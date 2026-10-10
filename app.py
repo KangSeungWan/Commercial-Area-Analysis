@@ -22,6 +22,7 @@ def load_area():
 
 
 prof, gj, lp, sp = load_area()
+fc = pd.read_csv(f"{OUT}/forecast_land.csv", encoding="utf-8-sig") if os.path.exists(f"{OUT}/forecast_land.csv") else None
 
 # ── 사이드바 ──
 st.sidebar.title("대전 트램 상권 지도")
@@ -60,10 +61,16 @@ if view == "상권(20개)":
     AM = {"tram_sel": f"트램 효과(%, {scen})", "land_chg_5y_pct": "공시지가 5년 상승률(%)",
           "land_rel_idx": "공시지가: 2015년 이후 대전 평균 대비(100=평균)",
           "store_share_chg_5y_pct": "점포 비중 5년 변화(%)", "close_rate_q_pct": "분기 폐업률(%, 최근 3년)",
-          "n_stores": "점포 수(2026-06)", "cluster": "상권 유형(K-means)"}
+          "n_stores": "점포 수(2026-06)", "cluster": "상권 유형(K-means)",
+          "risk_score": "쇠퇴 위험 점수(0~100)", "growth_score": "성장 가능 점수(0~100)", "quadrant": "진단(4분류)"}
     AM = {k: v for k, v in AM.items() if k in prof.columns}
     am = st.sidebar.radio("상권 색칠 기준", list(AM), format_func=AM.get)
-    if am == "cluster":                                       # 유형은 색 구분 (1 파랑, 2 주황, 3 초록, 4 빨강, …)
+    if am == "quadrant":                                      # 진단 4분류
+        QC = {"성장 지속": [44, 160, 44, 170], "트램 반등 기회": [255, 127, 14, 170], "쇠퇴 우려": [214, 39, 40, 170],
+              "정체·안정": [150, 150, 150, 150]}
+        colors = {c: QC.get(q, [200, 200, 200, 100]) for c, q in zip(prof.code, prof.quadrant)}
+        st.sidebar.markdown("🟢 성장 지속 · 🟠 트램 반등 기회 · 🔴 쇠퇴 우려 · ⚪ 정체·안정")
+    elif am == "cluster":                                       # 유형은 색 구분 (1 파랑, 2 주황, 3 초록, 4 빨강, …)
         PAL = [[31, 119, 180, 160], [255, 127, 14, 160], [44, 160, 44, 160], [214, 39, 40, 160], [148, 103, 189, 160]]
         colors = {c: PAL[(int(k) - 1) % len(PAL)] if pd.notna(k) else [180, 180, 180, 120]
                   for c, k in zip(prof.code, prof.cluster)}
@@ -75,7 +82,7 @@ if view == "상권(20개)":
     for f in gj["features"]:
         c = f["properties"]["code"]
         r = info.loc[c]
-        f["properties"].update({"fill": colors[c], "val": None if pd.isna(r[am]) else round(float(r[am]), 2),
+        f["properties"].update({"fill": colors[c], "val": None if pd.isna(r[am]) else (r[am] if isinstance(r[am], str) else round(float(r[am]), 2)),
                                 "tram_sel": round(float(r.tram_sel), 2)})
     lay_poly = pdk.Layer("GeoJsonLayer", gj, id="areas", pickable=True, stroked=True, filled=True,
                          get_fill_color="properties.fill", get_line_color=[80, 80, 80, 200], line_width_min_pixels=1,
@@ -106,6 +113,9 @@ if view == "상권(20개)":
               f"{int(r.nearest_tram)}번 정거장 {int(r.nearest_tram_m)}m" if pd.notna(r.nearest_tram) else None,
               delta_color="off")
     st.caption(f"주요 업종: {r.top3_mid}")
+    if "risk_score" in r and pd.notna(r.get("risk_score")):
+        st.markdown(f"**진단: {r.quadrant}** · 쇠퇴 위험 {r.risk_score:.0f}점 ({r.risk_drivers}) · "
+                    f"성장 가능 {r.growth_score:.0f}점 ({r.growth_drivers})")
     if sel == "A12":
         st.info("도룡동 점포 수 급증은 2021년 대전신세계 입점 매장이 등록된 영향입니다.")
 
@@ -115,6 +125,15 @@ if view == "상권(20개)":
         t.columns = [names.get(c, "대전 전체") for c in t.columns]
         g1.markdown("**공시지가 지수 (2015 = 100)**")
         g1.line_chart(t)
+    if fc is not None and sel in set(fc.code):
+        f = fc[fc.code == sel].set_index("year")
+        h = lp[lp.code == sel].set_index("year").idx if lp is not None else None
+        base = h.iloc[-1] / 100 if h is not None else 1
+        ch = pd.DataFrame({"실제": h.loc[2015:] if h is not None else None,
+                           "예측(트램 없음)": f.base_path * base, "예측(트램 기본)": f.tram_base * base,
+                           "80% 하한": f.lo80 * base, "80% 상한": f.hi80 * base})
+        st.markdown("**공시지가 예측 (2015 = 100, 2028 트램 개통)** — 범위가 넓어 상권 비교용")
+        st.line_chart(ch)
     if sp is not None:
         s = sp[sp.code == sel].copy()
         s["date"] = pd.to_datetime(s.period, format="%Y%m")

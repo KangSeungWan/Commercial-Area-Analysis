@@ -32,6 +32,8 @@ STEPS = [
     ("make_map_data", "지도용 데이터 (유형 반영)", None),
     ("analyze_robustness", "트램 효과 강건성 검정", None),
     ("forecast_areas", "예측 모델 비교 + 2034 트램 시나리오 (약 1분)", None),
+    ("score_areas", "쇠퇴 위험·성장 가능 점수", None),
+    ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 
 

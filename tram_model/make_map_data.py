@@ -101,6 +101,10 @@ def area_profile(map_df):
     tf = OUT / "area_types.csv"
     if tf.exists():                                        # cluster_areas.py 결과 (상권 유형)
         P = P.merge(pd.read_csv(tf, encoding="utf-8-sig")[["code", "cluster", "type_name"]], on="code", how="left")
+    sf = OUT / "area_scores.csv"
+    if sf.exists():                                        # score_areas.py 결과 (쇠퇴 위험·성장 가능)
+        P = P.merge(pd.read_csv(sf, encoding="utf-8-sig")[["code", "risk_score", "growth_score", "quadrant",
+                                                           "risk_drivers", "growth_drivers"]], on="code", how="left")
     eff = map_df.groupby("area")[["tram_effect", "tram_effect_low", "tram_effect_high"]].mean().round(2)
     P = P.merge(eff, left_on="code", right_index=True, how="left")
     P.to_csv(OUT / "area_profile.csv", index=False, encoding="utf-8-sig")

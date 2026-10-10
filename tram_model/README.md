@@ -109,3 +109,9 @@ python tram_model/run_all.py --from train_analyze
 - 모델: naive / drift / ARIMA(p,1,0)(직접 구현) / LightGBM(없으면 sklearn GBM), 시간 순서 검증 + 상권 분할 검증
 - 출력: forecast_backtest.csv/.png, forecast_land.csv, forecast_store.csv(도룡동 제외), forecast_paths.png
 - statsmodels·lightgbm 설치 불필요. LightGBM 을 쓰려면 `python -m pip install lightgbm`
+
+## E. 쇠퇴 위험 · 성장 가능 점수 (score_areas.py)
+- 위험: 점포 비중 10년·최근 3년(↓), 폐업률(↑), 지가 대전 대비 10년·최근 4년(↓), 2034 지가 예측(트램 없음, ↓) 의 백분위 평균
+- 성장: 2034 지가 예측(트램 기본), 트램 기본 효과, 개업률, 점포 비중 최근 3년 의 백분위 평균
+- 진단: 위험 ≥ 50 이고 트램 효과 ≥ 3p → 트램 반등 기회 / 아니면 쇠퇴 우려, 위험 < 50 → 성장 지속(성장 ≥ 50)·정체·안정
+- 출력: area_scores.csv, area_scores_sensitivity.csv, area_scores.png → area_profile.csv → app.py (색칠 기준·상세·예측 그래프)
