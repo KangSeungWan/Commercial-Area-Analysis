@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import adjusted_rand_score, silhouette_score
 
 import config as C
 
@@ -124,6 +124,37 @@ def main():
             names[c] += f" {seen[names[c]]}"
     F["type_name"] = F.cluster.map(names)
     F["note"] = ["점포 지표 왜곡(신세계 입점) → 지가·규모로 배정" if c in ARTIFACT else "" for c in F.index]
+    # ── 안정성: 표본 재추출(부트스트랩) · 특징 하나 빼기 · 시작값 바꾸기 → 같은 유형이 다시 나오는가
+    fit_codes = list(Z.index)
+    base_lab = pd.Series(km.predict(Z), index=fit_codes)
+    rng = np.random.default_rng(SEED)
+    same = pd.DataFrame(0.0, index=fit_codes, columns=fit_codes); cnt = same.copy()
+    aris = []
+    for b in range(300):
+        idx = rng.choice(len(Z), len(Z), replace=True)
+        kb = KMeans(n_clusters=k_best, n_init=20, random_state=b).fit(Z.iloc[idx])
+        lb = pd.Series(kb.predict(Z), index=fit_codes)
+        aris.append(adjusted_rand_score(base_lab, lb))
+        eq = (lb.values[:, None] == lb.values[None, :]).astype(float)
+        same += eq; cnt += 1
+    co = same / cnt
+    stab = {c: co.loc[c, base_lab[base_lab == base_lab[c]].index.drop(c)].mean()
+            if (base_lab == base_lab[c]).sum() > 1 else np.nan for c in fit_codes}
+    drop_ari = {}
+    for f in USE:
+        cols = [c for c in USE if c != f]
+        kd = KMeans(n_clusters=k_best, n_init=100, random_state=SEED).fit(Z[cols])
+        drop_ari[f] = adjusted_rand_score(base_lab, kd.labels_)
+    seed_ari = [adjusted_rand_score(base_lab, KMeans(n_clusters=k_best, n_init=1, random_state=s).fit(Z).labels_)
+                for s in range(50)]
+    F["stability"] = F.index.map(lambda c: round(stab.get(c, np.nan), 2) if c in stab else np.nan)
+    S = pd.DataFrame({"test": ["부트스트랩 300회 평균 ARI", "시작값 50개 평균 ARI"] + [f"'{FEATS[f]}' 빼고 ARI" for f in USE],
+                      "ari": [np.mean(aris), np.mean(seed_ari)] + list(drop_ari.values())}).round(3)
+    S.to_csv(C.OUT_DIR / "area_type_stability.csv", index=False, encoding="utf-8-sig")
+    print("\n[안정성] ARI (1 = 똑같이 나뉨, 0 = 우연 수준)\n", S.to_string(index=False))
+    print("  상권별 안정도(같은 유형 상권과 다시 묶이는 비율) 낮은 순:",
+          ", ".join(f"{F.loc[c, 'name']} {v:.2f}" for c, v in sorted(stab.items(), key=lambda x: x[1])[:5]))
+
     Z = Zall
     pca = PCA(2, random_state=SEED).fit(Z)
     pc = pca.transform(Z)

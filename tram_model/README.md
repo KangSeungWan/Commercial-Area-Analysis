@@ -93,3 +93,13 @@ streamlit run app.py
 ```
 - 보기 3가지: 상권 20개 / 행정동 82개(통계청 2023-01 경계, `data/daejeon_dong_2023.geojson`) / 격자 250m
 - 경계 클릭 → 오른쪽 패널에 상세·추이·AI 해설. 1호선(파란선), 트램 2호선(주황 점선 순환)
+
+## 한 번에 실행 (run_all.py)
+```bash
+python tram_model/run_all.py              # 무거운 단계(상가 과거·공시지가)는 결과 있으면 건너뜀, 약 1~2분
+python tram_model/run_all.py --full       # 전부 다시
+python tram_model/run_all.py --from train_analyze
+```
+- `tram_route.py`: 트램 노선 순서 (번호 ≠ 노선: 245 진잠네거리는 231~232 사이, 241~244 는 연축 지선)
+- `analyze_robustness.py`: 1호선 효과 강건성(비교군 거리·처리 반경·같은 구·가짜 개통연도·가짜 역) + 정거장 반경 400/500/600m 민감도
+- `cluster_areas.py`: 부트스트랩·특징 빼기·시작값 안정성(ARI), 상권별 안정도 → `area_type_stability.csv`

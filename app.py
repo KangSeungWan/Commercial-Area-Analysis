@@ -33,8 +33,10 @@ st.sidebar.caption("트램 효과 = 개통 6년 후 정거장 500m 안 매출 �
                    "기본: 대전 1호선 1단계 역세권 지가 효과(+5.8%)를 업종·버스밀도·상권 위치로 조정. "
                    "높음: 영국 경전철 연구(Lan 2025) 업종별 계수. 낮음: 버스가 적은 지역 계수.")
 
-route = stations[["lon", "lat"]].values.tolist()
-route = [{"path": route + route[:1]}]                                  # 2호선 순환선 (정거장 순서 연결)
+import sys
+sys.path.insert(0, "tram_model")
+from tram_route import route_paths                                     # 순환선 + 연축 지선 (번호 ≠ 노선 순서)
+route = [{"path": p} for p in route_paths(stations)]
 lay_route = pdk.Layer("PathLayer", route, get_path="path", get_color=[30, 90, 200, 140], width_min_pixels=2)
 lay_stop = pdk.Layer("ScatterplotLayer", stations, get_position=["lon", "lat"], get_radius=55,
                      get_fill_color=[30, 90, 200, 230], pickable=False)
