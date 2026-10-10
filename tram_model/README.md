@@ -115,3 +115,14 @@ python tram_model/run_all.py --from train_analyze
 - 성장: 2034 지가 예측(트램 기본), 트램 기본 효과, 개업률, 점포 비중 최근 3년 의 백분위 평균
 - 진단: 위험 ≥ 50 이고 트램 효과 ≥ 3p → 트램 반등 기회 / 아니면 쇠퇴 우려, 위험 < 50 → 성장 지속(성장 ≥ 50)·정체·안정
 - 출력: area_scores.csv, area_scores_sensitivity.csv, area_scores.png → area_profile.csv → app.py (색칠 기준·상세·예측 그래프)
+
+## 보강 분석 (2026-10-11)
+| 스크립트 | 내용 | 출력 |
+|---|---|---|
+| analyze_line1_trend.py | 1호선 효과 개통 전 추세 보정·사전 성장 매칭 + 가짜 개통연도 | line1_trend_adjusted.csv/.png |
+| analyze_tram_benchmark.py | 대전 추정 vs 국내외 LRT·트램 문헌 (`literature_tram_benchmarks.csv`) | tram_benchmark.csv/.png |
+| build_dong_panel.py | 행정동 82개 지가 지수·점포 패널 (상가 42분기 읽음, 약 1분) | dong_panel_land.csv, dong_panel_store.csv |
+| analyze_dong_events.py | 사건 효과를 행정동 단위로 (비교 62개, 가짜 처리군 p) | dong_event_effects.csv/.png |
+| analyze_factors.py | 요인 분석 (회귀+VIF, RF 순열 중요도) | factors_ols.csv, factors_rf.csv, factors.png |
+| analyze_industry.py | 업종 구성 변화·지역 이동·상권별·업종별 트램 효과 | industry_*.csv, industry.png |
+- 트램 시나리오 '높음'(지가) = 대전 1호선 추세 보정+매칭 9.3% (`DJ_line1_land_trendadj`)

@@ -202,7 +202,8 @@ def score(R):
 
 
 def tram_effects():
-    """상권별 트램 효과(log): 지가 = 정거장 500m 셀 비율 × (낮음 P2 버스저밀 / 기본 대전 1호선 / 높음 P2 지가),
+    """상권별 트램 효과(log): 지가 = 정거장 500m 셀 비율 × (낮음 P2 버스저밀 0.9% ≈ 청두 트램 1.4% / 기본 대전 1호선 5.8% /
+    높음 대전 1호선 추세보정 9.3%),
     점포 = scenario_tram_uplift 의 상권 평균 (업종·버스밀도·중심/주변 반영)."""
     lit = pd.read_csv(C.LIT_PARAMS).set_index("param_id").value
     S = static_feats()
@@ -215,7 +216,7 @@ def tram_effects():
             dj = float(np.log1p(r.effect_pct.iloc[0] / 100))
     land = pd.DataFrame({"low": S.tram_in500 * float(lit["P2_mod_bus_low"]),
                          "base": S.tram_in500 * dj,
-                         "high": S.tram_in500 * float(lit["P2_DID_price_noctrl"])})
+                         "high": S.tram_in500 * float(lit.get("DJ_line1_land_trendadj", lit["P2_DID_price_noctrl"]))})
     sc = pd.read_csv(C.OUT_DIR / "scenario_tram_uplift.csv", encoding="utf-8-sig")
     store = sc.groupby("zone")[["eff_low", "eff_base", "eff_high"]].mean()
     store.columns = ["low", "base", "high"]

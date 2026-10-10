@@ -1,0 +1,12 @@
+﻿id,source,use,outcome,setting,value,unit,sig,timing,journal,note,url,verified
+L01,Debrezion·Pels·Rietveld 2007 (메타분석),benchmark,property value,"LRT, 역 1/4마일",7.6,%,,,TI WP 2004-023 / JREFE 2007,"LRT 평균 7.6%, 지하철 5.3%, 주거 6.2%, 상업 15.2% (LRT·지하철 차이 유의하지 않음)",https://papers.tinbergen.nl/04023.pdf,확인(WP)
+L02,Cervero·Duncan 2002 (San Jose LRT),benchmark,commercial land value,"LRT, 1/4마일",23,%,,운영,TRR 1805,상업용지 +23% (횡단면 헤도닉),https://www.worldtransitresearch.info/research/839,확인
+L03,Leeds ITS 2019 (Manchester Metrolink),benchmark,residential price,트램 신설역 인근,6.3,%,,개통,보고서,"평균 +6.3%, 노선별 +10.5%·+20.9%",https://www.leeds.ac.uk/news/article/4473/new_insight_into_links_between_transport_and_land_value,확인(보도)
+L04,Yang 외 2025 (Chengdu 트램 2호선),benchmark,residential price,"트램, 800m, DiD",1.4,%,,개통,RTBM 59:101286,"800m 내 +1.4%, 선로 바로 옆은 감가",https://repository.essex.ac.uk/41516/,확인
+L05,Ahn·Kim 2021 (대구 3호선 모노레일),benchmark,apartment price,"경전철, DiD",0.078,log,p<0.05,개통 단기,대한건축학회 37(5),"상호작용 0.078, 저자는 '미미' 평가",https://pure.seoultech.ac.kr/en/publications/evaluating-the-short-term-effect-of-a-new-monorail-type-light-rai-2/,확인(초록)
+L06,Cervero·Kang 2011 (서울 중앙버스차로 BRT),benchmark,land value,"지상 BRT, 주거 300m·상업 150m",25,%,,운영,Transport Policy 18(1),"주거 최대 +10%(300m), 상업 +25% 이상(150m)",https://ideas.repec.org/a/eee/trapol/v18y2011i1p102-116.html,확인
+L07,Papon 외 2015 (파리 T3 트램),benchmark,residential price,"트램, 헤도닉",0,%,ns,개통,RTE,유의한 효과 없음,https://worldtransitresearch.info/research/5563,확인
+L08,Wagner 외 2017 (Norfolk Tide LRT),benchmark,residential price,"LRT, 1.5km, DiD",-8,%,,개통,RSUE 65,약 −8% (이용 적은 노선),https://ideas.repec.org/a/eee/regeco/v65y2017icp25-37.html,확인
+L09,Credit 2018 (Phoenix LRT),benchmark,new business starts,"LRT, 1마일, 준실험",28,%,,개통,Urban Studies 55(13),"신규 소매 창업 +28%, 서비스 +40%, 연 7%씩 감소",https://ideas.repec.org/a/sae/urbstu/v55y2018i13p2838-2862.html,확인(요약)
+L10,Pilgram·West 2018 (Minneapolis LRT),benchmark,residential price,"LRT, 반마일, 반복매매 DiD",0,%,,운영 후,RSUE 69,매칭 비교군이면 프리미엄 작고 0으로 소멸,https://ideas.repec.org/a/eee/regeco/v69y2018icp1-10.html,수치 미확인
+L11,Byun·Jang 2024 (대전 1호선 상업용지),benchmark,commercial land value,"지하철, 다층 혼합모형",,,,개통 후,RTE 106:101462,"개통 후 유의한 상승, 역에 가까울수록 큼 (수치 미확인)",https://dspace.kaist.ac.kr/handle/10203/323006,방향만 확인

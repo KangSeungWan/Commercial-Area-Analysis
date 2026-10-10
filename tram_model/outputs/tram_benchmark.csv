@@ -1,0 +1,16 @@
+﻿group,label,value,lo,hi,kind
+대전 1호선 (본 분석),기본 이중차분,5.8,0.0,12.7,지하철·지가(대)
+대전 1호선 (본 분석),추세 보정 (1996~2005),15.2,6.4,25.1,지하철·지가(대)
+대전 1호선 (본 분석),추세 보정 (2000~2005),10.3,2.6,19.0,지하철·지가(대)
+대전 1호선 (본 분석),사전 성장 매칭,3.7,-2.7,12.3,지하철·지가(대)
+대전 1호선 (본 분석),매칭 + 추세 보정 (2000~2005),9.3,1.7,17.9,지하철·지가(대)
+대전 1호선 (본 분석),행정동 단위 (역 있는 동 전체),2.9,-25.324,31.124,지하철·지가(동 평균)
+문헌,Debrezion·Pels·Rietveld 2007 (메타분석),7.6,,,property value
+문헌,Cervero·Duncan 2002 (San Jose LRT),23.0,,,commercial land value
+문헌,Leeds ITS 2019 (Manchester Metrolink),6.3,,,residential price
+문헌,Yang 외 2025 (Chengdu 트램 2호선),1.4,,,residential price
+문헌,Ahn·Kim 2021 (대구 3호선 모노레일),8.112265867008313,,,apartment price
+문헌,Cervero·Kang 2011 (서울 중앙버스차로 BRT),25.0,,,land value
+문헌,Papon 외 2015 (파리 T3 트램),0.0,,,residential price
+문헌,Wagner 외 2017 (Norfolk Tide LRT),-8.0,,,residential price
+문헌,Pilgram·West 2018 (Minneapolis LRT),0.0,,,residential price
