@@ -49,7 +49,9 @@ st.sidebar.caption("트램 효과 = 개통 6년 후 정거장 500m 안 매출 �
 
 import sys
 sys.path.insert(0, "tram_model")
-from tram_route import route_paths                                     # 순환선 + 연축 지선 (번호 ≠ 노선 순서)
+from tram_route import route_paths
+from about_page import show_about                                      # 분석 방법 팝업
+show_about(st)                                     # 순환선 + 연축 지선 (번호 ≠ 노선 순서)
 route = [{"path": p} for p in route_paths(stations)]
 lay_route = pdk.Layer("PathLayer", route, get_path="path", get_color=[30, 90, 200, 140], width_min_pixels=2)
 stop_df = stations.merge(st_sum[["station_no", "n_stores"]], on="station_no", how="left") if st_sum is not None \
