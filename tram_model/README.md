@@ -103,3 +103,9 @@ python tram_model/run_all.py --from train_analyze
 - `tram_route.py`: 트램 노선 순서 (번호 ≠ 노선: 245 진잠네거리는 231~232 사이, 241~244 는 연축 지선)
 - `analyze_robustness.py`: 1호선 효과 강건성(비교군 거리·처리 반경·같은 구·가짜 개통연도·가짜 역) + 정거장 반경 400/500/600m 민감도
 - `cluster_areas.py`: 부트스트랩·특징 빼기·시작값 안정성(ARI), 상권별 안정도 → `area_type_stability.csv`
+
+## D. 예측 모델 비교 (forecast_areas.py)
+- 대상: 상권 지가 지수(연, 1·2·3년 뒤), 점포 비중 지수(분기, 4·8분기 뒤). 매출은 합성값이라 제외
+- 모델: naive / drift / ARIMA(p,1,0)(직접 구현) / LightGBM(없으면 sklearn GBM), 시간 순서 검증 + 상권 분할 검증
+- 출력: forecast_backtest.csv/.png, forecast_land.csv, forecast_store.csv(도룡동 제외), forecast_paths.png
+- statsmodels·lightgbm 설치 불필요. LightGBM 을 쓰려면 `python -m pip install lightgbm`
