@@ -40,6 +40,7 @@ STEPS = [
     ("analyze_industry", "업종별 분석", None),
     ("forecast_areas", "예측 모델 비교 + 2034 트램 시나리오 (약 1분)", None),
     ("score_areas", "쇠퇴 위험·성장 가능 점수", None),
+    ("analyze_survey_sales", "실태조사·업종 매출 (data/raw/매출 있으면)", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 

@@ -116,6 +116,9 @@ if view == "상권(20개)":
     if "risk_score" in r and pd.notna(r.get("risk_score")):
         st.markdown(f"**진단: {r.quadrant}** · 쇠퇴 위험 {r.risk_score:.0f}점 ({r.risk_drivers}) · "
                     f"성장 가능 {r.growth_score:.0f}점 ({r.growth_drivers})")
+    if "bad_pct" in r and pd.notna(r.get("bad_pct")):
+        st.caption(f"2021 소상공인 실태조사 ({r.survey_dong}, 상권이 속한 행정동): 매출·이익 감소 {r.decline_pct:.0f}%, "
+                   f"폐업·업종전환 고려 {r.closing_pct:.0f}% (대전 평균 74% / 7%, 코로나 시기)")
     if sel == "A12":
         st.info("도룡동 점포 수 급증은 2021년 대전신세계 입점 매장이 등록된 영향입니다.")
 

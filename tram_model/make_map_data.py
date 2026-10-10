@@ -105,6 +105,10 @@ def area_profile(map_df):
     if sf.exists():                                        # score_areas.py 결과 (쇠퇴 위험·성장 가능)
         P = P.merge(pd.read_csv(sf, encoding="utf-8-sig")[["code", "risk_score", "growth_score", "quadrant",
                                                            "risk_drivers", "growth_drivers"]], on="code", how="left")
+    vf = OUT / "survey_area.csv"
+    if vf.exists():                                        # analyze_survey_sales.py (소속 행정동 2021 실태조사)
+        P = P.merge(pd.read_csv(vf, encoding="utf-8-sig")[["code", "dong", "decline_pct", "closing_pct", "bad_pct"]]
+                    .rename(columns={"dong": "survey_dong"}), on="code", how="left")
     eff = map_df.groupby("area")[["tram_effect", "tram_effect_low", "tram_effect_high"]].mean().round(2)
     P = P.merge(eff, left_on="code", right_index=True, how="left")
     P.to_csv(OUT / "area_profile.csv", index=False, encoding="utf-8-sig")

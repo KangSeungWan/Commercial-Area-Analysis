@@ -126,3 +126,9 @@ python tram_model/run_all.py --from train_analyze
 | analyze_factors.py | 요인 분석 (회귀+VIF, RF 순열 중요도) | factors_ols.csv, factors_rf.csv, factors.png |
 | analyze_industry.py | 업종 구성 변화·지역 이동·상권별·업종별 트램 효과 | industry_*.csv, industry.png |
 - 트램 시나리오 '높음'(지가) = 대전 1호선 추세 보정+매칭 9.3% (`DJ_line1_land_trendadj`)
+
+## 실태조사·업종 매출 (analyze_survey_sales.py)
+- `data/raw/매출/` 에 csv 를 넣으면 열 이름으로 자동 구분 (파일 이름 무관, cp949)
+  - 2021 소상공인 실태조사(행정동) → 행정동별 매출 감소·폐업 고려 응답률, 우리 지표와 순위 상관(외부 검증)
+  - 월별 업종 매출(2020-05~2021-09, 186업종) → 대분류 10개 구성비·점포당 월 매출
+- 위치별 매출 금액은 없어 격자 매출 합성값은 그대로 (실태조사는 응답률, 업종 매출은 대전 전체)
