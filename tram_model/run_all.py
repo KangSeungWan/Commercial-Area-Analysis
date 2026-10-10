@@ -20,6 +20,7 @@ OUT = HERE / "outputs"
 # (스크립트, 설명, 무거운 단계면 '이 파일이 있으면 건너뜀')
 STEPS = [
     ("build_areas", "20개 상권 경계", None),
+    ("build_area_regions", "대전 전체 상권 권역 (지도 색칠용)", None),
     ("build_store_panel", "상가 과거 패널 (42개 분기)", OUT / "store_panel.csv"),
     ("analyze_store_panel", "상가 사건 효과", OUT / "panel_event_effects.csv"),
     ("build_landprice", "공시지가 1990~2026", OUT / "landprice_long.pkl"),

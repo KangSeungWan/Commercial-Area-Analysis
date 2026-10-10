@@ -13,15 +13,18 @@ stations = stations.sort_values("station_no")
 @st.cache_data
 def load_area():
     prof = pd.read_csv(f"{OUT}/area_profile.csv", encoding="utf-8-sig")
-    gj = json.load(open(f"{OUT}/sangkwon_polygons.geojson", encoding="utf-8"))
+    gj = json.load(open(f"{OUT}/sangkwon_polygons.geojson", encoding="utf-8"))           # 상권 핵심 영역(반경 기반)
+    rg_f = f"{OUT}/sangkwon_regions.geojson"                                               # 대전 전체를 나눈 권역
+    rg = json.load(open(rg_f, encoding="utf-8")) if os.path.exists(rg_f) else None
     lp = pd.read_csv(f"{OUT}/landprice_area_panel.csv", encoding="utf-8-sig") \
         if os.path.exists(f"{OUT}/landprice_area_panel.csv") else None
     sp = pd.read_csv(f"{OUT}/store_panel.csv", dtype={"period": str}, encoding="utf-8-sig") \
         if os.path.exists(f"{OUT}/store_panel.csv") else None
-    return prof, gj, lp, sp
+    return prof, gj, rg, lp, sp
 
 
-prof, gj, lp, sp = load_area()
+prof, gj, rg, lp, sp = load_area()
+gj, rg = json.loads(json.dumps(gj)), (json.loads(json.dumps(rg)) if rg else None)   # 캐시 원본 보호
 def _opt(name, **kw):
     p = f"{OUT}/{name}"
     return pd.read_csv(p, encoding="utf-8-sig", **kw) if os.path.exists(p) else None
@@ -73,13 +76,20 @@ def deck(layers, tooltip):
 # ================================================================ 상권 보기
 if view == "상권(20개)":
     prof["tram_sel"] = prof[SCEN[scen]]
-    AM = {"tram_sel": f"트램 효과(%, {scen})", "land_chg_5y_pct": "공시지가 5년 상승률(%)",
-          "land_rel_idx": "공시지가: 2015년 이후 대전 평균 대비(100=평균)",
-          "store_share_chg_5y_pct": "점포 비중 5년 변화(%)", "close_rate_q_pct": "분기 폐업률(%, 최근 3년)",
-          "n_stores": "점포 수(2026-06)", "cluster": "상권 유형(K-means)",
-          "risk_score": "쇠퇴 위험 점수(0~100)", "growth_score": "성장 가능 점수(0~100)", "quadrant": "진단(4분류)"}
-    AM = {k: v for k, v in AM.items() if k in prof.columns}
-    am = st.sidebar.radio("상권 색칠 기준", list(AM), format_func=AM.get)
+    GROUPS = {
+        "종합 진단": {"quadrant": "진단 (4분류)", "risk_score": "쇠퇴 위험 점수 (0~100)", "growth_score": "성장 가능 점수 (0~100)"},
+        "트램 효과": {"tram_sel": f"트램 효과 (%, {scen})"},
+        "땅값(공시지가)": {"land_chg_5y_pct": "5년 상승률 (%)", "land_rel_idx": "대전 평균 대비 (2015=100)"},
+        "점포": {"store_share_chg_5y_pct": "대전 내 점포 비중 5년 변화 (%)", "close_rate_q_pct": "분기 폐업률 (%)",
+               "n_stores": "점포 수 (2026-06)"},
+        "상권 유형": {"cluster": "유형 (K-means 4개)"},
+    }
+    GROUPS = {g: {k: v for k, v in m.items() if k in prof.columns} for g, m in GROUPS.items()}
+    GROUPS = {g: m for g, m in GROUPS.items() if m}
+    AM = {k: v for m in GROUPS.values() for k, v in m.items()}
+    grp = st.sidebar.radio("색칠 주제", list(GROUPS))
+    opts = GROUPS[grp]
+    am = st.sidebar.radio("지표", list(opts), format_func=opts.get) if len(opts) > 1 else list(opts)[0]
     if am == "quadrant":                                      # 진단 4분류
         QC = {"성장 지속": [44, 160, 44, 170], "트램 반등 기회": [255, 127, 14, 170], "쇠퇴 우려": [214, 39, 40, 170],
               "정체·안정": [150, 150, 150, 150]}
@@ -93,10 +103,15 @@ if view == "상권(20개)":
                                        prof.drop_duplicates("cluster").sort_values("cluster")[["cluster", "type_name"]].values))
     else:
         colors = dict(zip(prof.code, color_scale(prof[am].clip(upper=prof[am].quantile(.95)))))   # 노랑(낮음) → 빨강(높음)
+        st.sidebar.caption("연한 노랑 = 낮음 → 진한 빨강 = 높음")
+    show_region = rg is not None and st.sidebar.toggle("대전 전체를 상권 권역으로 채우기", value=True,
+                                                       help="대전 모든 지점을 가장 가까운 상권에 배정한 권역. 끄면 상권 핵심 영역만 표시")
     info = prof.set_index("code")
-    for f in gj["features"]:
+    for f in gj["features"] + (rg["features"] if rg else []):
         c = f["properties"]["code"]
         r = info.loc[c]
+        f["properties"].setdefault("nearest_tram", int(r.nearest_tram) if pd.notna(r.get("nearest_tram")) else None)
+        f["properties"].setdefault("nearest_tram_m", int(r.nearest_tram_m) if pd.notna(r.get("nearest_tram_m")) else None)
         f["properties"].update({"fill": colors[c], "val": None if pd.isna(r[am]) else (r[am] if isinstance(r[am], str) else round(float(r[am]), 2)),
                                 "tram_sel": round(float(r.tram_sel), 2)})
     names = dict(zip(prof.code, prof.code + " " + prof.name))
@@ -114,17 +129,20 @@ if view == "상권(20개)":
     if click_stn is not None and click_stn != ss.get("_last_stn"):
         ss._last_stn = click_stn; ss.sel_station = int(click_stn)
 
-    for f in gj["features"]:
+    for f in gj["features"] + (rg["features"] if rg else []):
         f["properties"]["val_label"] = f"{AM[am]}: {f['properties']['val']}<br/>가까운 트램 " \
                                        f"{f['properties'].get('nearest_tram')}번 {f['properties'].get('nearest_tram_m')}m"
     sel = ss.sel_area
-    lay_poly = pdk.Layer("GeoJsonLayer", gj, id="areas", pickable=True, stroked=True, filled=True,
-                         get_fill_color="properties.fill", get_line_color=[80, 80, 80, 200], line_width_min_pixels=1,
-                         auto_highlight=True)
-    sel_gj = {"type": "FeatureCollection", "features": [f for f in gj["features"] if f["properties"]["code"] == sel]}
+    fill_src = rg if show_region else gj
+    lay_poly = pdk.Layer("GeoJsonLayer", fill_src, id="areas", pickable=True, stroked=True, filled=True,
+                         get_fill_color="properties.fill", get_line_color=[255, 255, 255, 230],
+                         line_width_min_pixels=1.5, auto_highlight=True)
+    lay_core = pdk.Layer("GeoJsonLayer", gj, id="core", pickable=False, stroked=True, filled=False,
+                         get_line_color=[60, 60, 60, 160], line_width_min_pixels=1)       # 상권 핵심 영역 윤곽
+    sel_gj = {"type": "FeatureCollection", "features": [f for f in fill_src["features"] if f["properties"]["code"] == sel]}
     lay_sel = pdk.Layer("GeoJsonLayer", sel_gj, id="sel_area", pickable=False, stroked=True, filled=False,
                         get_line_color=[37, 99, 235, 255], line_width_min_pixels=4)
-    layers = [lay_poly, lay_sel, lay_route]
+    layers = [lay_poly] + ([lay_core] if show_region else []) + [lay_sel, lay_route]
     if ss.sel_station is not None:
         srow = stations[stations.station_no == ss.sel_station]
         layers.append(pdk.Layer("ScatterplotLayer", srow, id="buffer", get_position=["lon", "lat"], get_radius=500,
@@ -136,7 +154,8 @@ if view == "상권(20개)":
         st.pydeck_chart(d, on_select="rerun", selection_mode="single-object", key="map")
     except TypeError:
         st.pydeck_chart(d)
-    st.caption("상권(폴리곤)을 클릭하면 파란 테두리로 선택되고, 파란 정거장 점을 클릭하면 500m 영향권이 표시됩니다.")
+    st.caption("색칠된 권역을 클릭하면 파란 테두리로 선택되고, 파란 정거장 점을 클릭하면 500m 영향권이 표시됩니다. "
+               "회색 윤곽 = 상권 핵심 영역(점포 밀집, 지표 계산 범위) · 색칠 권역 = 그 상권이 가장 가까운 지역(표시용)")
 
     # ── 정거장 500m 영향권 ──
     c_a, c_b = st.columns([3, 1])
