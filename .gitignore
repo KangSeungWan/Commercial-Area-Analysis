@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.streamlit/secrets.toml
+tram_model/data/raw/
+tram_model/data/dxf/
+tram_model/outputs/landprice_long.pkl
+tram_model/outputs/landprice_parcels.csv.gz
+*.dwg
+*.dxf
+*.zip
