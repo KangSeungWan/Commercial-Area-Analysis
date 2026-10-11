@@ -161,6 +161,73 @@ st.markdown("""<style>
 .stn{border:1px solid #d5d9de;border-left:4px solid #23272e;border-radius:8px;padding:10px 14px;margin:6px 0 10px 0;background:#fff}
 </style>""", unsafe_allow_html=True)
 
+LABEL_FONTS = ["/System/Library/Fonts/AppleSDGothicNeo.ttc", "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+               "/Library/Fonts/AppleGothic.ttf", "C:/Windows/Fonts/malgunbd.ttf", "C:/Windows/Fonts/malgun.ttf",
+               "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+               "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf", "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"]
+
+
+@st.cache_data(show_spinner=False)
+def label_shapes(texts, lons, lats, offs, sels, px_h=10.0):
+    """상권 이름 → (배경 상자, 글자 모양) GeoJSON. 첫 화면(zoom 12)에서 글자 높이 약 px_h 픽셀.
+    글꼴의 글자 윤곽(matplotlib TextPath)을 경위도 다각형으로 바꾸고, 구멍(ㅇ·ㅁ 안쪽)은 바깥 윤곽에 묶어 둠."""
+    import math
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.path import Path
+    from matplotlib.textpath import TextPath
+    font = next((f for f in LABEL_FONTS if os.path.exists(f)), None)
+    if font is None:
+        return None, None
+    fp = FontProperties(fname=font)
+    mpp = 156543.03 * math.cos(math.radians(VIEW0["latitude"])) / 2 ** VIEW0["zoom"]   # 첫 화면 1픽셀 = 몇 m
+    em = px_h * mpp / 0.72                                             # 글자 크기(em) → 한글 높이 약 0.72em
+    bg_f, tx_f = [], []
+    for text, lon, lat, (dx, dy), sel in zip(texts, lons, lats, offs, sels):
+        tp = TextPath((0, 0), text, size=1, prop=fp)
+        rings = [r for r in tp.to_polygons() if len(r) >= 3]
+        if not rings:
+            continue
+        allp = [p for r in rings for p in r]
+        x0, x1 = min(p[0] for p in allp), max(p[0] for p in allp)
+        y0, y1 = min(p[1] for p in allp), max(p[1] for p in allp)
+        cx_, cy_ = (x0 + x1) / 2, (y0 + y1) / 2
+        k = 111320 * math.cos(math.radians(lat))
+        ox, oy = dx * mpp, -dy * mpp                                   # off 는 화면 기준(아래 +) → 지도 기준(위 +)
+
+        def ll(x, y):
+            return [round(lon + ((x - cx_) * em + ox) / k, 6), round(lat + ((y - cy_) * em + oy) / 111320, 6)]
+
+        # 바깥 윤곽과 구멍 나누기: 넓이 부호가 많은 쪽 = 바깥
+        def area(r):
+            return sum(r[i][0] * r[i - 1][1] - r[i - 1][0] * r[i][1] for i in range(len(r))) / 2
+        A = [area(r) for r in rings]
+        outer_sign = 1 if sum(a > 0 for a in A) >= sum(a < 0 for a in A) else -1
+        outers = [i for i, a in enumerate(A) if a * outer_sign > 0]
+        polys = {i: [rings[i]] for i in outers}
+        for i, a in enumerate(A):
+            if a * outer_sign > 0:
+                continue
+            host = [j for j in outers if Path(rings[j]).contains_point(rings[i][0])]
+            if host:
+                polys[min(host, key=lambda j: abs(A[j]))].append(rings[i])
+        fg = [255, 255, 255, 255] if sel else [25, 28, 32, 255]
+        bg = [35, 39, 46, 235] if sel else [255, 255, 255, 220]
+        tx_f.append({"type": "Feature", "properties": {"fill": fg},
+                     "geometry": {"type": "MultiPolygon",
+                                  "coordinates": [[[ll(*p) for p in list(r) + [r[0]]] for r in rs] for rs in polys.values()]}})
+        px_, py_ = 0.32, 0.26                                          # 상자 여백 (em)
+        bx0, bx1, by0, by1 = x0 - px_, x1 + px_, y0 - py_, y1 + py_
+        rr = min(0.3, (by1 - by0) / 2)
+        box = []
+        for ccx, ccy, a0 in [(bx1 - rr, by0 + rr, -90), (bx1 - rr, by1 - rr, 0), (bx0 + rr, by1 - rr, 90), (bx0 + rr, by0 + rr, 180)]:
+            for t in range(0, 91, 15):
+                ang = math.radians(a0 + t)
+                box.append(ll(ccx + rr * math.cos(ang), ccy + rr * math.sin(ang)))
+        box.append(box[0])
+        bg_f.append({"type": "Feature", "properties": {"fill": bg}, "geometry": {"type": "Polygon", "coordinates": [box]}})
+    return ({"type": "FeatureCollection", "features": bg_f}, {"type": "FeatureCollection", "features": tx_f})
+
+
 # ================================================================ 기본 정보
 NM = dict(zip(prof.code, prof.name))
 names = {c: f"{c} {n}" for c, n in NM.items()}
@@ -404,7 +471,7 @@ if show_label:                                        # 상권 이름: 점포 �
             continue
         t = NM[c].split("(")[0]
         x, y = px(*cen_xy[c])
-        w, h = len(t) * 12.5 + 8, 20
+        w, h = len(t) * 14.5 + 10, 20                  # 글자 높이 10px 기준 한글 한 글자 폭 약 14px
         for dx, dy in [(0, 0), (0, 20), (0, -20), (w / 2 + 6, 0), (-w / 2 - 6, 0), (0, 38), (0, -38)]:
             bx = (x + dx - w / 2, y + dy - h / 2, x + dx + w / 2, y + dy + h / 2)
             if c == sel or not any(not (bx[2] < o[0] or bx[0] > o[2] or bx[3] < o[1] or bx[1] > o[3]) for o in boxes):
@@ -414,14 +481,15 @@ if show_label:                                        # 상권 이름: 점포 �
         boxes.append(bx)
         lab.append({"text": t, "lon": cen_xy[c][0], "lat": cen_xy[c][1], "sel": c == sel, "off": [dx, -dy]})
     lab = pd.DataFrame(lab)
-    TXT = dict(get_position=["lon", "lat"], get_text="text", size_units="pixels", character_set="auto",
-               font_family='Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
-               font_settings={"sdf": True, "fontSize": 64, "buffer": 8}, outline_color=[255, 255, 255, 245],
-               get_pixel_offset="off", pickable=False)
-    layers.append(pdk.Layer("TextLayer", lab[~lab.sel], id="labels", get_size=12.5, get_color=[30, 30, 30, 255],
-                            font_weight=600, outline_width=3, **TXT))
-    layers.append(pdk.Layer("TextLayer", lab[lab.sel], id="label_sel", get_size=15, get_color=ROUTE_C + [255],
-                            font_weight=800, outline_width=3.5, **TXT))
+    # 상권 이름: 이 Streamlit 의 지도에서는 글자(TextLayer)·그림(IconLayer) 층이 그려지지 않음 →
+    # 글자 모양을 다각형으로 바꿔 GeoJsonLayer 로 그림 (확대하면 글자도 함께 커짐)
+    lab_bg, lab_txt = label_shapes(tuple(lab.text), tuple(lab.lon), tuple(lab.lat),
+                                   tuple(map(tuple, lab.off)), tuple(lab.sel)) if len(lab) else (None, None)
+    if lab_bg:
+        layers.append(pdk.Layer("GeoJsonLayer", lab_bg, id="label_bg", filled=True, stroked=False, pickable=False,
+                                get_fill_color="properties.fill"))
+        layers.append(pdk.Layer("GeoJsonLayer", lab_txt, id="label_txt", filled=True, stroked=False, pickable=False,
+                                get_fill_color="properties.fill"))
 
 st.markdown(f'<div class="maphead">{legend}<div class="sym">'
             f'<span class="ln"></span>트램 2호선<span class="st"></span>정거장'
