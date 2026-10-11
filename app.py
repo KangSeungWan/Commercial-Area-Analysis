@@ -42,7 +42,8 @@ events = read_csv(f"{DATA}/area_events.csv")
 QC = {"성장 지속": [34, 139, 84], "트램 반등 기회": [235, 130, 20], "쇠퇴 우려": [200, 50, 50], "정체·안정": [140, 140, 140]}
 QHEX = {k: "#%02x%02x%02x" % tuple(v) for k, v in QC.items()}
 PAL = [[52, 110, 190], [235, 130, 20], [34, 139, 84], [200, 50, 50], [128, 90, 180]]       # 상권 유형 1~5
-ROUTE_C = [30, 90, 200]
+ROUTE_C = [35, 39, 46]                                     # 트램 노선·정거장: 짙은 먹색 (지표 색과 겹치지 않게)
+REG_A, CORE_A = 95, 225                                     # 권역은 옅게, 점포가 모인 핵심 영역은 진하게
 RAMP = {"bad": ["#fff4d6", "#f2a65a", "#b8322a"],          # 높을수록 나쁨 (위험·폐업률)
         "good": ["#eef7ee", "#83c58f", "#1d7a46"],         # 높을수록 좋음 (성장)
         "tram": ["#eef1fb", "#8ea2e6", "#2c3fa8"],         # 트램 효과
@@ -59,6 +60,14 @@ st.markdown("""<style>
 .lg{display:flex;align-items:center;gap:8px;font-size:13px;color:#444;margin:2px 0 4px 0;flex-wrap:wrap}
 .lg .bar{width:180px;height:10px;border-radius:5px}.lg .dot{width:11px;height:11px;border-radius:50%;display:inline-block;margin:0 4px 0 10px}
 .qh{font-weight:700;font-size:14px;margin-bottom:2px}
+.maphead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px;
+  border:1px solid #e3e6ea;border-bottom:none;border-radius:10px 10px 0 0;padding:8px 12px;background:#fff;margin-bottom:-2px}
+.maphead .lg{margin:0}
+.sym{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#555;flex-wrap:wrap}
+.sym .ln{display:inline-block;width:22px;height:3px;background:#23272e;border-radius:2px;margin-left:8px}
+.sym .st{display:inline-block;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid #23272e;margin-left:8px}
+.sym .sq{display:inline-block;width:12px;height:12px;border-radius:3px;margin-left:8px;border:1px solid #ccc}
+.sym .sq.strong{background:#8a8f98}.sym .sq.weak{background:#dfe1e4}
 </style>""", unsafe_allow_html=True)
 
 
@@ -74,11 +83,12 @@ def _interp(stops, t):
     return [int(a[j] + (b[j] - a[j]) * f) for j in range(3)]
 
 
-def colorize(values, kind):
-    """숫자 → 색. kind: seq_bad / seq_good / seq_tram / seq_neutral / div0(0 기준 증감) / div100(100 기준)."""
+def colorize(values, kind, center=None):
+    """숫자 → 색. kind: seq_bad / seq_good / seq_tram / seq_neutral / div0(0 기준 증감) / div100(100 기준)
+    / divavg(center = 대전 평균 기준)."""
     v = pd.to_numeric(values, errors="coerce")
     if kind.startswith("div"):
-        c = 100 if kind == "div100" else 0
+        c = center if center is not None else (100 if kind == "div100" else 0)
         m = float((v - c).abs().quantile(.95)) or 1.0
         t = ((v - c).clip(-m, m) / m + 1) / 2
         stops, lo, hi = RAMP["div"], c - m, c + m
@@ -90,8 +100,10 @@ def colorize(values, kind):
     return cols, (stops, lo, hi)
 
 
-def legend_bar(label, stops, lo, hi, kind):
-    if kind.startswith("div"):
+def legend_bar(label, stops, lo, hi, kind, center=None):
+    if kind == "divavg":
+        left, right = f"평균보다 낮음 {lo:+.0f}", f"높음 {hi:+.0f} · 흰색 = 대전 평균 {center:+.1f}"
+    elif kind.startswith("div"):
         c = 100 if kind == "div100" else 0
         left, right = f"감소 {lo:+.0f}" if c == 0 else f"평균보다 약함 {lo:.0f}", \
             f"증가 {hi:+.0f}" if c == 0 else f"평균보다 강함 {hi:.0f}"
@@ -106,9 +118,27 @@ def legend_cat(label, items):
         f'<span class="dot" style="background:rgb({c[0]},{c[1]},{c[2]})"></span>{n}' for n, c in items) + "</div>"
 
 
+TIP_STYLE = {"backgroundColor": "#ffffff", "color": "#1d1d1f", "fontSize": "12.5px", "lineHeight": "1.5",
+             "borderRadius": "8px", "border": "1px solid #e3e6ea", "boxShadow": "0 4px 14px rgba(0,0,0,.14)",
+             "padding": "8px 11px", "fontFamily": "Pretendard, 'Apple SD Gothic Neo', sans-serif"}
+# 첫 화면: 트램 노선 전체가 꽉 차게 (대전 전체가 아니라 분석 대상에 초점)
+VIEW0 = dict(latitude=float((stations.lat.min() + stations.lat.max()) / 2),
+             longitude=float((stations.lon.min() + stations.lon.max()) / 2), zoom=12.0)
+
+
 def deck(layers, tooltip, view=None):
+    if isinstance(tooltip, dict):
+        tooltip = {**tooltip, "style": TIP_STYLE}
     return pdk.Deck(layers=layers, map_style="light", tooltip=tooltip,
-                    initial_view_state=view or pdk.ViewState(latitude=36.345, longitude=127.39, zoom=11.3))
+                    initial_view_state=view or pdk.ViewState(**VIEW0, min_zoom=10, max_zoom=16))
+
+
+def px(lon, lat, zoom=VIEW0["zoom"]):
+    """경위도 → 첫 화면 기준 픽셀 좌표 (라벨 겹침 계산용)."""
+    import math
+    m = 156543.03 * math.cos(math.radians(VIEW0["latitude"])) / 2 ** zoom
+    return ((lon - VIEW0["longitude"]) * 111320 * math.cos(math.radians(VIEW0["latitude"])) / m,
+            (lat - VIEW0["latitude"]) * 111320 / m)
 
 
 def show_map(d, select=True):
@@ -136,14 +166,19 @@ st.sidebar.caption("트램 효과 = 개통 6년 뒤 정거장 500m 안 매출 �
 show_about(st)
 
 route = [{"path": p} for p in route_paths(stations)]
-lay_route = pdk.Layer("PathLayer", route, get_path="path", get_color=ROUTE_C + [150], width_min_pixels=2)
+lay_route = [pdk.Layer("PathLayer", route, id="route_case", get_path="path", get_color=[255, 255, 255, 235],
+                       width_min_pixels=6, cap_rounded=True, joint_rounded=True),           # 흰 테두리 (어떤 색 위에서도 보이게)
+             pdk.Layer("PathLayer", route, id="route", get_path="path", get_color=ROUTE_C + [255],
+                       width_min_pixels=3, cap_rounded=True, joint_rounded=True)]
 stop_df = stations.merge(st_sum[["station_no", "n_stores"]], on="station_no", how="left") if st_sum is not None \
     else stations.assign(n_stores=None)
-stop_df = stop_df.assign(name=stop_df.station_no.astype(str) + " " + stop_df.get("station_name", ""), type="트램 정거장",
+stop_df = stop_df.assign(name=stop_df.station_no.astype(str) + "번 " + stop_df.get("station_name", ""), type="트램 정거장",
+                         qcolor="#23272e",
                          val_label="500m 안 점포 " + stop_df.n_stores.fillna(0).astype(int).astype(str) + "개 · 클릭하면 영향권 표시")
-lay_stop = pdk.Layer("ScatterplotLayer", stop_df, id="stations", get_position=["lon", "lat"], get_radius=70,
-                     radius_min_pixels=4, get_fill_color=ROUTE_C + [230], get_line_color=[255, 255, 255],
-                     stroked=True, line_width_min_pixels=1, pickable=True)
+lay_stop = pdk.Layer("ScatterplotLayer", stop_df, id="stations", get_position=["lon", "lat"], get_radius=55,
+                     radius_min_pixels=4.5, radius_max_pixels=9, get_fill_color=[255, 255, 255, 255],
+                     get_line_color=ROUTE_C + [255], stroked=True, line_width_min_pixels=1.8, pickable=True,
+                     auto_highlight=True, highlight_color=[35, 39, 46, 255])
 
 # ================================================================ 상권 보기
 if view == "상권(20개)":
@@ -161,7 +196,7 @@ if view == "상권(20개)":
          "growth_score": ("성장 가능 점수 (0~100)", "종합 진단", "seq_good",
                           "땅값·점포 증가 흐름과 트램 효과를 순위로 합친 점수. 높을수록 유리"),
          "tram_sel": ("트램 효과 (%)", "트램 효과", "seq_tram", "개통 6년 뒤 정거장 500m 안 매출 변화 추정치"),
-         "land_chg_5y_pct": ("땅값 5년 상승률 (%)", "땅값(공시지가)", "div0", "2021→2026 같은 필지 공시지가 변화의 중앙값"),
+         "land_chg_5y_pct": ("땅값 5년 상승률 (%)", "땅값(공시지가)", "divavg", "2021→2026 같은 필지 공시지가 변화의 중앙값"),
          "land_rel_idx": ("대전 평균 대비 땅값 흐름 (100=평균)", "땅값(공시지가)", "div100",
                           "2015년 이후 이 상권 땅값이 대전 평균보다 얼마나 더(100 초과)·덜(100 미만) 올랐는지"),
          "store_share_chg_5y_pct": ("대전 내 점포 비중 5년 변화 (%)", "점포", "div0",
@@ -183,7 +218,7 @@ if view == "상권(20개)":
 
     kind = M[am][2]
     if am == "quadrant":
-        colors = {c: QC.get(q, [200, 200, 200]) + [175] for c, q in zip(prof.code, prof.quadrant)}
+        colors = {c: QC.get(q, [200, 200, 200]) + [190] for c, q in zip(prof.code, prof.quadrant)}
         legend = legend_cat("진단", [(k, v) for k, v in QC.items()])
     elif am == "cluster":
         colors = {c: PAL[(int(k) - 1) % len(PAL)] + [170] if pd.notna(k) else [190, 190, 190, 110]
@@ -191,9 +226,15 @@ if view == "상권(20개)":
         tn = prof.drop_duplicates("cluster").sort_values("cluster")
         legend = legend_cat("유형", [(f"{int(k)}. {n}", PAL[(int(k) - 1) % len(PAL)]) for k, n in tn[["cluster", "type_name"]].values])
     else:
-        cl, (stops, lo, hi) = colorize(prof[am], kind)
+        cen = None
+        if kind == "divavg" and lp is not None:              # 대전 전체 5년 상승률을 기준(흰색)으로
+            a = lp[lp.code == "ALL"].set_index("year").idx
+            cen = float((a.iloc[-1] / a.loc[a.index.max() - 5] - 1) * 100)
+        elif kind == "divavg":
+            cen = float(prof[am].median())
+        cl, (stops, lo, hi) = colorize(prof[am], kind, cen)
         colors = dict(zip(prof.code, cl))
-        legend = legend_bar(M[am][0], stops, lo, hi, kind)
+        legend = legend_bar(M[am][0], stops, lo, hi, kind, cen)
 
     # ── 선택 상태: 첫 실행은 주소(공유 링크)에서, 이후는 클릭·선택 상자에서 ──
     qp = st.query_params if hasattr(st, "query_params") else {}
@@ -212,7 +253,8 @@ if view == "상권(20개)":
     sel_obj = (ss.get("map") or {}).get("selection", {}) if isinstance(ss.get("map"), dict) else \
         (getattr(ss.get("map"), "selection", None) or {})
     objs = sel_obj.get("objects", {}) if sel_obj else {}
-    click_area = (objs.get("areas") or [{}])[0].get("properties", {}).get("code") if objs.get("areas") else None
+    _hit = objs.get("core") or objs.get("areas")                   # 핵심 영역·권역 어느 쪽을 눌러도 같은 상권
+    click_area = (_hit or [{}])[0].get("properties", {}).get("code") if _hit else None
     click_stn = (objs.get("stations") or [{}])[0].get("station_no") if objs.get("stations") else None
     if click_area and click_area != ss.get("_last_area"):
         ss._last_area = click_area; ss.sel_area = click_area; ss.panel = "상권 상세"
@@ -220,7 +262,7 @@ if view == "상권(20개)":
         ss._last_stn = click_stn; ss.sel_station = int(click_stn); ss.panel = "정거장 500m"
 
     def go_area(code):                              # 요약 칩·버튼 → 상권 이동
-        ss.sel_area = code; ss._last_area_box = code; ss.panel = "상권 상세"
+        ss.sel_area = code; ss.panel = "상권 상세"
 
     def chip_cb(key):
         v = ss.get(key)
@@ -253,43 +295,81 @@ if view == "상권(20개)":
         r = info.loc[c]
         val = r[am]
         val = "-" if pd.isna(val) else (val if isinstance(val, str) else
-                                        (f"{int(val)}. {r.type_name}" if am == "cluster" else round(float(val), 1)))
-        near = f"가까운 트램 {int(r.nearest_tram)}번 {int(r.nearest_tram_m)}m" if pd.notna(r.get("nearest_tram")) else ""
-        f["properties"].update({"fill": colors[c], "name": f"{c} {r['name']}", "type": r.quadrant if "quadrant" in r else "",
-                                "val_label": f"{M[am][0]}: {val}<br/>{near}<br/>클릭하면 아래에 상세 정보"})
+                                        (f"{int(val)}. {r.type_name}" if am == "cluster" else f"{float(val):,.1f}"))
+        near = f"가까운 트램 {int(r.nearest_tram)}번 정거장 · {int(r.nearest_tram_m)}m" if pd.notna(r.get("nearest_tram")) else ""
+        q = r.quadrant if "quadrant" in r and pd.notna(r.quadrant) else ""
+        f["properties"].update({"fill": colors[c][:3] + [REG_A], "fill_core": colors[c][:3] + [CORE_A],
+                                "name": r["name"], "type": q, "qcolor": QHEX.get(q, "#999"),
+                                "val_label": f"{M[am][0]} <b>{val}</b><br/><span style='color:#777'>{near}</span>"})
     sel = ss.sel_area
     fill_src = rg if show_region else gj
-    layers = [pdk.Layer("GeoJsonLayer", fill_src, id="areas", pickable=True, stroked=True, filled=True,
-                        get_fill_color="properties.fill", get_line_color=[255, 255, 255, 230],
-                        line_width_min_pixels=1.5, auto_highlight=True)]
-    if show_region:
-        layers.append(pdk.Layer("GeoJsonLayer", gj, id="core", pickable=False, stroked=True, filled=False,
-                                get_line_color=[60, 60, 60, 150], line_width_min_pixels=1))
+    HL = dict(auto_highlight=True, highlight_color=[255, 255, 255, 90])
+    layers = []
+    if show_region:                                   # 1) 권역: 옅게 (그 상권이 가장 가까운 지역)
+        layers.append(pdk.Layer("GeoJsonLayer", rg, id="areas", pickable=True, stroked=True, filled=True,
+                                get_fill_color="properties.fill", get_line_color=[255, 255, 255, 255],
+                                line_width_min_pixels=1.2, **HL))
+    layers.append(pdk.Layer("GeoJsonLayer", gj, id="core", pickable=True, stroked=True, filled=True,   # 2) 핵심 영역: 진하게
+                            get_fill_color="properties.fill_core", get_line_color=[255, 255, 255, 255],
+                            line_width_min_pixels=1, **HL))
     sel_gj = {"type": "FeatureCollection", "features": [f for f in fill_src["features"] if f["properties"]["code"] == sel]}
-    layers += [pdk.Layer("GeoJsonLayer", sel_gj, id="sel_area", pickable=False, stroked=True, filled=False,
-                         get_line_color=[20, 20, 20, 255], line_width_min_pixels=4), lay_route]
-    if ss.sel_station is not None:
+    layers += [pdk.Layer("GeoJsonLayer", sel_gj, id="sel_halo", pickable=False, stroked=True, filled=False,     # 3) 선택: 흰 후광 + 먹색 선
+                         get_line_color=[255, 255, 255, 255], line_width_min_pixels=8),
+               pdk.Layer("GeoJsonLayer", sel_gj, id="sel_area", pickable=False, stroked=True, filled=False,
+                         get_line_color=ROUTE_C + [255], line_width_min_pixels=3.5)]
+    layers += lay_route                                # 4) 트램 노선 (흰 테두리 + 먹색)
+    if ss.sel_station is not None:                     # 5) 정거장 500m 영향권
         srow = stations[stations.station_no == ss.sel_station]
-        layers.append(pdk.Layer("ScatterplotLayer", srow, id="buffer", get_position=["lon", "lat"], get_radius=500,
-                                filled=True, get_fill_color=ROUTE_C + [30], stroked=True,
-                                get_line_color=ROUTE_C + [220], line_width_min_pixels=2, pickable=False))
+        layers += [pdk.Layer("ScatterplotLayer", srow, id="buffer", get_position=["lon", "lat"], get_radius=500,
+                             filled=True, get_fill_color=ROUTE_C + [28], stroked=True,
+                             get_line_color=ROUTE_C + [240], line_width_min_pixels=2.5, pickable=False)]
     layers.append(lay_stop)
-    if show_label:                                   # 상권 이름 (핵심 영역 중심)
-        lab = []
+    if ss.sel_station is not None:
+        layers.append(pdk.Layer("ScatterplotLayer", srow, id="sel_stop", get_position=["lon", "lat"], get_radius=90,
+                                radius_min_pixels=7, get_fill_color=ROUTE_C + [255], get_line_color=[255, 255, 255, 255],
+                                stroked=True, line_width_min_pixels=2, pickable=False))
+    if show_label:                                    # 6) 상권 이름: 점포 많은 순으로 놓고, 첫 화면에서 겹치면 생략
+        cen_xy = {}
         for f in gj["features"]:
             g = f["geometry"]
             ring = g["coordinates"][0] if g["type"] == "Polygon" else max((p[0] for p in g["coordinates"]), key=len)
-            lab.append({"text": NM[f["properties"]["code"]].split("(")[0], "lon": sum(p[0] for p in ring) / len(ring),
-                        "lat": sum(p[1] for p in ring) / len(ring), "w": 800 if f["properties"]["code"] == sel else 600})
-        layers.append(pdk.Layer("TextLayer", pd.DataFrame(lab), id="labels", get_position=["lon", "lat"], get_text="text",
-                                get_size=13, size_units="pixels", get_color=[25, 25, 25, 255], character_set="auto",
-                                font_family='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif',
-                                font_weight=700, background=True, get_background_color=[255, 255, 255, 200],
-                                background_padding=[3, 1], get_pixel_offset=[0, -14], pickable=False))
-    st.markdown(legend, unsafe_allow_html=True)
-    show_map(deck(layers, {"html": "<b>{name}</b> · {type}<br/>{val_label}"}))
-    st.caption("권역을 클릭하면 굵은 테두리로 선택, 파란 점(정거장)을 클릭하면 500m 영향권 표시 · "
-               "회색 윤곽 = 상권 핵심 영역(지표 계산 범위)")
+            cen_xy[f["properties"]["code"]] = (sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring))
+        pri = prof.assign(p=prof.n_stores.fillna(0) + 1e9 * (prof.code == sel)).sort_values("p", ascending=False).code
+        boxes, lab = [], []
+        for c in pri:
+            if c not in cen_xy:
+                continue
+            t = NM[c].split("(")[0]
+            x, y = px(*cen_xy[c])
+            w, h = len(t) * 12.5 + 8, 20
+            for dx, dy in [(0, 0), (0, 20), (0, -20), (w / 2 + 6, 0), (-w / 2 - 6, 0), (0, 38), (0, -38)]:  # 겹치면 위·아래·옆으로
+                bx = (x + dx - w / 2, y + dy - h / 2, x + dx + w / 2, y + dy + h / 2)
+                if c == sel or not any(not (bx[2] < o[0] or bx[0] > o[2] or bx[3] < o[1] or bx[1] > o[3]) for o in boxes):
+                    break
+            else:
+                continue                                  # 어디에도 자리가 없으면 생략 (마우스를 올리면 보임)
+            boxes.append(bx)
+            lab.append({"text": t, "lon": cen_xy[c][0], "lat": cen_xy[c][1], "sel": c == sel,
+                        "off": [dx, -dy]})               # 화면 y는 아래가 + 이므로 부호 반대
+        lab = pd.DataFrame(lab)
+        TXT = dict(get_position=["lon", "lat"], get_text="text", size_units="pixels", character_set="auto",
+                   font_family='Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
+                   font_settings={"sdf": True, "fontSize": 64, "buffer": 8}, outline_color=[255, 255, 255, 245],
+                   get_pixel_offset="off", pickable=False)
+        layers.append(pdk.Layer("TextLayer", lab[~lab.sel], id="labels", get_size=12.5, get_color=[30, 30, 30, 255],
+                                font_weight=600, outline_width=3, **TXT))
+        layers.append(pdk.Layer("TextLayer", lab[lab.sel], id="label_sel", get_size=15, get_color=ROUTE_C + [255],
+                                font_weight=800, outline_width=3.5, **TXT))
+
+    # 지도 제목줄: 무엇을 칠했는지 + 범례 + 기호 설명
+    st.markdown(f'<div class="maphead">{legend}<div class="sym">'
+                f'<span class="ln"></span>트램 2호선<span class="st"></span>정거장'
+                f'<span class="sq strong"></span>상권 핵심(점포 밀집)'
+                + ('<span class="sq weak"></span>그 상권의 영향 권역' if show_region else "")
+                + '</div></div>', unsafe_allow_html=True)
+    show_map(deck(layers, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>"
+                                   "<div><span style='color:{qcolor}'>●</span> {type}</div>{val_label}"}))
+    st.caption("권역이나 정거장을 누르면 아래에 상세 정보가 나옵니다 · 이름이 겹치는 상권은 확대하거나 마우스를 올리면 보입니다")
 
     # ── 선택 요약 카드 + 선택 상자 ──
     r = info.loc[sel]
@@ -380,11 +460,11 @@ if view == "상권(20개)":
         l = alt.Chart(ln).mark_line(strokeWidth=2.5).encode(
             x="year:Q", y="v:Q", color=alt.Color("구분:N", scale=alt.Scale(domain=dom, range=rng),
                                                  legend=alt.Legend(orient="top", title=None)),
-            strokeDash=alt.condition(alt.datum["구분"] == "예측 (트램 없음)", alt.value([5, 4]), alt.value([1, 0])),
+            strokeDash=alt.StrokeDash("구분:N", scale=alt.Scale(domain=dom, range=[[1, 0], [5, 4], [1, 0]]), legend=None),
             tooltip=["구분", "year", alt.Tooltip("v:Q", format=".1f")])
         op = alt.Chart(pd.DataFrame({"year": [2028], "t": ["트램 개통"]}))
         return (a + l + op.mark_rule(color="#1f4fa3").encode(x="year:Q")
-                + op.mark_text(align="left", dx=4, dy=-110, color="#1f4fa3").encode(x="year:Q", text="t")).properties(height=280)
+                + op.mark_text(align="left", dx=4, color="#1f4fa3").encode(x="year:Q", y=alt.value(10), text="t")).properties(height=280)
 
     # ================= 패널 1: 상권 상세
     if panel == "상권 상세":
@@ -611,7 +691,7 @@ else:
                          get_fill_color="color", pickable=True)
     else:
         main = pdk.Layer("HeatmapLayer", d, get_position=["lon", "lat"], get_weight="norm", radius_pixels=60)
-    show_map(deck([main, lay_route, lay_stop],
+    show_map(deck([main] + lay_route + [lay_stop],
                   {"text": "{zone} · {dong} {cell_id}\n트램효과 {tram_sel}%\n잔차 {resid_pct}%\n매출(합성) {sales}"}), select=False)
     st.subheader(f"{LABEL[metric]} 상위 격자")
     st.dataframe(d.sort_values(metric, ascending=False).head(20).drop(columns=["color", "norm"]),
