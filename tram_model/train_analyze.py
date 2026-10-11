@@ -18,7 +18,7 @@ from sklearn.model_selection import GroupKFold
 
 import config as C
 
-OPEN_YEAR = 2028            # 2호선 개통 가정
+OPEN_YEAR = 2030            # 2호선 개통 가정
 SEED = 42
 
 

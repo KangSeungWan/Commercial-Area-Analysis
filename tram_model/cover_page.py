@@ -119,7 +119,7 @@ def render_cover(st, stations, route_paths, stats, open_about):
     st.markdown(CSS, unsafe_allow_html=True)
     st.markdown('<div class="cv-nav"><span class="mark"><i></i>대전 트램 상권 지도</span>'
                 '<span class="meta">공공데이터 분석 프로젝트</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="cv-hero"><span class="tag">대전 트램 2호선 · 2028년 개통</span>'
+    st.markdown('<div class="cv-hero"><span class="tag">대전 트램 2호선 · 2030년 개통</span>'
                 '<h1>트램이 지날 길 위의<br/>스무 상권</h1>'
                 '<p>트램 2호선이 개통하면 정거장 주변 상권은 어떻게 달라질까요. 37년치 공시지가와 '
                 '10년치 상가 기록으로 20개 상권의 지금과 트램 이후를 살펴봅니다.</p></div>',

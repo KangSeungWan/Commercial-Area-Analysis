@@ -1,4 +1,4 @@
-"""D. 상권 예측 모델 비교 + 2028 트램 개통 시나리오 예측.
+"""D. 상권 예측 모델 비교 + 2030 트램 개통 시나리오 예측.
 
 예측 대상 (매출은 합성값이라 제외)
 - 지가: 상권 공시지가 지수 (연, 1990~2026)                     → 1·2·3년 뒤
@@ -27,7 +27,7 @@ from sklearn.model_selection import GroupKFold
 
 import config as C
 
-OPEN_YEAR = 2028
+OPEN_YEAR = 2030
 END_YEAR = 2034
 STORE_EXCLUDE = {"A12"}      # 도룡동: 2021 신세계 입점점포 등록으로 점포 비중 +600% → 점포 예측 검증·예측에서 제외
 LAG_START = 6               # (예전 영국식 램프, 지금은 tram_effect.profile 사용)
@@ -284,7 +284,7 @@ def main():
 
     best_l, best_s = pick("지가"), pick("점포 비중")
     print(f"\n장기 경로 모델: 지가 = {best_l}, 점포 비중 = {best_s}")
-    print("3/3 2028 트램 개통 시나리오 예측 (~2034) ...", flush=True)
+    print(f"3/3 {OPEN_YEAR} 트램 개통 시나리오 예측 (~2034) ...", flush=True)
     eland, estore = tram_effects()
     PL = project(WL, RL[RL.model == best_l], best_l, 1, WL.index[-1], eland, "지가 지수")
     PS = project(WS, RS[RS.model == best_s], best_s, 4, WS.index[-1], estore.drop(index=list(STORE_EXCLUDE)),

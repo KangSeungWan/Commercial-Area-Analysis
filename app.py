@@ -9,6 +9,7 @@ from tram_route import route_paths
 from about_page import show_about                                      # 분석 방법 팝업
 
 OUT, DATA = "tram_model/outputs", "tram_model/data"
+OPEN_YEAR = 2030                                           # 트램 2호선 개통 예정 연도
 ss = st.session_state
 
 
@@ -233,7 +234,7 @@ if ss.page == "cover":
 
 # ================================================================ 사이드바 (꼭 필요한 것만)
 st.sidebar.title("대전 트램 상권 지도")
-st.sidebar.caption("2028 개통 트램 2호선 주변 20개 상권 진단")
+st.sidebar.caption(f"{OPEN_YEAR}년 개통 트램 2호선 주변 20개 상권 진단")
 TRAM_MODES = ["건설 전", "건설 후"]
 tram_mode = st.sidebar.radio("트램 2호선", TRAM_MODES, index=1, horizontal=True, key="tram_mode",
                              help="건설 후 = 업종 점수에 트램 효과(10점)를 넣고, 땅값 예측에 트램 효과 경로를 표시")
@@ -554,7 +555,7 @@ def forecast_chart(code, with_tram):
                                              legend=alt.Legend(orient="top", title=None)),
         strokeDash=alt.StrokeDash("구분:N", scale=alt.Scale(domain=dom, range=dash), legend=None),
         tooltip=["구분", "year", alt.Tooltip("v:Q", format=".1f")])
-    op = alt.Chart(pd.DataFrame({"year": [2028], "t": ["트램 개통"]}))
+    op = alt.Chart(pd.DataFrame({"year": [OPEN_YEAR], "t": ["트램 개통"]}))
     return (a_ + l_ + op.mark_rule(color="#1f4fa3").encode(x="year:Q")
             + op.mark_text(align="left", dx=4, color="#1f4fa3").encode(x="year:Q", y=alt.value(10), text="t")).properties(height=280)
 
