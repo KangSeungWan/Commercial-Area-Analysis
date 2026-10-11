@@ -157,12 +157,24 @@ def show_map(d, select=True):
 st.sidebar.title("대전 트램 상권 지도")
 view = st.sidebar.radio("보기", ["상권(20개)", "격자(250m) · 실험용"], horizontal=True)
 box = st.sidebar.container()                         # 색칠 기준은 보기별로 아래에서 채움
-SCEN = {"기본(대전 실측)": "tram_effect", "낮음": "tram_effect_low", "높음(추세 보정)": "tram_effect_high"}
-SCEN = {k: v for k, v in SCEN.items() if v in prof.columns}
+# 트램 시나리오: 이름·설명을 결과 파일(tram_scenarios.csv)에서 읽어 실제 값과 항상 일치
+_ts = read_csv(f"{OUT}/tram_scenarios.csv")
+_TS = {r.scenario: r for r in _ts.itertuples()} if _ts is not None else {}
+_COL = {"base": "tram_effect", "low": "tram_effect_low", "high": "tram_effect_high"}
+SCEN, SCEN_HELP = {}, []
+for _k in ("base", "low", "high"):
+    _r = _TS.get(_k)
+    _lab = f"{_r.label} {_r.effect_pct:+.1f}%" if _r is not None else {"base": "기본", "low": "낮음", "high": "높음"}[_k]
+    if _COL[_k] in prof.columns:
+        SCEN[_lab] = _COL[_k]
+        if _r is not None:
+            SCEN_HELP.append(f"{_r.label} {_r.effect_pct:+.1f}%: {_r.source}"
+                             + (f" (95% 구간 {_r.ci95}%)" if isinstance(_r.ci95, str) and _r.ci95 else ""))
+TRAM_DEF = "개통 초기 1~4년, 정거장 500m 안 땅값 기준 추정 효과(%) · 매출 변화가 아님"
 scen = st.sidebar.radio("트램 시나리오", list(SCEN), horizontal=True,
-                        help="기본: 대전 1호선 역세권 땅값 효과(+5.8%)를 업종·버스·위치로 조정. "
-                             "낮음: 해외 트램 하한 수준(0.9%). 높음: 1호선 개통 전 추세를 보정한 값(+9.3%).")
-st.sidebar.caption("트램 효과 = 개통 6년 뒤 정거장 500m 안 매출 변화 추정(%)")
+                        help=" / ".join(SCEN_HELP) + " · 효과 = 수준 × 업종 비율 × 상권 중 500m 안 비율. "
+                             "대전 1호선에서는 개통 6년 뒤 효과가 약 1/3로 줄었음")
+st.sidebar.caption(f"트램 효과 = {TRAM_DEF}")
 show_about(st)
 
 route = [{"path": p} for p in route_paths(stations)]
@@ -190,12 +202,16 @@ if view == "상권(20개)":
     STN = dict(zip(stations.station_no.astype(int), stations.station_no.astype(str) + " " + stations.get("station_name", "")))
 
     # 지표 정의: (이름, 묶음, 색 종류, 도움말)
-    M = {"quadrant": ("진단 (4분류)", "종합 진단", "cat", "쇠퇴 위험 점수와 트램 효과로 나눈 4가지 상태"),
-         "risk_score": ("쇠퇴 위험 점수 (0~100)", "종합 진단", "seq_bad",
-                        "땅값 상대 하락·점포 비중 감소·폐업률을 20개 상권 순위로 합친 점수. 높을수록 위험"),
-         "growth_score": ("성장 가능 점수 (0~100)", "종합 진단", "seq_good",
-                          "땅값·점포 증가 흐름과 트램 효과를 순위로 합친 점수. 높을수록 유리"),
-         "tram_sel": ("트램 효과 (%)", "트램 효과", "seq_tram", "개통 6년 뒤 정거장 500m 안 매출 변화 추정치"),
+    M = {"quadrant": ("진단 (4분류)", "종합 진단", "cat",
+                      "상대 쇠퇴 위험 50점 이상 + 상권 점포 절반 이상이 정거장 500m 안 → 트램 반등 기회, "
+                      "500m 밖 → 쇠퇴 우려 / 위험 50 미만은 성장 점수로 성장 지속·정체·안정. "
+                      "15가지 변형(지표 빼기·기준 45/55·반경 400/600m)에서 80% 미만으로 같으면 '불확실'"),
+         "risk_score": ("상대 쇠퇴 위험 (0~100)", "종합 진단", "seq_bad",
+                        "땅값 상대 하락·점포 비중 감소·폐업률을 20개 상권 안 순위로 합친 점수. 절대 수준이 아니라 "
+                        "20곳 중 상대 비교라 언제나 약 절반이 50점 이상"),
+         "growth_score": ("상대 성장 가능 (0~100)", "종합 진단", "seq_good",
+                          "트램 효과·개업률·최근 점포 비중을 20개 상권 안 순위로 합친 점수"),
+         "tram_sel": ("트램 효과 (%)", "트램 효과", "seq_tram", TRAM_DEF),
          "land_chg_5y_pct": ("땅값 5년 상승률 (%)", "땅값(공시지가)", "divavg", "2021→2026 같은 필지 공시지가 변화의 중앙값"),
          "land_rel_idx": ("대전 평균 대비 땅값 흐름 (100=평균)", "땅값(공시지가)", "div100",
                           "2015년 이후 이 상권 땅값이 대전 평균보다 얼마나 더(100 초과)·덜(100 미만) 올랐는지"),
@@ -382,9 +398,11 @@ if view == "상권(20개)":
         kp.append(f"땅값 5년 <b>{r.land_chg_5y_pct:+.1f}%</b>")
     kp.append(f"트램 효과 <b>{r.tram_sel:+.1f}%</b> ({scen})")
     if pd.notna(r.get("risk_score")):
-        kp.append(f"쇠퇴 위험 <b>{r.risk_score:.0f}</b> · 성장 <b>{r.growth_score:.0f}</b>")
+        kp.append(f"상대 위험 <b>{r.risk_score:.0f}</b> · 상대 성장 <b>{r.growth_score:.0f}</b>")
     cA.markdown(f'<div class="card"><span class="code">{sel}</span><span class="t">{r["name"]}</span>'
                 + (f'<span class="badge" style="background:{QHEX.get(q, "#999")}">{q}</span>' if pd.notna(q) else "")
+                + (f'<span class="badge" style="background:#fff;color:#b8322a;border:1px solid #b8322a">불확실 '
+                   f'{r.quadrant_stability * 100:.0f}%</span>' if bool(r.get("quadrant_uncertain", False)) else "")
                 + (f'<span class="badge gray">{r.type_name}</span>' if pd.notna(r.get("type_name")) else "")
                 + f'<div class="k">{r.gu} · {r.type} &nbsp;|&nbsp; ' + " · ".join(kp) + "</div></div>",
                 unsafe_allow_html=True)
@@ -481,8 +499,14 @@ if view == "상권(20개)":
                   f"{int(r.nearest_tram)}번 정거장 {int(r.nearest_tram_m)}m" if pd.notna(r.nearest_tram) else None,
                   delta_color="off", help=HELP.get("tram_sel"))
         if pd.notna(r.get("risk_score")):
-            st.markdown(f"**진단 근거** · 쇠퇴 위험 {r.risk_score:.0f}점: {r.risk_drivers} · "
-                        f"성장 가능 {r.growth_score:.0f}점: {r.growth_drivers}")
+            stab = r.get("quadrant_stability")
+            if pd.notna(stab):
+                alt_q = r.get("quadrant_alt") if isinstance(r.get("quadrant_alt"), str) and r.get("quadrant_alt") else ""
+                st.caption(f"진단 안정도 {stab * 100:.0f}% (15가지 변형 중 같은 진단 비율)"
+                           + (f" · 바뀔 때는 '{alt_q}'" if alt_q else "")
+                           + (" · 80% 미만이라 불확실" if stab < 0.8 else ""))
+            st.markdown(f"**진단 근거** · 상대 쇠퇴 위험 {r.risk_score:.0f}점: {r.risk_drivers} · "
+                        f"상대 성장 가능 {r.growth_score:.0f}점: {r.growth_drivers}")
         notes = [f"주요 업종: {r.top3_mid}"]
         if pd.notna(r.get("bad_pct")):
             notes.append(f"2021 소상공인 실태조사({r.survey_dong}): 매출·이익 감소 {r.decline_pct:.0f}%, "
@@ -499,7 +523,8 @@ if view == "상권(20개)":
             g2.markdown("**점포 수 (분기)** · 빨간 점선 = 자료 수집 기준 변경")
             g2.altair_chart(store_chart(sel), use_container_width=True)
         if fc is not None and lp is not None and sel in set(fc.code):
-            st.markdown("**땅값 예측** · 파란 띠 = 80% 범위 (넓으므로 상권끼리 비교용으로 보세요)")
+            st.markdown("**땅값 예측** · 파란 띠 = 80% 범위 (넓으므로 상권끼리 비교용) · 트램 효과는 대전 1호선처럼 "
+                        "개통 1~4년에 가장 크고 이후 줄어드는 모양")
             st.altair_chart(forecast_chart(sel), use_container_width=True)
 
         def area_context(code):
@@ -515,7 +540,8 @@ if view == "상권(20개)":
                    "공시지가 5년·10년 상승률(%)": (g("land_chg_5y_pct"), g("land_chg_10y_pct")),
                    "공시지가 대전 평균 대비(2015=100)": g("land_rel_idx"),
                    "가까운 트램 정거장": f"{g('nearest_tram', 0)}번, {g('nearest_tram_m', 0)}m",
-                   "트램 효과 개통 6년 후(%) 낮음/기본/높음": (g("tram_effect_low", 2), g("tram_effect", 2), g("tram_effect_high", 2))}
+                   "트램 효과(개통 초기 1~4년, 땅값 기준 추정 %) 낮음/기본/높음": (g("tram_effect_low", 2), g("tram_effect", 2), g("tram_effect_high", 2)),
+                   "진단 안정도(15가지 변형 중 같은 진단 비율)": g("quadrant_stability", 2)}
             if fc is not None and code in set(fc.code):
                 f = fc[(fc.code == code)].set_index("year")
                 y = f.index.max()
@@ -546,8 +572,9 @@ if view == "상권(20개)":
 {ctx_text}
 
 [지표 설명]
-- 진단: 쇠퇴 위험 50점 이상 + 트램 효과 3p 이상이면 '트램 반등 기회', 트램 효과 없으면 '쇠퇴 우려', 위험 50 미만이면 '성장 지속'/'정체·안정'
-- 트램 효과: 2028 개통 6년 후 정거장 500m 안 매출 변화 추정(%). 기본 = 대전 1호선 역세권 지가 효과(+5.8%)를 업종·버스밀도·중심/주변으로 조정, 낮음 0.9%(중국 청두 트램 수준), 높음 = 1호선 추세 보정값(+9.3%). 선택된 시나리오: {scen_text}
+- 점수: 20개 상권 안 상대 순위(0~100). 절대적 쇠퇴 판정이 아님
+- 진단: 상대 쇠퇴 위험 50점 이상이면서 상권 점포 절반 이상이 트램 정거장 500m 안이면 '트램 반등 기회', 아니면 '쇠퇴 우려', 위험 50 미만이면 '성장 지속'/'정체·안정'. 진단 안정도가 0.8 미만이면 '불확실'이라고 꼭 말할 것
+- 트램 효과: {TRAM_DEF}. 시나리오 근거: {' / '.join(SCEN_HELP)}. 지하철 효과를 지상 트램에 빌려 쓴 것이라 과대일 수 있음. 선택된 시나리오: {scen_text}
 - 공시지가 예측: 상권별 ARIMA + 트램 효과, 80% 범위가 넓어 비교용
 - 매출 금액은 위치별 실측이 없어 사용하지 않음
 
@@ -634,7 +661,7 @@ if view == "상권(20개)":
             x2.altair_chart(land_chart([sel, o]), use_container_width=True)
 
         st.markdown("#### 20개 상권 한 표로 보기 · 행을 누르면 그 상권으로 이동")
-        keep = ["code", "name", "quadrant", "risk_score", "growth_score", "tram_sel", "land_chg_5y_pct",
+        keep = ["code", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "tram_sel", "land_chg_5y_pct",
                 "store_share_chg_5y_pct", "close_rate_q_pct", "n_stores", "type_name"]
         tb = prof[[c for c in keep if c in prof.columns]].copy()
         tb.insert(0, "선택", tb.code.eq(sel).map({True: "▶", False: ""}))
@@ -642,8 +669,10 @@ if view == "상권(20개)":
         tb = tb.sort_values(sort_col, ascending=False).reset_index(drop=True)
         CC = st.column_config
         cfg = {"code": "코드", "name": "상권", "quadrant": "진단", "type_name": "유형",
-               "risk_score": CC.ProgressColumn("쇠퇴 위험", min_value=0, max_value=100, format="%.0f", help=HELP.get("risk_score")),
-               "growth_score": CC.ProgressColumn("성장 가능", min_value=0, max_value=100, format="%.0f", help=HELP.get("growth_score")),
+               "quadrant_stability": CC.NumberColumn("진단 안정도", format="%.2f",
+                                                     help="15가지 변형 중 같은 진단 비율. 0.8 미만 = 불확실"),
+               "risk_score": CC.ProgressColumn("상대 위험", min_value=0, max_value=100, format="%.0f", help=HELP.get("risk_score")),
+               "growth_score": CC.ProgressColumn("상대 성장", min_value=0, max_value=100, format="%.0f", help=HELP.get("growth_score")),
                "tram_sel": CC.NumberColumn(f"트램 효과 ({scen})", format="%+.1f%%", help=HELP.get("tram_sel")),
                "land_chg_5y_pct": CC.NumberColumn("땅값 5년", format="%+.1f%%"),
                "store_share_chg_5y_pct": CC.NumberColumn("점포 비중 5년", format="%+.1f%%", help=HELP.get("store_share_chg_5y_pct")),
@@ -703,7 +732,7 @@ else:
         return client.models.generate_content(
             model="gemini-3.8-flash",
             contents=(f"대전 트램 상권 분석 격자 데이터야: {row_text}. 선택 업종: {cats_text}. "
-                      f"트램 효과(tram_sel)는 '{scen_text}' 시나리오의 개통 6년 후 매출 변화 추정치(%)야. "
+                      f"트램 효과(tram_sel)는 '{scen_text}' 시나리오의 {TRAM_DEF}야. "
                       "sales 는 합성값이니 해석에 쓰지 마. "
                       "창업자 관점에서 장점, 위험, 추천 업종을 5줄로 정리하고 추정은 추정이라고 표시해줘.")).text
 

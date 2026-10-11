@@ -2,7 +2,7 @@
 
 - 컬럼은 기존 Colab map_data.csv 와 동일:
   cell_id, category, lat, lon, zone, dong, sales, dist_tram, tram_effect, resid_pct
-- tram_effect 를 '가정 5%·거리감쇠' 대신 논문 근거(P2·P6) 기본 시나리오(개통 6년 후, %)로 교체
+- tram_effect 를 '가정 5%·거리감쇠' 대신 tram_effect.py 시나리오(개통 초기 1~4년, 땅값 기준 %)로 교체
 - tram_effect_low / tram_effect_high 컬럼 추가 (app.py 시나리오 선택용)
 - resid_pct 는 Colab(LightGBM) 결과이므로, 기존 map_data.csv 가 있으면 거기서 가져옴
 
@@ -28,7 +28,7 @@ def main(old_path, out_path):
     m = (lk.merge(sales, on="area_id")
            .merge(sc[["area_id", "eff_low", "eff_base", "eff_high"]], on="area_id", how="left"))
     for s, col in [("low", "tram_effect_low"), ("base", "tram_effect"), ("high", "tram_effect_high")]:
-        m[col] = (np.expm1(m[f"eff_{s}"]) * 100).round(2)           # log-point → %, 개통 6년 후 완전 반영치
+        m[col] = (np.expm1(m[f"eff_{s}"]) * 100).round(2)           # log-point → %, 개통 초기 1~4년 (땅값 기준 추정)
 
     map_df = m.rename(columns={"cat_name": "category", "zone": "area", "zone_name": "zone"})[
         ["cell_id", "category", "lat", "lon", "area", "zone", "dong", "sales", "dist_tram",
@@ -103,8 +103,10 @@ def area_profile(map_df):
         P = P.merge(pd.read_csv(tf, encoding="utf-8-sig")[["code", "cluster", "type_name"]], on="code", how="left")
     sf = OUT / "area_scores.csv"
     if sf.exists():                                        # score_areas.py 결과 (쇠퇴 위험·성장 가능)
-        P = P.merge(pd.read_csv(sf, encoding="utf-8-sig")[["code", "risk_score", "growth_score", "quadrant",
-                                                           "risk_drivers", "growth_drivers"]], on="code", how="left")
+        _sc = pd.read_csv(sf, encoding="utf-8-sig")
+        _cols = ["code", "risk_score", "growth_score", "quadrant", "risk_drivers", "growth_drivers"] + \
+            [c for c in ("quadrant_stability", "quadrant_alt", "quadrant_uncertain", "in500") if c in _sc.columns]
+        P = P.merge(_sc[_cols], on="code", how="left")
     vf = OUT / "survey_area.csv"
     if vf.exists():                                        # analyze_survey_sales.py (소속 행정동 2021 실태조사)
         P = P.merge(pd.read_csv(vf, encoding="utf-8-sig")[["code", "dong", "decline_pct", "closing_pct", "bad_pct"]]

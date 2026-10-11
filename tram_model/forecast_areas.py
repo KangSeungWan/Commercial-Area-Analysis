@@ -30,7 +30,7 @@ import config as C
 OPEN_YEAR = 2028
 END_YEAR = 2034
 STORE_EXCLUDE = {"A12"}      # 도룡동: 2021 신세계 입점점포 등록으로 점포 비중 +600% → 점포 예측 검증·예측에서 제외
-LAG_START = 6               # P2: 개통 6년차부터 효과 100%, 1~5년차 0→50%
+LAG_START = 6               # (예전 영국식 램프, 지금은 tram_effect.profile 사용)
 
 
 def ramp(years_after):
@@ -202,21 +202,12 @@ def score(R):
 
 
 def tram_effects():
-    """상권별 트램 효과(log): 지가 = 정거장 500m 셀 비율 × (낮음 P2 버스저밀 0.9% ≈ 청두 트램 1.4% / 기본 대전 1호선 5.8% /
-    높음 대전 1호선 추세보정 9.3%),
-    점포 = scenario_tram_uplift 의 상권 평균 (업종·버스밀도·중심/주변 반영)."""
-    lit = pd.read_csv(C.LIT_PARAMS).set_index("param_id").value
+    """상권별 트램 효과(log) — tram_effect.py 의 시나리오 수준 하나로 통일.
+    지가 = 정거장 500m 셀 비율 × 수준, 점포 = scenario_tram_uplift 상권 평균(업종 비율 반영)."""
+    import tram_effect as TE
+    L = TE.levels()
     S = static_feats()
-    dj = float(lit.get("DJ_line1_land_500m", 0.0564))
-    f = C.OUT_DIR / "landprice_effects.csv"
-    if f.exists():
-        E = pd.read_csv(f, encoding="utf-8-sig")
-        r = E[E.analysis.str.contains("1호선 1단계")]
-        if len(r):
-            dj = float(np.log1p(r.effect_pct.iloc[0] / 100))
-    land = pd.DataFrame({"low": S.tram_in500 * float(lit["P2_mod_bus_low"]),
-                         "base": S.tram_in500 * dj,
-                         "high": S.tram_in500 * float(lit.get("DJ_line1_land_trendadj", lit["P2_DID_price_noctrl"]))})
+    land = pd.DataFrame({s: S.tram_in500 * L[s]["log"] for s in TE.SCEN})
     sc = pd.read_csv(C.OUT_DIR / "scenario_tram_uplift.csv", encoding="utf-8-sig")
     store = sc.groupby("zone")[["eff_low", "eff_base", "eff_high"]].mean()
     store.columns = ["low", "base", "high"]
@@ -225,6 +216,7 @@ def tram_effects():
 
 def project(W, R_best, best, per_year, last_label, eff, label):
     """2034년까지 기준 경로 + 80% 구간 + 트램 시나리오."""
+    import tram_effect as TE
     codes = [c for c in eff.index if c in W.columns]
     sd_h = R_best.assign(e=R_best.pred - R_best.true).groupby("h").e.std()
     sd1 = float(sd_h.iloc[0] / np.sqrt(sd_h.index[0])) if len(sd_h) else 0.05
@@ -242,7 +234,7 @@ def project(W, R_best, best, per_year, last_label, eff, label):
             sd = sd1 * np.sqrt(max(h, 0))
             row = {"code": c, "year": yr, "base_path": np.exp(lvl) * 100 / np.exp(y[-1]) if False else np.exp(lvl),
                    "lo80": np.exp(lvl - 1.2816 * sd), "hi80": np.exp(lvl + 1.2816 * sd)}
-            w = float(ramp(yr - OPEN_YEAR))
+            w = float(TE.profile([yr - OPEN_YEAR])[0])   # 대전 1호선 연차별 모양
             for s in ("low", "base", "high"):
                 row[f"tram_{s}"] = np.exp(lvl + eff.loc[c, s] * w)
             out.append(row)
@@ -251,7 +243,7 @@ def project(W, R_best, best, per_year, last_label, eff, label):
     last = P[P.year == start_year].set_index("code").base_path
     for col in ("base_path", "lo80", "hi80", "tram_low", "tram_base", "tram_high"):
         P[col] = (P[col] / P.code.map(last) * 100).round(2)
-    P["tram_gain_base_pct"] = (P.tram_base - P.base_path).round(2)
+    P["tram_gain_base_pct"] = ((P.tram_base / P.base_path - 1) * 100).round(2)   # % (지수 포인트 아님)
     P.insert(2, "target", label)
     return P
 

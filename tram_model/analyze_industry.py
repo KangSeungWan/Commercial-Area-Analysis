@@ -96,7 +96,7 @@ def main():
     t = (np.expm1(t) * 100).round(2).sort_values("eff_base", ascending=False)
     t.columns = ["낮음(%)", "기본(%)", "높음(%)"]
     t.to_csv(C.OUT_DIR / "industry_tram_effect.csv", encoding="utf-8-sig")
-    print("\n[업종별 트램 효과, 정거장 500m 셀 평균, 개통 6년 후]\n", t.to_string())
+    print("\n[업종별 트램 효과, 정거장 500m 셀 평균, 개통 초기 1~4년, 땅값 기준 추정]\n", t.to_string())
 
     # 그림
     fig = plt.figure(figsize=(17, 6.5))
@@ -121,7 +121,7 @@ def main():
     ax3.scatter(t["높음(%)"], yy, c="C1", zorder=3, label="높음")
     ax3.scatter(t["낮음(%)"], yy, c="gray", zorder=3, label="낮음")
     ax3.set_yticks(yy); ax3.set_yticklabels(t.index, fontsize=8)
-    ax3.set_title("업종별 트램 효과 (정거장 500m, 개통 6년 후, %)"); ax3.legend(fontsize=8)
+    ax3.set_title("업종별 트램 효과 (정거장 500m, 개통 초기, 땅값 기준 추정 %) — 업종 비율은 가정"); ax3.legend(fontsize=8)
     plt.tight_layout(); plt.savefig(C.OUT_DIR / "industry.png", dpi=130)
     print("→ outputs/industry_city_summary.csv, industry_city_trend.csv, industry_by_group.csv, industry_by_area.csv, industry_tram_effect.csv, industry.png")
 

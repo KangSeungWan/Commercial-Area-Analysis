@@ -11,7 +11,7 @@
 지표
 - n_stores, top3 : 2026-06 점포 수, 업종 대분류 상위 3
 - tram500_share  : 트램 정거장 500m 안 점포 비율
-- tram_effect(_low/_high) : 트램 효과(%, 개통 6년 후) = tram500_share × 정거장 권역 효과
+- tram_effect(_low/_high) : 트램 효과(%, 개통 초기 1~4년, 땅값 기준 추정) = tram500_share × 정거장 권역 효과
     기본 = 대전 1호선 1단계 지가 효과(landprice_effects.csv), 낮음 = P2 버스 저밀 0.89%, 높음 = P2 음식·소매 평균
 - land_price, land_chg_5y_pct, land_chg_10y_pct : 지목 '대' 필지 공시지가 중앙값, 같은 필지 상승률 중앙값
 """

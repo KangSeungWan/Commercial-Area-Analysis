@@ -182,7 +182,7 @@ C_LAG = 6   # literature_params.csv 의 P2_lag_start_yr 로 덮어씀
 
 
 def ramp(years_after):
-    """P2 event study: +1~+5년 유의하지 않음(점증), +6년부터 유의 → 1~5년 0→50% 선형, 6년~ 100%."""
+    """(사용 안 함) 예전 영국식 램프. 지금은 tram_effect.profile (대전 1호선 연차별 모양) 사용."""
     y = np.asarray(years_after, float)
     return np.where(y <= 0, 0.0, np.where(y < C_LAG, 0.5 * y / (C_LAG - 1), 1.0))
 
@@ -205,29 +205,17 @@ def scenario(df, lit, tram_riders=None):
     b = base_months.groupby("area_id").agg(baseline_sales=("sales", "mean")).reset_index()
     e = df.drop_duplicates("area_id").merge(b, on="area_id")
 
-    # P6 중심/주변 가중: 구역 방문객 변화 / 지구 전체 변화
-    tot = 0.075  # P6 Table 4 total +7.5%
-    zf = {"core": P(lit, "P6_visit_core") / tot, "secondary": P(lit, "P6_visit_secondary") / tot,
-          "periphery": P(lit, "P6_visit_periphery") / tot}
-    e["zone_factor"] = e.zone_type.map(zf)
-
-    cat_eff = e.cat.map(lambda c: P(lit, CAT_EFFECT_KEY.get(c, "P2_POI_homeofficeleisure")))
-    low_bus = P(lit, "P2_mod_bus_low")
-    high_bus = P(lit, "P2_mod_bus_high")
-    cap = np.log1p(P(lit, "P6_spend_periphery"))            # 상한: 고베 주변상권 소비 +23.6%
-
+    # 트램 효과 = 정거장 500m 안 × 시나리오 수준(tram_effect.levels) × 업종 비율
+    #   예전의 고베(P6) 중심/주변 가중·소비 상한, 영국 버스밀도 조절계수는 대전 근거가 없어 제외
+    import tram_effect as TE
+    L = TE.levels()
     in500 = e.in_tram_500.values == 1
-    dense = e.bus_dense.values == 1
-    dj, dj_src = daejeon_effect(lit)
-    # 업종 차이는 P2 의 업종별 비율 그대로 (부동산 POI 효과 대비): 음식 0.99, 소매 0.86, 기타 0.24
-    dj_cat = dj * cat_eff / P(lit, "P2_POI_property")
-    # low  : P2 버스 저밀 계수 0.0089 (사실상 효과 없음)
-    # base : 대전 1호선 1단계 지가 효과(실측) × 업종 비율, 버스 저밀 셀은 0.0089 → × P6 구역 가중
-    # high : P2 영국 LRT 업종별 계수(논문), 버스 저밀 셀은 0.0089 → × P6 구역 가중
-    e["eff_low"] = np.where(in500, low_bus, 0.0)
-    e["eff_base"] = np.where(in500, np.minimum(np.where(dense, dj_cat, low_bus) * e.zone_factor, cap), 0.0)
-    e["eff_high"] = np.where(in500, np.minimum(np.where(dense, cat_eff, low_bus) * e.zone_factor, cap), 0.0)
-    print(f"  기본 시나리오 = 대전 1호선 지가 효과 {np.expm1(dj) * 100:.1f}% ({dj_src})", flush=True)
+    ratio = e.cat.map(TE.cat_ratio).values
+    for sc in TE.SCEN:
+        e[f"eff_{sc}"] = np.where(in500, L[sc]["log"] * ratio, 0.0)
+    TE.write_table()
+    print("  시나리오 수준(개통 초기 1~4년, 땅값 기준): " +
+          ", ".join(f"{TE.LABEL[s]} {L[s]['pct']:+.1f}%" for s in TE.SCEN), flush=True)
 
     # (선택) P3 승하차 탄력성: 정거장 일 승하차 예측치가 있으면 base 에 가산
     if tram_riders is not None:
@@ -236,7 +224,7 @@ def scenario(df, lit, tram_riders=None):
         e["eff_p3_riders"] = np.where(in500, np.log1p(el * r / 80422), 0.0)
 
     for yrs in (3, 6, 10):
-        w = float(ramp(yrs))
+        w = float(TE.profile([yrs])[0])           # 대전 1호선 연차별 효과 모양 (초기에 크고 점점 줄어듦)
         for sc in ("low", "base", "high"):
             e[f"sales_{sc}_y{yrs}"] = (e.baseline_sales * np.exp(e[f"eff_{sc}"] * w)).round(0)
     keep = ["area_id", "zone", "zone_type", "cat", "cat_name", "nearest_tram", "is_transfer_station",

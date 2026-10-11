@@ -57,7 +57,9 @@ def main():
     ax.errorbar(R.value[m], y[m.values], xerr=[R.value[m] - R.lo[m], R.hi[m] - R.value[m]], fmt="none", ecolor="C3", lw=1.2)
     ax.axvspan(0, 6, color="C0", alpha=.08, label="트램·LRT 주거 문헌 범위 0~6%")
     ax.axvspan(10, 25, color="C2", alpha=.08, label="LRT 상업용지 문헌 범위 10~25%")
-    for v, ls, t in [(0.9, ":", "낮음"), (5.8, "--", "기본"), (9.3, "-.", "높음")]:
+    import tram_effect as TE
+    _L = TE.levels()
+    for v, ls, t in [(_L["low"]["pct"], ":", "낮음"), (_L["base"]["pct"], "--", "기본"), (_L["high"]["pct"], "-.", "높음")]:
         ax.axvline(v, c="k", ls=ls, lw=.8)
         ax.text(v, len(R) - 0.3, f"시나리오 {t} {v}%", fontsize=7, rotation=90, va="top", ha="right")
     ax.set_yticks(y); ax.set_yticklabels([f"{l[:34]}" for l in R.label], fontsize=8)

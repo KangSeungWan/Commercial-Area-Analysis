@@ -138,6 +138,17 @@ def main():
             m2, lo2, hi2 = window_mean(e2, b2, y2, post)
             rings.append({"phase": ph, "ring_m": f"{a}-{b}", "effect_pct": pct(m2),
                           "ci95": f"{pct(lo2)} ~ {pct(hi2)}", "n": int(e2.n_treat.max())})
+    # 1·2단계 합산: 두 단계 모두 개통된 2008~2011 평균 (한 단계만 골라 쓰지 않도록 함께 보고)
+    tr = G.l1_phase.isin([1, 2]) & (G.d_l1 <= 500)
+    es, boot, yrs = event_study(G, W, tr, ctrl, 2005, list(range(1996, 2014)))
+    post = range(2008, 2012)
+    m, lo, hi = window_mean(es, boot, yrs, post)
+    pm, *_ = window_mean(es, boot, yrs, range(2000, 2004))
+    summary.append({"analysis": "1호선 1·2단계 합산", "treat": "역 500m 필지", "control": "1호선 역 1~3km 필지",
+                    "base": 2005, "post": "2008-2011", "effect_pct": pct(m), "ci95": f"{pct(lo)} ~ {pct(hi)}",
+                    "pre_2000_03_pct": pct(pm), "n_treat": int(es.n_treat.max()), "n_ctrl": int(es.n_ctrl.max())})
+    es["phase"] = 12
+    l1_es.append(es)
     l1_es = pd.concat(l1_es)
     rings = pd.DataFrame(rings)
 
