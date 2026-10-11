@@ -295,3 +295,11 @@ streamlit run app.py
 | 유형·예측·진단 | `area_types.csv`, `area_type_stability.csv`, `forecast_backtest.csv`, `forecast_land.csv`, `forecast_store.csv`, `area_scores.csv` |
 | 지도 | `map_data.csv`(프로젝트 폴더), `area_profile.csv`, `sangkwon_polygons.geojson` |
 | 그림 | `landprice_line1_es.png`, `landprice_area_trend.png`, `robust_line1.png`, `area_types.png`, `forecast_paths.png`, `area_scores.png`, `panel_trend.png` |
+
+
+
+### 지도 앱 사용성 개선 (v17)
+- [x] 1차: AI 해설 유지, 선택 요약 카드 + 패널 3개, 상권 이름 표시, 의미별 색·지도 위 범례
+- [x] 2차: 한눈에 보기(진단별 상권 칩), 도움말, 예측 띠·개통선, 점포 자료 단절 표시, 비교표 막대·행 클릭 이동
+- [x] 3차: 공유 링크(?area=), 상권 2곳 비교, 캐시, 격자 보기 실험용 표시, 사이드바 순서, 지도 높이 620px
+- [ ] Mac 실제 화면 확인: 한글 상권 이름 표시, 칩(Streamlit 1.40 이상), 표 행 클릭
