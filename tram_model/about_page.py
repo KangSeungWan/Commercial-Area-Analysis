@@ -99,6 +99,30 @@ PAPERS = [
      "대전 추정치가 과대인지 확인: 트램 주거 0~6%, 상업용지 10~25% → +5.8% 는 중간값"),
 ]
 
+FRAMEWORKS = [
+    ("머신러닝", "scikit-learn", "HistGradientBoosting(격자 모델·예측 비교), RandomForest(요인 분석), K-means·PCA(상권 유형), "
+                              "GroupKFold(공간 검증), 순열 중요도, 실루엣"),
+    ("머신러닝(선택)", "LightGBM", "예측 비교·격자 잔차. 설치돼 있으면 사용, 없으면 scikit-learn HistGradientBoosting 으로 자동 대체"),
+    ("통계 모델", "NumPy (직접 구현)", "이중차분·사건연구, 군집 부트스트랩, 강건 표준오차 회귀, ARIMA(p,1,0)"),
+    ("과학 계산", "SciPy", "가까운 정거장·점포 검색(KD-tree), 순위 상관"),
+    ("데이터 처리", "pandas", "패널 구성·집계 전반"),
+    ("공간 처리·그림", "scikit-image, matplotlib", "상권 경계선 추출, 지점의 행정동 판정, 결과 그림"),
+    ("지도 앱", "Streamlit + pydeck", "화면·지도·클릭 선택·팝업"),
+    ("AI 해설", "Google Gemini (google-genai)", "분석 결과 묶음을 근거로 해설 생성"),
+]
+WHY = ("딥러닝(PyTorch·TensorFlow)은 쓰지 않음: 상권 20개·행정동 82개·격자 293개 규모라 통계·트리 모델이 적합하고, "
+       "예측 비교에서도 단순 모델(ARIMA)이 머신러닝보다 정확했음. 통계 모델은 추가 설치 없이 돌도록 NumPy 로 직접 구현 "
+       "→ pandas·numpy·scipy·scikit-learn·scikit-image·matplotlib 만으로 전체 재현 가능")
+
+
+def _lgbm_status():
+    try:
+        import lightgbm  # noqa: F401
+        return "이 컴퓨터: LightGBM 설치됨 → 예측 비교에 LightGBM 사용"
+    except ImportError:
+        return "이 컴퓨터: LightGBM 없음 → scikit-learn 모델로 대체 중 (python -m pip install lightgbm 으로 설치 가능)"
+
+
 LIMITS = [
     "**매출 금액**: 위치별 실측 매출이 없어 격자 매출은 '구 매출 ÷ 점포 수' 합성값 → 매출 예측·잔차는 참고용",
     "**트램 효과**: 지하철(1호선) 땅값 효과를 트램 매출 효과로 빌려 씀 → 문헌과 비교해 범위(낮음~높음)로 제시",
@@ -118,7 +142,12 @@ def _body(st):
     c[1].metric("지가 1년 예측 오차", n["land_rmse"], n.get("land_best", ""), delta_color="off")
     c[2].metric("상권 유형", f"{n['k']}개", f"안정성 ARI {n['ari']}", delta_color="off")
     c[3].metric("분석 단위", "20개 상권", "82개 행정동 · 293개 격자", delta_color="off")
-    t1, t2, t3, t4 = st.tabs(["📦 데이터", "🧮 분석·모델", "📚 참고 논문", "⚠️ 검증·한계"])
+    t1, t2, t5, t3, t4 = st.tabs(["📦 데이터", "🧮 분석·모델", "🛠️ 프레임워크", "📚 참고 논문", "⚠️ 검증·한계"])
+    with t5:
+        st.dataframe(pd.DataFrame(FRAMEWORKS, columns=["용도", "프레임워크", "쓴 곳"]), hide_index=True,
+                     use_container_width=True)
+        st.caption(WHY)
+        st.caption(_lgbm_status())
     with t1:
         st.dataframe(pd.DataFrame(DATA, columns=["데이터", "출처", "기간", "규모", "쓰인 곳"]), hide_index=True,
                      use_container_width=True)
