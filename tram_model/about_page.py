@@ -192,9 +192,13 @@ def _body(st):
 
 
 def show_about(st):
-    """사이드바 버튼 → 팝업. Streamlit 1.37 미만이면 접히는 상자로 대체."""
-    if not st.sidebar.button("📘 분석 방법 한눈에 보기", use_container_width=True):
-        return
+    """사이드바 버튼 → 팝업."""
+    if st.sidebar.button("📘 분석 방법 한눈에 보기", use_container_width=True):
+        open_about(st)
+
+
+def open_about(st):
+    """분석 방법 팝업 바로 열기. Streamlit 1.37 미만이면 접히는 상자로 대체."""
     if hasattr(st, "dialog"):
         @st.dialog("분석 방법 한눈에 보기", width="large")
         def _dlg():

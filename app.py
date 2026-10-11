@@ -209,6 +209,28 @@ def ind_scores(after, w=None):
     return out, w
 
 
+# ================================================================ 커버 화면 (처음 들어오면)
+from cover_page import render_cover
+from about_page import open_about
+
+_qp = st.query_params if hasattr(st, "query_params") else {}
+if "page" not in ss:
+    ss.page = "map" if (_qp.get("view") == "map" or _qp.get("area")) else "cover"
+if ss.page == "cover":
+    _stats = {"rebound": int((prof.quadrant == "트램 반등 기회").sum()) if "quadrant" in prof else "-",
+              "base": f"{_TS['base'].effect_pct:+.1f}%" if "base" in _TS else "-",
+              "low": f"{_TS['low'].effect_pct:+.1f}%" if "low" in _TS else "-",
+              "high": f"{_TS['high'].effect_pct:+.1f}%" if "high" in _TS else "-",
+              "n_scores": int(IS.score_before.notna().sum()) if IS is not None else "-"}
+    if render_cover(st, stations, route_paths, _stats, lambda: open_about(st)):
+        ss.page = "map"
+        try:
+            st.query_params["view"] = "map"
+        except Exception:
+            pass
+        st.rerun()
+    st.stop()
+
 # ================================================================ 사이드바 (꼭 필요한 것만)
 st.sidebar.title("대전 트램 상권 지도")
 st.sidebar.caption("2028 개통 트램 2호선 주변 20개 상권 진단")
@@ -224,6 +246,13 @@ if ss.get("map_metric") not in MAPM:
 am = st.sidebar.selectbox("지도에 칠할 것", list(MAPM), format_func=MAPM.get, key="map_metric",
                           help="업종 점수를 고르면 그 업종의 100점 점수로 칠함 (아래 '업종 점수' 탭에서 순위·근거)")
 show_about(st)
+if st.sidebar.button("처음 화면으로", use_container_width=True, key="to_cover"):
+    ss.page = "cover"
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
+    st.rerun()
 with st.sidebar.expander("고급 설정"):
     scen = st.radio("트램 효과 시나리오", list(SCEN), horizontal=True,
                     help=" / ".join(SCEN_HELP) + " · 효과 = 수준 × 업종 비율 × 상권 중 500m 안 비율")
