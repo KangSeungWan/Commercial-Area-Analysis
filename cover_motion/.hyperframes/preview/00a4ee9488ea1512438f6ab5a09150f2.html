@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head><script data-hf-gsap-fallback>
+(function(){
+  var cdnBase="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/";
+  var loaded={};
+  function loadFallback(file){
+    if(loaded[file])return loaded[file];
+    return loaded[file]=new Promise(function(ok,fail){
+      var s=document.createElement("script");
+      s.src=cdnBase+file;s.hfGsapFallback=true;s.onload=ok;s.onerror=fail;
+      document.head.appendChild(s);
+    });
+  }
+  document.addEventListener("error",function(e){
+    var t=e.target;
+    if(!t||t.tagName!=="SCRIPT"||!t.src||t.hfGsapFallback)return;
+    var m=t.src.match(/gsap[^/]*\/dist\/(.+\.js)/);
+    if(m)loadFallback(m[1]).catch(function(){
+      reportError(new Error("GSAP could not load from "+t.src+" or "+cdnBase+m[1]+", so this preview's animations will not play."));
+    });
+  },true);
+})();
+</script>
+<meta name="hyperframes-studio-preview"><script>(function(){var seen=window.__hfPreviewErrors=[];
+addEventListener("error",function(e){seen.push(e.message||String(e))});})();</script>
+<base href="/api/projects/cover_motion/preview/"><style data-hyperframes-text-rendering="true">html,body,*{text-rendering:geometricPrecision}</style><script data-hf-after-fonts-fallback="">document.addEventListener("DOMContentLoaded", function () {
+  if (window.__hfAfterFontsClaimed) return;
+  var T = "text/hf-after-fonts";
+  var all = [].slice.call(document.querySelectorAll('script[type="text/hf-after-fonts"], script[type="text/hf-after-fonts+module"]'));
+  if (!all.length) return;
+  console.warn("[hyperframes] the runtime has no web-font gate; composition scripts run without waiting for fonts");
+  var late = function (el) { return el.type !== T || el.matches('[defer][src], [defer][data-hf-inlined-src]'); };
+  var queue = all.filter(function (el) { return !late(el); }).concat(all.filter(late));
+  (function next() {
+    var el = queue.shift();
+    if (!el) return;
+    var s = document.createElement("script");
+    for (var i = 0; i < el.attributes.length; i++) s.setAttribute(el.attributes[i].name, el.attributes[i].value);
+    if (el.type === T) s.removeAttribute("type"); else s.type = "module";
+    s.async = el.hasAttribute("async");
+    s.text = el.text;
+    var waits = s.type !== "module" && s.hasAttribute("src") && !s.async && !s.noModule;
+    if (waits) { s.addEventListener("load", next); s.addEventListener("error", next); }
+    el.replaceWith(s);
+    if (!waits) next();
+  })();
+});
+//# sourceURL=hyperframes://after-fonts-fallback</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* 색·글꼴: DESIGN.md (리넨 바탕, 숲색 잉크, 세이지, Newsreader 제목) */
+      @font-face { font-family: "Newsreader"; font-weight: 300; src: url("assets/fonts/newsreader-300.woff2") format("woff2"); }
+      @font-face { font-family: "Noto Serif KR"; font-weight: 300; src: url("assets/fonts/noto-serif-kr-300.woff2") format("woff2"); }
+      @font-face { font-family: "Pretendard"; font-weight: 500; src: url("assets/fonts/pretendard-500.woff2") format("woff2"); }
+      :root {
+        --ink: #0a1d08; --linen: #f8f9f5; --bone: #eff2e8; --mist: #e1e6df;
+        --sage-mist: #a5ac9f; --sage: #4a6d47;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--linen); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--linen); }
+      .layer { position: absolute; inset: 0; }
+      .layer svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .ghost { fill: none; stroke: var(--sage-mist); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round;
+                stroke-dasharray: 2 9; opacity: 0.7; }
+      .ink-line { fill: none; stroke: var(--ink); stroke-width: 3.6; stroke-linejoin: round; stroke-linecap: round; }
+      .stop { fill: var(--linen); stroke: var(--ink); stroke-width: 2.6; }
+      .ring { fill: none; stroke: var(--sage); stroke-width: 2; opacity: 0; }
+      #head { fill: var(--ink); stroke: var(--linen); stroke-width: 3; opacity: 0; }
+      #copy { position: absolute; left: 170px; top: 384px; width: 720px; }
+      #copy-label { font-family: "Pretendard", sans-serif; font-weight: 500; font-size: 26px; letter-spacing: 0.04em;
+                     color: var(--sage); word-break: keep-all; }
+      #copy-rule { width: 84px; height: 2px; margin: 26px 0 18px 0; background: var(--sage-mist); transform-origin: 0 50%; }
+      #copy-mask { overflow: hidden; padding: 4px 0 18px 0; }
+      #copy-title { display: block; font-family: "Newsreader", "Noto Serif KR", serif; font-weight: 300; font-size: 156px;
+                     line-height: 1.08; letter-spacing: -0.025em; color: var(--ink); white-space: nowrap; }
+    </style>
+  
+<script data-hyperframes-preview-runtime="1" src="/api/runtime.js"></script>
+<meta name="hyperframes-project-signature" content="28905b6c280b2db5846fe085">
+</head>
+  <body>
+    <div data-hf-id="hf-199x" id="root" data-composition-id="main" data-start="0" data-duration="10" data-width="1920" data-height="1080">
+
+      <!-- 풍경: 하늘 + 언덕 4겹 (tram_model/cover_page.py 와 같은 식) + 계획 노선 옅은 점선 -->
+      <div data-hf-id="hf-joev" id="land" class="layer clip" data-start="0" data-duration="10" data-track-index="0">
+        <svg data-hf-id="hf-q9xh" viewBox="0 0 1920 1080" preserveAspectRatio="none" data-layout-allow-overflow="">
+          <defs data-hf-id="hf-mh0t"><lineargradient data-hf-id="hf-vlwz" id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop data-hf-id="hf-agyq" offset="0" stop-color="#f8f9f5" /><stop data-hf-id="hf-hv2p" offset="1" stop-color="#eff2e8" /></lineargradient></defs>
+          <rect data-hf-svg-reference-aliases="[{&quot;name&quot;:&quot;fill&quot;,&quot;localName&quot;:&quot;fill&quot;,&quot;namespaceURI&quot;:null,&quot;before&quot;:&quot;url(#sky)&quot;,&quot;after&quot;:&quot;url(#sky)&quot;}]" data-hf-id="hf-q5s0" width="1920" height="1080" fill="url(#sky)" />
+          <path data-hf-id="hf-vj6m" id="ghost" class="ghost" d="M1412.1,662.5 L1447.2,664.0 L1461.3,696.2 L1537.6,692.9 L1585.7,667.2 L1562.2,621.0 L1586.6,596.3 L1608.0,622.0 L1644.3,583.3 L1626.0,514.7 L1578.1,497.6 L1582.3,459.2 L1547.2,434.1 L1470.3,442.7 L1434.9,442.6 L1392.9,437.0 L1350.9,431.4 L1287.5,430.2 L1287.8,407.2 L1287.9,374.8 L1283.4,336.1 L1221.5,385.0 L1116.5,415.9 L1134.8,423.9 L1092.8,472.4 L1087.9,526.2 L1067.6,561.0 L1049.9,598.9 L1049.8,620.0 L1049.8,633.5 L955.7,692.3 L1008.4,820.0 L1060.4,757.2 L1062.1,799.6 L1094.0,791.4 L1159.7,773.6 L1211.5,763.9 L1259.2,748.4 L1295.7,724.2 L1355.0,700.2 L1375.2,693.8 L1412.1,662.5 M1547.2,434.1 L1597.6,396.8 L1536.6,348.6 L1506.3,336.9 L1508.2,200.0" />
+          <path data-hf-id="hf-1f92" id="hill-0" class="hill" d="M0,792.4 L12.0,791.7 L24.0,791.6 L36.0,792.0 L48.0,792.9 L60.0,794.2 L72.0,795.7 L84.0,797.3 L96.0,798.9 L108.0,800.3 L120.0,801.6 L132.0,802.5 L144.0,803.2 L156.0,803.5 L168.0,803.5 L180.0,803.3 L192.0,802.8 L204.0,802.2 L216.0,801.6 L228.0,801.0 L240.0,800.6 L252.0,800.5 L264.0,800.6 L276.0,801.2 L288.0,802.0 L300.0,803.3 L312.0,805.0 L324.0,806.9 L336.0,809.1 L348.0,811.4 L360.0,813.7 L372.0,815.9 L384.0,817.9 L396.0,819.6 L408.0,820.8 L420.0,821.6 L432.0,821.8 L444.0,821.4 L456.0,820.4 L468.0,818.9 L480.0,817.0 L492.0,814.7 L504.0,812.1 L516.0,809.4 L528.0,806.7 L540.0,804.2 L552.0,802.0 L564.0,800.2 L576.0,799.0 L588.0,798.4 L600.0,798.5 L612.0,799.3 L624.0,800.8 L636.0,802.9 L648.0,805.6 L660.0,808.9 L672.0,812.5 L684.0,816.3 L696.0,820.3 L708.0,824.2 L720.0,828.1 L732.0,831.7 L744.0,835.0 L756.0,837.8 L768.0,840.3 L780.0,842.4 L792.0,844.1 L804.0,845.4 L816.0,846.4 L828.0,847.2 L840.0,847.9 L852.0,848.6 L864.0,849.4 L876.0,850.3 L888.0,851.4 L900.0,852.7 L912.0,854.3 L924.0,856.2 L936.0,858.2 L948.0,860.4 L960.0,862.6 L972.0,864.8 L984.0,866.8 L996.0,868.5 L1008.0,869.9 L1020.0,870.7 L1032.0,871.0 L1044.0,870.6 L1056.0,869.5 L1068.0,867.7 L1080.0,865.2 L1092.0,862.1 L1104.0,858.4 L1116.0,854.3 L1128.0,849.9 L1140.0,845.4 L1152.0,840.8 L1164.0,836.3 L1176.0,832.1 L1188.0,828.4 L1200.0,825.1 L1212.0,822.4 L1224.0,820.3 L1236.0,818.9 L1248.0,818.1 L1260.0,817.9 L1272.0,818.2 L1284.0,819.0 L1296.0,820.0 L1308.0,821.3 L1320.0,822.6 L1332.0,823.8 L1344.0,824.9 L1356.0,825.7 L1368.0,826.2 L1380.0,826.3 L1392.0,826.0 L1404.0,825.4 L1416.0,824.4 L1428.0,823.1 L1440.0,821.7 L1452.0,820.1 L1464.0,818.5 L1476.0,817.1 L1488.0,815.8 L1500.0,814.7 L1512.0,814.0 L1524.0,813.6 L1536.0,813.6 L1548.0,813.9 L1560.0,814.5 L1572.0,815.3 L1584.0,816.3 L1596.0,817.3 L1608.0,818.2 L1620.0,818.9 L1632.0,819.3 L1644.0,819.3 L1656.0,818.9 L1668.0,817.9 L1680.0,816.3 L1692.0,814.1 L1704.0,811.5 L1716.0,808.3 L1728.0,804.8 L1740.0,801.1 L1752.0,797.2 L1764.0,793.3 L1776.0,789.6 L1788.0,786.3 L1800.0,783.4 L1812.0,781.0 L1824.0,779.3 L1836.0,778.3 L1848.0,778.1 L1860.0,778.7 L1872.0,779.9 L1884.0,781.9 L1896.0,784.4 L1908.0,787.3 L1920.0,790.6 L1920,1120 L0,1120 Z" fill="#c9d5c5" fill-opacity="0.9" />
+          <path data-hf-id="hf-gcom" id="hill-1" class="hill" d="M0,846.6 L12.0,845.0 L24.0,844.0 L36.0,843.4 L48.0,843.4 L60.0,843.9 L72.0,844.9 L84.0,846.3 L96.0,848.1 L108.0,850.3 L120.0,852.8 L132.0,855.4 L144.0,858.1 L156.0,860.9 L168.0,863.6 L180.0,866.2 L192.0,868.7 L204.0,870.9 L216.0,873.0 L228.0,874.7 L240.0,876.2 L252.0,877.5 L264.0,878.6 L276.0,879.5 L288.0,880.3 L300.0,881.0 L312.0,881.7 L324.0,882.5 L336.0,883.4 L348.0,884.6 L360.0,886.0 L372.0,887.7 L384.0,889.7 L396.0,892.1 L408.0,894.8 L420.0,897.9 L432.0,901.3 L444.0,905.0 L456.0,908.9 L468.0,912.9 L480.0,917.1 L492.0,921.2 L504.0,925.2 L516.0,929.0 L528.0,932.6 L540.0,935.7 L552.0,938.5 L564.0,940.7 L576.0,942.5 L588.0,943.6 L600.0,944.2 L612.0,944.2 L624.0,943.6 L636.0,942.5 L648.0,940.9 L660.0,939.0 L672.0,936.7 L684.0,934.2 L696.0,931.5 L708.0,928.8 L720.0,926.1 L732.0,923.6 L744.0,921.2 L756.0,919.1 L768.0,917.3 L780.0,915.9 L792.0,914.9 L804.0,914.3 L816.0,914.0 L828.0,914.2 L840.0,914.6 L852.0,915.3 L864.0,916.2 L876.0,917.2 L888.0,918.3 L900.0,919.4 L912.0,920.5 L924.0,921.3 L936.0,922.0 L948.0,922.5 L960.0,922.6 L972.0,922.5 L984.0,922.0 L996.0,921.3 L1008.0,920.3 L1020.0,919.1 L1032.0,917.7 L1044.0,916.2 L1056.0,914.6 L1068.0,913.0 L1080.0,911.6 L1092.0,910.3 L1104.0,909.2 L1116.0,908.4 L1128.0,907.9 L1140.0,907.8 L1152.0,908.1 L1164.0,908.8 L1176.0,909.8 L1188.0,911.2 L1200.0,912.9 L1212.0,914.8 L1224.0,916.9 L1236.0,919.0 L1248.0,921.2 L1260.0,923.3 L1272.0,925.2 L1284.0,926.8 L1296.0,928.0 L1308.0,928.9 L1320.0,929.2 L1332.0,929.1 L1344.0,928.4 L1356.0,927.1 L1368.0,925.2 L1380.0,922.8 L1392.0,920.0 L1404.0,916.6 L1416.0,912.9 L1428.0,908.9 L1440.0,904.7 L1452.0,900.4 L1464.0,896.0 L1476.0,891.7 L1488.0,887.6 L1500.0,883.6 L1512.0,880.0 L1524.0,876.7 L1536.0,873.7 L1548.0,871.2 L1560.0,869.0 L1572.0,867.3 L1584.0,865.9 L1596.0,864.8 L1608.0,864.0 L1620.0,863.4 L1632.0,862.9 L1644.0,862.5 L1656.0,862.2 L1668.0,861.8 L1680.0,861.3 L1692.0,860.6 L1704.0,859.7 L1716.0,858.6 L1728.0,857.3 L1740.0,855.8 L1752.0,854.0 L1764.0,852.1 L1776.0,850.1 L1788.0,848.0 L1800.0,845.9 L1812.0,843.9 L1824.0,842.0 L1836.0,840.4 L1848.0,839.0 L1860.0,838.0 L1872.0,837.5 L1884.0,837.4 L1896.0,837.8 L1908.0,838.8 L1920.0,840.2 L1920,1120 L0,1120 Z" fill="#c5ccb6" fill-opacity="0.95" />
+          <path data-hf-id="hf-hc1c" id="hill-2" class="hill" d="M0,923.4 L12.0,922.6 L24.0,922.3 L36.0,922.6 L48.0,923.6 L60.0,925.2 L72.0,927.5 L84.0,930.3 L96.0,933.7 L108.0,937.5 L120.0,941.4 L132.0,945.4 L144.0,949.1 L156.0,952.6 L168.0,955.5 L180.0,957.9 L192.0,959.6 L204.0,960.6 L216.0,960.9 L228.0,960.6 L240.0,959.8 L252.0,958.6 L264.0,957.3 L276.0,955.9 L288.0,954.6 L300.0,953.6 L312.0,952.9 L324.0,952.7 L336.0,952.9 L348.0,953.6 L360.0,954.6 L372.0,956.0 L384.0,957.4 L396.0,959.0 L408.0,960.4 L420.0,961.6 L432.0,962.5 L444.0,962.9 L456.0,963.0 L468.0,962.6 L480.0,961.8 L492.0,960.8 L504.0,959.6 L516.0,958.4 L528.0,957.4 L540.0,956.7 L552.0,956.5 L564.0,956.8 L576.0,957.8 L588.0,959.6 L600.0,962.0 L612.0,965.1 L624.0,968.8 L636.0,972.8 L648.0,977.1 L660.0,981.5 L672.0,985.7 L684.0,989.7 L696.0,993.2 L708.0,996.2 L720.0,998.5 L732.0,1000.1 L744.0,1001.1 L756.0,1001.5 L768.0,1001.3 L780.0,1000.8 L792.0,999.9 L804.0,999.0 L816.0,998.1 L828.0,997.2 L840.0,996.6 L852.0,996.1 L864.0,995.9 L876.0,995.8 L888.0,995.8 L900.0,995.8 L912.0,995.6 L924.0,995.1 L936.0,994.1 L948.0,992.6 L960.0,990.4 L972.0,987.4 L984.0,983.7 L996.0,979.3 L1008.0,974.2 L1020.0,968.6 L1032.0,962.7 L1044.0,956.6 L1056.0,950.4 L1068.0,944.5 L1080.0,939.0 L1092.0,934.0 L1104.0,929.7 L1116.0,926.1 L1128.0,923.3 L1140.0,921.2 L1152.0,919.8 L1164.0,919.0 L1176.0,918.7 L1188.0,918.7 L1200.0,918.9 L1212.0,919.1 L1224.0,919.3 L1236.0,919.3 L1248.0,919.2 L1260.0,918.9 L1272.0,918.4 L1284.0,917.9 L1296.0,917.4 L1308.0,917.1 L1320.0,917.1 L1332.0,917.6 L1344.0,918.6 L1356.0,920.2 L1368.0,922.5 L1380.0,925.6 L1392.0,929.3 L1404.0,933.5 L1416.0,938.3 L1428.0,943.3 L1440.0,948.4 L1452.0,953.5 L1464.0,958.3 L1476.0,962.7 L1488.0,966.5 L1500.0,969.7 L1512.0,972.1 L1524.0,973.8 L1536.0,974.8 L1548.0,975.2 L1560.0,975.0 L1572.0,974.6 L1584.0,973.9 L1596.0,973.1 L1608.0,972.5 L1620.0,972.1 L1632.0,972.0 L1644.0,972.2 L1656.0,972.8 L1668.0,973.8 L1680.0,975.0 L1692.0,976.3 L1704.0,977.6 L1716.0,978.9 L1728.0,979.9 L1740.0,980.5 L1752.0,980.7 L1764.0,980.4 L1776.0,979.5 L1788.0,978.2 L1800.0,976.4 L1812.0,974.4 L1824.0,972.2 L1836.0,970.0 L1848.0,968.0 L1860.0,966.4 L1872.0,965.2 L1884.0,964.6 L1896.0,964.6 L1908.0,965.4 L1920.0,966.8 L1920,1120 L0,1120 Z" fill="#a5ac9f" fill-opacity="0.9" />
+          <path data-hf-id="hf-ftxx" id="hill-3" class="hill" d="M0,1004.1 L12.0,1005.6 L24.0,1007.3 L36.0,1009.1 L48.0,1010.9 L60.0,1012.5 L72.0,1013.7 L84.0,1014.6 L96.0,1015.1 L108.0,1015.2 L120.0,1015.1 L132.0,1014.7 L144.0,1014.3 L156.0,1014.0 L168.0,1013.9 L180.0,1014.0 L192.0,1014.4 L204.0,1015.1 L216.0,1016.2 L228.0,1017.4 L240.0,1018.7 L252.0,1020.0 L264.0,1021.2 L276.0,1021.9 L288.0,1022.3 L300.0,1022.0 L312.0,1021.2 L324.0,1019.8 L336.0,1017.8 L348.0,1015.4 L360.0,1012.7 L372.0,1009.9 L384.0,1007.1 L396.0,1004.5 L408.0,1002.4 L420.0,1000.8 L432.0,999.9 L444.0,999.8 L456.0,1000.3 L468.0,1001.5 L480.0,1003.3 L492.0,1005.6 L504.0,1008.1 L516.0,1010.8 L528.0,1013.4 L540.0,1015.9 L552.0,1018.2 L564.0,1020.1 L576.0,1021.8 L588.0,1023.2 L600.0,1024.4 L612.0,1025.6 L624.0,1026.7 L636.0,1028.0 L648.0,1029.5 L660.0,1031.4 L672.0,1033.6 L684.0,1036.2 L696.0,1039.1 L708.0,1042.1 L720.0,1045.3 L732.0,1048.4 L744.0,1051.3 L756.0,1053.7 L768.0,1055.7 L780.0,1056.9 L792.0,1057.4 L804.0,1057.2 L816.0,1056.3 L828.0,1054.8 L840.0,1052.9 L852.0,1050.6 L864.0,1048.1 L876.0,1045.8 L888.0,1043.6 L900.0,1041.9 L912.0,1040.7 L924.0,1040.0 L936.0,1039.9 L948.0,1040.3 L960.0,1041.2 L972.0,1042.4 L984.0,1043.8 L996.0,1045.2 L1008.0,1046.6 L1020.0,1047.8 L1032.0,1048.7 L1044.0,1049.4 L1056.0,1049.7 L1068.0,1049.8 L1080.0,1049.8 L1092.0,1049.7 L1104.0,1049.7 L1116.0,1049.9 L1128.0,1050.4 L1140.0,1051.2 L1152.0,1052.6 L1164.0,1054.3 L1176.0,1056.4 L1188.0,1058.8 L1200.0,1061.2 L1212.0,1063.7 L1224.0,1065.9 L1236.0,1067.7 L1248.0,1069.0 L1260.0,1069.6 L1272.0,1069.5 L1284.0,1068.5 L1296.0,1066.8 L1308.0,1064.4 L1320.0,1061.5 L1332.0,1058.1 L1344.0,1054.5 L1356.0,1050.9 L1368.0,1047.4 L1380.0,1044.2 L1392.0,1041.3 L1404.0,1038.9 L1416.0,1037.0 L1428.0,1035.5 L1440.0,1034.4 L1452.0,1033.5 L1464.0,1032.8 L1476.0,1032.1 L1488.0,1031.4 L1500.0,1030.4 L1512.0,1029.2 L1524.0,1027.7 L1536.0,1026.0 L1548.0,1024.2 L1560.0,1022.2 L1572.0,1020.4 L1584.0,1018.7 L1596.0,1017.4 L1608.0,1016.6 L1620.0,1016.3 L1632.0,1016.6 L1644.0,1017.5 L1656.0,1018.9 L1668.0,1020.8 L1680.0,1023.0 L1692.0,1025.3 L1704.0,1027.5 L1716.0,1029.5 L1728.0,1031.1 L1740.0,1032.1 L1752.0,1032.5 L1764.0,1032.1 L1776.0,1031.1 L1788.0,1029.5 L1800.0,1027.3 L1812.0,1024.8 L1824.0,1022.0 L1836.0,1019.2 L1848.0,1016.5 L1860.0,1014.0 L1872.0,1011.9 L1884.0,1010.2 L1896.0,1008.9 L1908.0,1008.0 L1920.0,1007.4 L1920,1120 L0,1120 Z" fill="#4a6d47" fill-opacity="0.85" />
+        </svg>
+      </div>
+
+      <!-- 트램 2호선: 순환선 → 지선 순서로 그려지고 정거장이 차례로 켜짐 -->
+      <div data-hf-id="hf-zxf8" id="route" class="layer clip" data-start="0" data-duration="10" data-track-index="1">
+        <svg data-hf-id="hf-kchy" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+          <g data-hf-id="hf-c8cd" id="ink">
+            <path data-hf-id="hf-9rga" id="line-loop" class="ink-line" d="M1412.1,662.5 L1447.2,664.0 L1461.3,696.2 L1537.6,692.9 L1585.7,667.2 L1562.2,621.0 L1586.6,596.3 L1608.0,622.0 L1644.3,583.3 L1626.0,514.7 L1578.1,497.6 L1582.3,459.2 L1547.2,434.1 L1470.3,442.7 L1434.9,442.6 L1392.9,437.0 L1350.9,431.4 L1287.5,430.2 L1287.8,407.2 L1287.9,374.8 L1283.4,336.1 L1221.5,385.0 L1116.5,415.9 L1134.8,423.9 L1092.8,472.4 L1087.9,526.2 L1067.6,561.0 L1049.9,598.9 L1049.8,620.0 L1049.8,633.5 L955.7,692.3 L1008.4,820.0 L1060.4,757.2 L1062.1,799.6 L1094.0,791.4 L1159.7,773.6 L1211.5,763.9 L1259.2,748.4 L1295.7,724.2 L1355.0,700.2 L1375.2,693.8 L1412.1,662.5" />
+            <path data-hf-id="hf-u2sh" id="line-branch" class="ink-line" d="M1547.2,434.1 L1597.6,396.8 L1536.6,348.6 L1506.3,336.9 L1508.2,200.0" />
+            <circle data-hf-id="hf-fa8b" id="ring-201" class="ring" cx="1412.1" cy="662.5" r="8" />
+            <circle data-hf-id="hf-firk" id="ring-202" class="ring" cx="1447.2" cy="664.0" r="8" />
+            <circle data-hf-id="hf-5m07" id="ring-203" class="ring" cx="1461.3" cy="696.2" r="8" />
+            <circle data-hf-id="hf-7dkw" id="ring-204" class="ring" cx="1537.6" cy="692.9" r="8" />
+            <circle data-hf-id="hf-9exc" id="ring-205" class="ring" cx="1585.7" cy="667.2" r="8" />
+            <circle data-hf-id="hf-dydn" id="ring-206" class="ring" cx="1562.2" cy="621.0" r="8" />
+            <circle data-hf-id="hf-p3km" id="ring-207" class="ring" cx="1586.6" cy="596.3" r="8" />
+            <circle data-hf-id="hf-g5op" id="ring-208" class="ring" cx="1608.0" cy="622.0" r="8" />
+            <circle data-hf-id="hf-gdm6" id="ring-209" class="ring" cx="1644.3" cy="583.3" r="8" />
+            <circle data-hf-id="hf-rkcx" id="ring-210" class="ring" cx="1626.0" cy="514.7" r="8" />
+            <circle data-hf-id="hf-o1ou" id="ring-211" class="ring" cx="1578.1" cy="497.6" r="8" />
+            <circle data-hf-id="hf-sd1o" id="ring-212" class="ring" cx="1582.3" cy="459.2" r="8" />
+            <circle data-hf-id="hf-cfk5" id="ring-213" class="ring" cx="1547.2" cy="434.1" r="8" />
+            <circle data-hf-id="hf-6bmd" id="ring-214" class="ring" cx="1470.3" cy="442.7" r="8" />
+            <circle data-hf-id="hf-ax9v" id="ring-215" class="ring" cx="1434.9" cy="442.6" r="8" />
+            <circle data-hf-id="hf-myy7" id="ring-216" class="ring" cx="1392.9" cy="437.0" r="8" />
+            <circle data-hf-id="hf-aame" id="ring-217" class="ring" cx="1350.9" cy="431.4" r="8" />
+            <circle data-hf-id="hf-s3uh" id="ring-218" class="ring" cx="1287.5" cy="430.2" r="8" />
+            <circle data-hf-id="hf-zjnx" id="ring-219" class="ring" cx="1287.8" cy="407.2" r="8" />
+            <circle data-hf-id="hf-rwf1" id="ring-220" class="ring" cx="1287.9" cy="374.8" r="8" />
+            <circle data-hf-id="hf-ms7g" id="ring-221" class="ring" cx="1283.4" cy="336.1" r="8" />
+            <circle data-hf-id="hf-rgwj" id="ring-222" class="ring" cx="1221.5" cy="385.0" r="8" />
+            <circle data-hf-id="hf-768o" id="ring-223" class="ring" cx="1116.5" cy="415.9" r="8" />
+            <circle data-hf-id="hf-2jer" id="ring-224" class="ring" cx="1134.8" cy="423.9" r="8" />
+            <circle data-hf-id="hf-y1j6" id="ring-225" class="ring" cx="1092.8" cy="472.4" r="8" />
+            <circle data-hf-id="hf-0kvc" id="ring-226" class="ring" cx="1087.9" cy="526.2" r="8" />
+            <circle data-hf-id="hf-gafz" id="ring-227" class="ring" cx="1067.6" cy="561.0" r="8" />
+            <circle data-hf-id="hf-du84" id="ring-228" class="ring" cx="1049.9" cy="598.9" r="8" />
+            <circle data-hf-id="hf-y93x" id="ring-229" class="ring" cx="1049.8" cy="620.0" r="8" />
+            <circle data-hf-id="hf-2ij2" id="ring-230" class="ring" cx="1049.8" cy="633.5" r="8" />
+            <circle data-hf-id="hf-fhd6" id="ring-231" class="ring" cx="955.7" cy="692.3" r="8" />
+            <circle data-hf-id="hf-2ily" id="ring-245" class="ring" cx="1008.4" cy="820.0" r="8" />
+            <circle data-hf-id="hf-rit9" id="ring-232" class="ring" cx="1060.4" cy="757.2" r="8" />
+            <circle data-hf-id="hf-jj6f" id="ring-233" class="ring" cx="1062.1" cy="799.6" r="8" />
+            <circle data-hf-id="hf-ste8" id="ring-234" class="ring" cx="1094.0" cy="791.4" r="8" />
+            <circle data-hf-id="hf-iqc2" id="ring-235" class="ring" cx="1159.7" cy="773.6" r="8" />
+            <circle data-hf-id="hf-wsua" id="ring-236" class="ring" cx="1211.5" cy="763.9" r="8" />
+            <circle data-hf-id="hf-l39y" id="ring-237" class="ring" cx="1259.2" cy="748.4" r="8" />
+            <circle data-hf-id="hf-7pbq" id="ring-238" class="ring" cx="1295.7" cy="724.2" r="8" />
+            <circle data-hf-id="hf-x2gz" id="ring-239" class="ring" cx="1355.0" cy="700.2" r="8" />
+            <circle data-hf-id="hf-uxv0" id="ring-240" class="ring" cx="1375.2" cy="693.8" r="8" />
+            <circle data-hf-id="hf-b41r" id="ring-241" class="ring" cx="1597.6" cy="396.8" r="8" />
+            <circle data-hf-id="hf-42zy" id="ring-242" class="ring" cx="1536.6" cy="348.6" r="8" />
+            <circle data-hf-id="hf-ds6r" id="ring-243" class="ring" cx="1506.3" cy="336.9" r="8" />
+            <circle data-hf-id="hf-o1uq" id="ring-244" class="ring" cx="1508.2" cy="200.0" r="8" />
+            <circle data-hf-id="hf-v1yk" id="stop-201" class="stop" cx="1412.1" cy="662.5" r="7" />
+            <circle data-hf-id="hf-8a87" id="stop-202" class="stop" cx="1447.2" cy="664.0" r="7" />
+            <circle data-hf-id="hf-eu7k" id="stop-203" class="stop" cx="1461.3" cy="696.2" r="7" />
+            <circle data-hf-id="hf-vxtr" id="stop-204" class="stop" cx="1537.6" cy="692.9" r="7" />
+            <circle data-hf-id="hf-vbcf" id="stop-205" class="stop" cx="1585.7" cy="667.2" r="7" />
+            <circle data-hf-id="hf-h790" id="stop-206" class="stop" cx="1562.2" cy="621.0" r="7" />
+            <circle data-hf-id="hf-t9ud" id="stop-207" class="stop" cx="1586.6" cy="596.3" r="7" />
+            <circle data-hf-id="hf-0n22" id="stop-208" class="stop" cx="1608.0" cy="622.0" r="7" />
+            <circle data-hf-id="hf-foa1" id="stop-209" class="stop" cx="1644.3" cy="583.3" r="7" />
+            <circle data-hf-id="hf-w8qu" id="stop-210" class="stop" cx="1626.0" cy="514.7" r="7" />
+            <circle data-hf-id="hf-bkix" id="stop-211" class="stop" cx="1578.1" cy="497.6" r="7" />
+            <circle data-hf-id="hf-o9y3" id="stop-212" class="stop" cx="1582.3" cy="459.2" r="7" />
+            <circle data-hf-id="hf-ykmy" id="stop-213" class="stop" cx="1547.2" cy="434.1" r="7" />
+            <circle data-hf-id="hf-jipm" id="stop-214" class="stop" cx="1470.3" cy="442.7" r="7" />
+            <circle data-hf-id="hf-vubw" id="stop-215" class="stop" cx="1434.9" cy="442.6" r="7" />
+            <circle data-hf-id="hf-4ayo" id="stop-216" class="stop" cx="1392.9" cy="437.0" r="7" />
+            <circle data-hf-id="hf-me2x" id="stop-217" class="stop" cx="1350.9" cy="431.4" r="7" />
+            <circle data-hf-id="hf-kz12" id="stop-218" class="stop" cx="1287.5" cy="430.2" r="7" />
+            <circle data-hf-id="hf-bt2a" id="stop-219" class="stop" cx="1287.8" cy="407.2" r="7" />
+            <circle data-hf-id="hf-wrtm" id="stop-220" class="stop" cx="1287.9" cy="374.8" r="7" />
+            <circle data-hf-id="hf-taf3" id="stop-221" class="stop" cx="1283.4" cy="336.1" r="7" />
+            <circle data-hf-id="hf-5zts" id="stop-222" class="stop" cx="1221.5" cy="385.0" r="7" />
+            <circle data-hf-id="hf-q9d3" id="stop-223" class="stop" cx="1116.5" cy="415.9" r="7" />
+            <circle data-hf-id="hf-w0cs" id="stop-224" class="stop" cx="1134.8" cy="423.9" r="7" />
+            <circle data-hf-id="hf-4qid" id="stop-225" class="stop" cx="1092.8" cy="472.4" r="7" />
+            <circle data-hf-id="hf-7o83" id="stop-226" class="stop" cx="1087.9" cy="526.2" r="7" />
+            <circle data-hf-id="hf-p260" id="stop-227" class="stop" cx="1067.6" cy="561.0" r="7" />
+            <circle data-hf-id="hf-2paz" id="stop-228" class="stop" cx="1049.9" cy="598.9" r="7" />
+            <circle data-hf-id="hf-f9ai" id="stop-229" class="stop" cx="1049.8" cy="620.0" r="7" />
+            <circle data-hf-id="hf-prqd" id="stop-230" class="stop" cx="1049.8" cy="633.5" r="7" />
+            <circle data-hf-id="hf-37y9" id="stop-231" class="stop" cx="955.7" cy="692.3" r="7" />
+            <circle data-hf-id="hf-n4ud" id="stop-245" class="stop" cx="1008.4" cy="820.0" r="7" />
+            <circle data-hf-id="hf-qwfu" id="stop-232" class="stop" cx="1060.4" cy="757.2" r="7" />
+            <circle data-hf-id="hf-jgzg" id="stop-233" class="stop" cx="1062.1" cy="799.6" r="7" />
+            <circle data-hf-id="hf-bqkn" id="stop-234" class="stop" cx="1094.0" cy="791.4" r="7" />
+            <circle data-hf-id="hf-0ngx" id="stop-235" class="stop" cx="1159.7" cy="773.6" r="7" />
+            <circle data-hf-id="hf-a4wh" id="stop-236" class="stop" cx="1211.5" cy="763.9" r="7" />
+            <circle data-hf-id="hf-26dd" id="stop-237" class="stop" cx="1259.2" cy="748.4" r="7" />
+            <circle data-hf-id="hf-ddzh" id="stop-238" class="stop" cx="1295.7" cy="724.2" r="7" />
+            <circle data-hf-id="hf-6abk" id="stop-239" class="stop" cx="1355.0" cy="700.2" r="7" />
+            <circle data-hf-id="hf-wd2j" id="stop-240" class="stop" cx="1375.2" cy="693.8" r="7" />
+            <circle data-hf-id="hf-gxjk" id="stop-241" class="stop" cx="1597.6" cy="396.8" r="7" />
+            <circle data-hf-id="hf-snwh" id="stop-242" class="stop" cx="1536.6" cy="348.6" r="7" />
+            <circle data-hf-id="hf-vl7w" id="stop-243" class="stop" cx="1506.3" cy="336.9" r="7" />
+            <circle data-hf-id="hf-a0hp" id="stop-244" class="stop" cx="1508.2" cy="200.0" r="7" />
+            <circle data-hf-id="hf-f1yt" id="head" cx="1412.1" cy="662.5" r="10" />
+          </g>
+        </svg>
+      </div>
+
+      <!-- 글자 -->
+      <div data-hf-id="hf-ep06" id="copy-wrap" class="layer clip" data-start="0" data-duration="10" data-track-index="2">
+        <div data-hf-id="hf-5l42" id="copy">
+          <div data-hf-id="hf-58pr" id="copy-label">대전 트램 2호선</div>
+          <div data-hf-id="hf-fh19" id="copy-rule"></div>
+          <div data-hf-id="hf-90o8" id="copy-mask" data-layout-allow-overflow=""><span data-hf-id="hf-k6f4" id="copy-title">2030 개통</span></div>
+        </div>
+      </div>
+    </div>
+    
+  <script type="text/hf-after-fonts">const G = { "loop": [[1412.1, 662.5], [1447.2, 664], [1461.3, 696.2], [1537.6, 692.9], [1585.7, 667.2], [1562.2, 621], [1586.6, 596.3], [1608, 622], [1644.3, 583.3], [1626, 514.7], [1578.1, 497.6], [1582.3, 459.2], [1547.2, 434.1], [1470.3, 442.7], [1434.9, 442.6], [1392.9, 437], [1350.9, 431.4], [1287.5, 430.2], [1287.8, 407.2], [1287.9, 374.8], [1283.4, 336.1], [1221.5, 385], [1116.5, 415.9], [1134.8, 423.9], [1092.8, 472.4], [1087.9, 526.2], [1067.6, 561], [1049.9, 598.9], [1049.8, 620], [1049.8, 633.5], [955.7, 692.3], [1008.4, 820], [1060.4, 757.2], [1062.1, 799.6], [1094, 791.4], [1159.7, 773.6], [1211.5, 763.9], [1259.2, 748.4], [1295.7, 724.2], [1355, 700.2], [1375.2, 693.8], [1412.1, 662.5]], "branch": [[1547.2, 434.1], [1597.6, 396.8], [1536.6, 348.6], [1506.3, 336.9], [1508.2, 200]], "loopLen": 2130.7, "branchLen": 309.8, "stops": [[201, 0, 0], [202, 0, 35.1], [203, 0, 70.3], [204, 0, 146.7], [205, 0, 201.2], [206, 0, 253], [207, 0, 287.7], [208, 0, 321.2], [209, 0, 374.2], [210, 0, 445.2], [211, 0, 496.1], [212, 0, 534.7], [213, 0, 577.9], [214, 0, 655.3], [215, 0, 690.7], [216, 0, 733], [217, 0, 775.4], [218, 0, 838.8], [219, 0, 861.8], [220, 0, 894.2], [221, 0, 933.2], [222, 0, 1012.1], [223, 0, 1121.5], [224, 0, 1141.5], [225, 0, 1205.7], [226, 0, 1259.7], [227, 0, 1300], [228, 0, 1341.8], [229, 0, 1362.9], [230, 0, 1376.4], [231, 0, 1487.4], [245, 0, 1625.5], [232, 0, 1707], [233, 0, 1749.5], [234, 0, 1782.4], [235, 0, 1850.5], [236, 0, 1903.2], [237, 0, 1953.3], [238, 0, 1997.1], [239, 0, 2061.1], [240, 0, 2082.3], [241, 1, 62.7], [242, 1, 140.4], [243, 1, 172.9], [244, 1, 309.8]] };
+const DRAW_START = 0.6, DRAW_DUR = 3.9;
+const SPEED = (G.loopLen + G.branchLen) / DRAW_DUR;
+const LOOP_DUR = G.loopLen / SPEED, BRANCH_DUR = G.branchLen / SPEED;
+const BRANCH_START = DRAW_START + LOOP_DUR, DRAW_END = BRANCH_START + BRANCH_DUR;
+const TEXT_IN = 4.7, OUT = 8.4, OUT_DUR = 1.1;
+const tl = gsap.timeline({ paused: true });
+[3, 5, 7, 9].forEach((a, i) => {
+  tl.fromTo("#hill-" + i, { y: 0 }, { y: -a, duration: 5, ease: "sine.inOut", yoyo: true, repeat: 1 }, 0);
+});
+tl.fromTo(
+  "#line-loop",
+  { strokeDasharray: G.loopLen + " " + (G.loopLen + 20), strokeDashoffset: G.loopLen + 10 },
+  { strokeDashoffset: 0, duration: LOOP_DUR, ease: "none" },
+  DRAW_START
+);
+tl.fromTo(
+  "#line-branch",
+  { strokeDasharray: G.branchLen + " " + (G.branchLen + 20), strokeDashoffset: G.branchLen + 10 },
+  { strokeDashoffset: 0, duration: BRANCH_DUR, ease: "none" },
+  BRANCH_START
+);
+tl.fromTo("#head", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power1.out" }, DRAW_START - 0.1);
+let t = DRAW_START;
+[G.loop, G.branch].forEach((pts, pi) => {
+  if (pi === 1) {
+    tl.set("#head", { attr: { cx: pts[0][0], cy: pts[0][1] } }, t);
+  }
+  for (let i = 1; i < pts.length; i++) {
+    const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) / SPEED;
+    tl.to("#head", { attr: { cx: pts[i][0], cy: pts[i][1] }, duration: d, ease: "none" }, t);
+    t += d;
+  }
+});
+tl.to("#head", { opacity: 0, duration: 0.5, ease: "power1.in" }, DRAW_END + 0.1);
+G.stops.forEach(([no, path, d]) => {
+  const at = (path === 0 ? DRAW_START : BRANCH_START) + d / SPEED;
+  tl.fromTo(
+    "#stop-" + no,
+    { scale: 0, transformOrigin: "50% 50%" },
+    { scale: 1, duration: 0.45, ease: "back.out(2.4)" },
+    at
+  );
+  tl.fromTo(
+    "#ring-" + no,
+    { attr: { r: 8 }, opacity: 0.6 },
+    { attr: { r: 28 }, opacity: 0, duration: 0.9, ease: "power2.out", immediateRender: false },
+    at
+  );
+});
+tl.fromTo("#copy-label", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, TEXT_IN);
+tl.fromTo("#copy-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power2.inOut" }, TEXT_IN + 0.15);
+tl.fromTo("#copy-title", { yPercent: 140 }, { yPercent: 0, duration: 1.1, ease: "expo.out" }, TEXT_IN + 0.3);
+tl.to("#ink", { opacity: 0, duration: OUT_DUR, ease: "power2.inOut" }, OUT);
+tl.to("#copy", { opacity: 0, y: -12, duration: OUT_DUR, ease: "power2.inOut" }, OUT);
+window.__timelines["main"] = tl;
+tl.seek(0);</script></body>
+</html>
