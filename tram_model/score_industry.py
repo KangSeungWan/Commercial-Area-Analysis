@@ -6,7 +6,10 @@
       outputs/industry_score_weights.csv   (항목·가중치·데이터·계산·근거·한계)
 
 항목 점수 = 그 업종 안에서 20개 상권을 줄 세운 백분위(0~100). 즉 '대전 20개 상권 중 상대 위치'.
-점수 = Σ 가중치 × 항목 점수 / Σ 가중치(값이 있는 항목만). 건설 후 = 트램 항목(10점)을 넣고 나머지를 0.9배.
+점수 = Σ 가중치 × 항목 점수 / Σ 가중치(값이 있는 항목만).
+건설 후 = 트램 예상 효과를 실제 값에 더한 뒤(성장 += 업종별 트램 효과, 땅값 흐름 += 500m 안 비율 × 효과 수준),
+          '건설 전' 20개 상권 분포에 대어 다시 점수화 → 트램이 닿지 않는 상권은 그대로, 닿는 상권만 오름.
+          (예전 방식: 트램 10점 항목을 넣고 나머지를 0.9배 → 트램 밖 상권이 일제히 내려가 트램이 악영향처럼 보였음)
 """
 import numpy as np
 import pandas as pd
@@ -34,12 +37,23 @@ COMP = {
                  "문 닫는 가게가 적은 상권이 버티기 쉬움", "업종별 폐업률 자료가 없어 상권 공통값"),
     "land": ("땅값 흐름", 15, 1, "개별공시지가 2021·2026", "상권 땅값 5년 상승률(%)",
              "입지 가치·수요가 오르는 신호", "임대료 부담이 커질 수도 있음 (상권 공통값)"),
-    "tram": ("트램 효과", 0, 1, "대전 1호선 개통 전후 땅값 + 정거장 좌표",
-             "정거장 500m 안 비율 × 업종 민감도(음식 0.99·소매 0.86·기타 0.24) → 0~100",
-             "트램이 닿는 정도. 대전 1호선에서 역 500m 땅값이 개통 초기 +1.8%(기본) 더 오름",
-             "건설 후에만 반영(10점). 지하철 효과를 빌려 써 과대 가능, 공사 기간 손실은 반영 안 함"),
+    "tram": ("트램 반영 (건설 후)", 0, 1, "대전 1호선 개통 전후 땅값 + 정거장 좌표",
+             "따로 점수를 매기지 않고, 성장에 업종별 트램 효과(500m 안 비율 × 수준 × 업종 민감도)를, "
+             "땅값 흐름에 500m 안 비율 × 수준을 더해 건설 전 분포 기준으로 다시 점수화",
+             "트램이 닿는 상권만 성장·땅값 흐름이 좋아짐. 대전 1호선에서 역 500m 땅값이 개통 초기 +1.8%(기본) 더 오름",
+             "지하철 효과를 빌려 써 과대 가능, 공사 기간 손실은 반영 안 함. 효과가 작아 점수 변화도 작음"),
 }
-TRAM_W = 10
+TRAM_W = 0                              # (예전: 건설 후 트램 10점 항목) 지금은 값에 더하는 방식
+
+
+def ref_pct(before, new):
+    """new 값을 '건설 전' 분포(before)에 대어 0~100 백분위로 (before 값 자체는 원래 점수와 같음)."""
+    b = before.dropna()
+    if len(b) < 2:
+        return new * np.nan
+    pr = pct_rank(b)
+    tab = pd.DataFrame({"v": b.values, "p": pr.values}).groupby("v").p.mean().sort_index()
+    return pd.Series(np.interp(new, tab.index.values, tab.values), index=new.index).where(new.notna())
 
 
 def pct_rank(s):
@@ -98,11 +112,22 @@ def main():
         return ((S.fillna(0) * W).sum(axis=1) / W.sum(axis=1)).round(1)
 
     w_before = {k: v[1] for k, v in COMP.items() if k != "tram"}
-    w_after = {k: v * (100 - TRAM_W) / 100 for k, v in w_before.items()} | {"tram": TRAM_W}
+    w_after = dict(w_before) | {"tram": 0}
     D["score_before"] = total(D, w_before)
-    D["score_after"] = total(D, w_after)
+    # 건설 후: 트램 예상 효과를 값에 더하고 건설 전 분포에 대어 다시 점수화 (시나리오별)
+    for sc in TE.SCEN:
+        D[f"growth_after_{sc}"] = D.growth + D[f"tram_effect_{sc}"]
+        D[f"land_after_{sc}"] = D.land + D.in500 * L[sc]["pct"]
+        for k in ("growth", "land"):
+            D[f"s_{k}_after_{sc}"] = 0.0
+            for ind, g in D.groupby("industry"):
+                D.loc[g.index, f"s_{k}_after_{sc}"] = ref_pct(g[k], g[f"{k}_after_{sc}"]).round(1)
+        A = D.copy()
+        A["s_growth"], A["s_land"] = D[f"s_growth_after_{sc}"], D[f"s_land_after_{sc}"]
+        D[f"score_after_{sc}"] = total(A, w_before)
+    D["score_after"] = D.score_after_base
     few = D.n_stores.fillna(0) < MIN_N                      # 업종 점포가 거의 없으면 점수 안 매김
-    D.loc[few, ["score_before", "score_after"]] = np.nan
+    D.loc[few, ["score_before", "score_after"] + [f"score_after_{sc}" for sc in TE.SCEN]] = np.nan
     D.loc[few, "flag"] = f"업종 점포 {MIN_N}개 미만 → 점수 없음"
     D["score_change"] = (D.score_after - D.score_before).round(1)
     for t in ("before", "after"):

@@ -256,23 +256,25 @@ _IND_ORDER = ["음식", "소매", "수리·개인", "교육", "보건의료", "�
 IND_LIST = ([i for i in _IND_ORDER if i in set(IS.industry)] + sorted(set(IS.industry) - set(_IND_ORDER))) \
     if IS is not None else []
 W_DEF = {r.key: float(r.weight_before) for r in ISW.itertuples() if r.key != "tram"} if ISW is not None else {}
-TRAM_W = float(ISW.set_index("key").weight_after.get("tram", 10)) if ISW is not None else 10.0
 ITEM = ISW.set_index("key").item.to_dict() if ISW is not None else {}
 ss.setdefault("ind_w", dict(W_DEF))
 
 
 def ind_scores(after, w=None):
-    """업종 점수 = 항목 점수(0~100) 가중 평균. 건설 후 = 트램 항목 TRAM_W 점 + 나머지를 (100-TRAM_W) 로 맞춤."""
+    """업종 점수 = 항목 점수(0~100) 가중 평균.
+    건설 후 = 성장·땅값 흐름에 트램 예상 효과를 더한 값을 '건설 전' 분포에 대어 다시 매긴 항목 점수를 씀
+    → 트램이 닿지 않는 상권은 점수 그대로, 닿는 상권만 오름."""
     w = dict(w or ss.ind_w)
+    w = {k: v for k, v in w.items() if k != "tram"}
     tot = sum(w.values()) or 1.0
     w = {k: v / tot * 100 for k, v in w.items()}
-    if after:
-        w = {k: v * (100 - TRAM_W) / 100 for k, v in w.items()} | {"tram": TRAM_W}
-    S = IS[[f"s_{k}" for k in w]].values
+    sk = globals().get("SCEN_KEY", "base")
+    cols = {k: (f"s_{k}_after_{sk}" if after and f"s_{k}_after_{sk}" in IS.columns else f"s_{k}") for k in w}
+    S = IS[[cols[k] for k in w]].values
     Wm = np.where(~np.isnan(S), np.array(list(w.values())), 0.0)
     den = Wm.sum(1)
     sc = np.where(den > 0, (np.nan_to_num(S) * Wm).sum(1) / np.where(den > 0, den, 1), np.nan)
-    out = IS.assign(score=np.round(sc, 1))
+    out = IS.assign(score=np.round(sc, 1), **{f"sa_{k}": IS[cols[k]] for k in w})
     out.loc[IS.score_before.isna(), "score"] = np.nan          # 업종 점포가 거의 없는 상권
     return out, w
 
@@ -317,7 +319,7 @@ PAGE = ss.page
 TRAM_MODES = ["건설 전", "건설 후"]
 tram_mode = st.sidebar.radio("트램 2호선", TRAM_MODES, index=1, horizontal=True, key="tram_mode",
                              help="건설 전: 트램이 없을 때의 진단(반등 기회 → 쇠퇴 우려), 트램 효과 0, 땅값 전망은 트램 없는 경로, "
-                                  "노선은 옅은 계획선으로 표시 / 건설 후: 트램 효과를 넣은 진단·전망·업종 점수")
+                                  "노선은 옅은 계획선으로 표시 / 건설 후: 트램 효과를 넣은 진단·전망·업종 점수(트램이 닿는 상권만 오름)")
 tram_after = tram_mode == "건설 후"
 
 MAPM = {"quadrant": "진단 (4분류)", "land_fc": f"땅값 전망 (2026→{int(fc.year.max()) if fc is not None else 2034})",
@@ -880,18 +882,21 @@ elif PAGE == "industry":
             row_b = B[(B.industry == cur) & (B.code == sel)]
             if len(row_b):
                 rb_ = row_b.iloc[0]
+                ra_ = (A if tram_after else B).loc[row_b.index[0]]
                 w_now = wa if tram_after else wb
                 pr = info.loc[sel]
-                raw = {"growth": f"{rb_.growth:+.1f}%" if pd.notna(rb_.growth) else "–",
+                _ga, _la = rb_.get(f"growth_after_{SCEN_KEY}"), rb_.get(f"land_after_{SCEN_KEY}")
+                raw = {"growth": ("–" if pd.isna(rb_.growth) else f"{rb_.growth:+.1f}%" +
+                                  (f" → {_ga:+.1f}%" if tram_after and pd.notna(_ga) and _ga != rb_.growth else "")),
                        "size": f"{int(rb_.n_stores):,}개" if pd.notna(rb_.n_stores) else "–",
                        "lq": f"{rb_.lq:.2f}" if pd.notna(rb_.lq) else "–",
                        "survival": f"분기 폐업률 {pr.close_rate_q_pct:.1f}%" if pd.notna(pr.get("close_rate_q_pct")) and pd.notna(rb_.survival) else "–",
-                       "land": f"{rb_.land:+.1f}%" if pd.notna(rb_.land) else "–",
-                       "tram": f"500m 안 {rb_.in500 * 100:.0f}% · 효과 {rb_[f'tram_effect_{SCEN_KEY}']:.2f}%"}
-                ws = sum(v for k, v in w_now.items() if pd.notna(rb_[f"s_{k}"]))
-                br = pd.DataFrame([{"항목": ITEM.get(k, k), "이 상권 값": raw[k], "항목 점수": rb_[f"s_{k}"],
+                       "land": ("–" if pd.isna(rb_.land) else f"{rb_.land:+.1f}%" +
+                                (f" → {_la:+.1f}%" if tram_after and pd.notna(_la) and _la != rb_.land else ""))}
+                ws = sum(v for k, v in w_now.items() if pd.notna(ra_[f"sa_{k}"]))
+                br = pd.DataFrame([{"항목": ITEM.get(k, k), "이 상권 값": raw[k], "항목 점수": ra_[f"sa_{k}"],
                                     "가중치": round(v, 1),
-                                    "기여 점수": round(rb_[f"s_{k}"] * v / ws, 1) if pd.notna(rb_[f"s_{k}"]) else None}
+                                    "기여 점수": round(ra_[f"sa_{k}"] * v / ws, 1) if pd.notna(ra_[f"sa_{k}"]) else None}
                                    for k, v in w_now.items()])
                 tot_ = (A if tram_after else B).loc[row_b.index[0], "score"]
                 st.markdown(f"**{names[sel]} · {cur} {tot_:.0f}점** (트램 {tram_mode})" if pd.notna(tot_)
@@ -899,8 +904,9 @@ elif PAGE == "industry":
                 st.dataframe(br, hide_index=True, use_container_width=True, column_config={
                     "항목 점수": CC.ProgressColumn("항목 점수 (20개 중 상대)", min_value=0, max_value=100, format="%.0f"),
                     "기여 점수": CC.NumberColumn("기여 점수", format="%.1f", help="항목 점수 × 가중치 ÷ 가중치 합. 다 더하면 총점")})
-                if isinstance(rb_.flag, str) and rb_.flag:
-                    st.caption(f"비고: {rb_.flag}")
+                st.caption(f"트램: 이 상권 점포의 {rb_.in500 * 100:.0f}%가 정거장 500m 안 · {cur} 트램 효과 "
+                           f"{rb_[f'tram_effect_{SCEN_KEY}']:.2f}% ({scen}) · 건설 후에는 이 효과를 성장·땅값 흐름에 더해 다시 매김"
+                           + (f" · 비고: {rb_.flag}" if isinstance(rb_.flag, str) and rb_.flag else ""))
         with t2:
             dd = T.dropna(subset=["before"]).assign(short=lambda d: d.name.str.split("(").str[0])
             base = alt.Chart(dd).encode(y=alt.Y("short:N", sort=list(dd.short), title=None))
@@ -910,7 +916,7 @@ elif PAGE == "industry":
             pa = base.mark_circle(size=90, color="#1f4fa3").encode(x="after:Q", tooltip=["name", alt.Tooltip("after:Q", title="건설 후"),
                                                                                          alt.Tooltip("change:Q", title="변화")])
             st.caption("회색 = 건설 전, 파랑 = 건설 후 · 정거장 500m 안 비율이 높고 트램에 민감한 업종(음식·소매)일수록 오르고, "
-                       "트램이 닿지 않는 상권은 상대적으로 내려감")
+                       "트램이 닿지 않는 상권은 점수가 그대로 (순위는 다른 상권이 오르면서 밀릴 수 있음)")
             st.altair_chart((rule + pb + pa).properties(height=max(260, 22 * len(dd))), use_container_width=True)
         with t3:
             Cur = A if tram_after else B
@@ -931,9 +937,10 @@ elif PAGE == "industry":
             wt = ISW.rename(columns={"item": "항목", "weight_before": "건설 전", "weight_after": "건설 후",
                                      "data": "데이터", "method": "계산", "rationale": "근거", "limit": "한계"})
             st.dataframe(wt.drop(columns=["key"]), hide_index=True, use_container_width=True)
-            st.caption("항목 점수는 업종마다 20개 상권을 줄 세운 백분위(0~100). 트램 효과만 절대 척도(정거장 500m 안 비율 × "
-                       "업종 민감도). 업종 점포 5개 미만은 점수 없음, 도룡동은 성장·생존 제외")
-            st.markdown("**가중치 직접 조정** · 건설 전 기준(비율로 맞춤), 건설 후는 트램 10점 + 나머지 90점")
+            st.caption("항목 점수는 업종마다 20개 상권을 줄 세운 백분위(0~100). 건설 후에는 성장·땅값 흐름에 트램 예상 효과를 "
+                       "더한 값을 건설 전 분포에 대어 다시 매김 → 트램이 닿는 상권만 오르고 나머지는 그대로. "
+                       "업종 점포 5개 미만은 점수 없음, 도룡동은 성장·생존 제외")
+            st.markdown("**가중치 직접 조정** · 비율로 맞춤 (건설 전·후 같은 가중치)")
             cols = st.columns(len(W_DEF))
             new_w = {k: float(c_.slider(ITEM.get(k, k), 0, 50, int(v), 5)) for c_, (k, v) in zip(cols, ss.ind_w.items())}
             b1, b2 = st.columns([1, 5])
