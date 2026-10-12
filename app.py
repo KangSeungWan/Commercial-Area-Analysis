@@ -51,6 +51,7 @@ st_sum = read_csv(f"{OUT}/station_summary.csv")
 st_areas = read_csv(f"{OUT}/station_areas.csv")
 ind_area = read_csv(f"{OUT}/industry_by_area.csv")
 events = read_csv(f"{DATA}/area_events.csv")
+money = read_csv(f"{OUT}/tram_impact_money.csv")             # 트램 효과 금액 (analyze_tram_impact, 공시지가 기준)
 
 # 핵심 파일이 없으면 파이썬 오류 대신 안내를 띄우고 멈춤
 _miss = [k for k, v in {"상권 정보 (outputs/area_profile.csv)": prof, "트램 정거장 좌표 (data/tram_stations.csv)": stations,
@@ -319,6 +320,19 @@ SRC_TRAM = "outputs/tram_scenarios.csv"                    # 수준(낮음·기�
 
 def src(*files):
     return "출처: " + ", ".join(files)
+
+
+def eok(v):
+    """억 원 → '4,349억 원' / '1.40조 원'."""
+    return f"{v / 1e4:,.2f}조 원" if abs(v) >= 1e4 else f"{v:,.0f}억 원"
+
+
+def money_of(code, key):
+    """상권(또는 ALL)의 정거장 500m 안 땅값 증가액(억 원). 없으면 None."""
+    if money is None or code not in set(money.code):
+        return None
+    v = money.set_index("code").loc[code, f"gain_{key}_eok"]
+    return float(v) if pd.notna(v) else None
 
 
 def tram_range(row, lo="tram_effect_low", hi="tram_effect_high"):
@@ -631,7 +645,10 @@ if PAGE == "map":
                 for q in QC if cnt.get(q, 0))
                 + (f'<span class="sep">땅값 기준 트램 효과({scen}) 상권 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
                      f'({tram_range(prof[["tram_effect_low", "tram_effect_high"]].mean())})</span>'
-                   if tram_after else "") + '</div>', unsafe_allow_html=True)
+                   if tram_after else "")
+                + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
+                   f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
+                + '</div>', unsafe_allow_html=True)
             st.caption(src(f"{SRC_AREA} (진단·상권 값)", f"{SRC_TRAM} (트램 효과 수준)"))
 
     # ================================================================ ③ 지도 | 선택 상권
@@ -820,9 +837,14 @@ if PAGE == "map":
                   delta_color="off", delta_arrow="off", help=HELP["land_chg_5y_pct"])
         m3.metric("분기 폐업률", f"{r.close_rate_q_pct:.1f}%" if pd.notna(r.get("close_rate_q_pct")) else "-",
                   help=HELP["close_rate_q_pct"])
+        _mv = money_of(sel, SCEN_KEY)
         m4.metric("땅값 기준 트램 효과", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
-                  tram_range(r) if tram_after else f"건설 후 {r.tram_sel:+.1f}% ({scen})",
-                  delta_color="off", delta_arrow="off", help=TRAM_DEF + f" · 지금 시나리오: {scen}")
+                  ((f"500m 안 땅값 +{eok(_mv)} · " if _mv else "") + tram_range(r)) if tram_after
+                  else f"건설 후 {r.tram_sel:+.1f}% ({scen})" + (f" · +{eok(_mv)}" if _mv else ""),
+                  delta_color="off", delta_arrow="off",
+                  help=TRAM_DEF + f" · 지금 시나리오: {scen}"
+                       + (" · 금액 = 이 상권 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외, 시세로는 더 큼)"
+                          if _mv else ""))
         notes = [f"주요 업종: {r.top3_mid}"]
         if pd.notna(r.get("bad_pct")):
             notes.append(f"2021 실태조사({r.survey_dong}): 매출·이익 감소 {r.decline_pct:.0f}%, "

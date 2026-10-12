@@ -18,7 +18,8 @@ def _read(name):
 def _numbers():
     n = {"ph1": "+5.8%", "ph2": "-8.3%", "pool": "+1.8%", "dj_adj": "+9.3~15.2%", "low": "+0.9%", "base": "+1.8%",
          "high": "+5.8%", "base_ci": "", "land_rmse": "4.4%", "store_rmse": "2.7%", "ari": "0.49", "sil": "0.21", "k": "4",
-         "n_unc": "-", "rho_area": "0.07"}
+         "n_unc": "-", "rho_area": "0.07", "money_base": "-", "money_range": "-", "value500": "-", "money_750": "-",
+         "gap5_base": "-", "gap5_high": "-", "gap_year": "2034", "meta": "-", "meta_ci": "-", "meta_k": "-"}
     e = _read("landprice_effects.csv")
     if e is not None and len(e):
         for key, pat in (("ph1", "1호선 1단계"), ("ph2", "1호선 2단계"), ("pool", "1·2단계 합산")):
@@ -59,6 +60,30 @@ def _numbers():
     a = _read("area_scores.csv")
     if a is not None and "quadrant_uncertain" in a:
         n["n_unc"] = str(int(a.quadrant_uncertain.sum()))
+    m = _read("tram_impact_money.csv")
+    if m is not None and len(m):
+        r = m.set_index("code")
+        if "ALL" in r.index:
+            a = r.loc["ALL"]
+            n["money_base"] = f"{a.gain_base_eok / 1e4:,.2f}조 원"
+            n["money_range"] = f"{a.gain_low_eok / 1e4:,.2f}~{a.gain_high_eok / 1e4:,.2f}조"
+            n["value500"] = f"{a.value_eok / 1e4:,.1f}조 원"
+        if "ALL_750" in r.index:
+            n["money_750"] = f"{r.loc['ALL_750'].gain_base_eok / 1e4:,.2f}조 원"
+    ww = _read("tram_with_without.csv")
+    if ww is not None and len(ww):
+        e = ww[ww.year == ww.year.max()]
+        n["gap5_base"] = f"{e.gap_base_eok.sum():,.0f}억 원"
+        n["gap5_high"] = f"{e.gap_high_eok.sum():,.0f}억"
+        n["gap_year"] = str(int(ww.year.max()))
+    ms = _read("tram_meta_summary.csv")
+    if ms is not None and len(ms):
+        g = ms[ms.group == "전체 (트램·경전철)"]
+        if len(g):
+            g = g.iloc[0]
+            n["meta"] = f"{g.mu_pct:+.1f}%"
+            n["meta_ci"] = f"{g.ci_low_pct:.1f}~{g.ci_high_pct:.1f}%"
+            n["meta_k"] = str(int(g.k))
     v = _read("survey_validation.csv")
     if v is not None:
         r = v[v.level.str.contains("20개") & v.our_metric.str.contains("위험") & v.survey.str.contains("어려움")]
@@ -119,6 +144,8 @@ PAPERS = [
     ("비교", "Debrezion 외 2007(메타분석), Cervero·Duncan 2002, Cervero·Kang 2011(서울 BRT), "
              "Yang 외 2025(청두 트램), Ahn·Kim 2021(대구 3호선), Papon 외 2015(파리 T3), Byun·Jang 2024(대전 1호선)",
      "트램 주거 문헌 0~6% → 기본 {base}·높음 {high} 모두 그 범위 안. 지하철 효과를 지상 트램에 쓰므로 과대 가능"),
+    ("메타", "해외 트램·경전철 개통 전후 비교 {meta_k}곳 메타분석 (랜덤효과) — 영국·핀란드·폴란드·이탈리아·중국·미국·호주·대구",
+     "평균 {meta} (95% {meta_ci}) → 기본 {base}·높음 {high} 모두 이 범위 안 (analyze_tram_meta.py)"),
 ]
 
 FRAMEWORKS = [
@@ -148,6 +175,7 @@ def _lgbm_status():
 LIMITS = [
     "**매출 금액**: 위치별 실측 매출이 없어 격자 매출은 '구 매출 ÷ 점포 수' 합성값 → 매출 예측·잔차는 참고용",
     "**땅값 기준 트램 효과**: 매출 변화가 아니라 땅값으로 추정한 값. 지하철(1호선) 효과를 지상 트램에 빌려 씀 → 과대 가능, 범위(낮음~높음)로 제시",
+    "**금액 환산**: 공시지가 총액 × 효과 % 라서 효과 %의 불확실성(기본 구간 {base_ci})을 그대로 가짐. 도로·하천 등 공공 시설 땅 제외",
     "**1호선 효과의 불확실성**: 1단계 +5.8%(구간 0~12.8%), 2단계 −8.3%(개통 전부터 하락 추세), 트램 발표(2019) 뒤 정거장 주변 땅값 −1% 안팎",
     "**정거장 좌표**: 정거장 좌표는 공개 도면과 정류장 위치로 정한 값",
     "**자료 단절**: 상가정보 수집 기준이 2023-03·2024-12·2026-06 에 바뀜 → 대전 내 비중·구간 분리로 보정",
@@ -167,7 +195,22 @@ def _body(st):
     c[1].metric("지가 1년 예측 오차", n["land_rmse"], n.get("land_best", ""), delta_color="off", delta_arrow="off")
     c[2].metric("상권 유형", f"{n['k']}개", f"안정성 ARI {n['ari']}", delta_color="off", delta_arrow="off")
     c[3].metric("분석 단위", "20개 상권", "82개 행정동 · 293개 격자", delta_color="off", delta_arrow="off")
-    t1, t2, t5, t3, t4 = st.tabs(["데이터", "분석·모델", "프레임워크", "참고 논문", "검증·한계"])
+    t0, t1, t2, t5, t3, t4 = st.tabs(["트램 효과 크기", "데이터", "분석·모델", "프레임워크", "참고 논문", "검증·한계"])
+    with t0:
+        c = st.columns(3)
+        c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음~높음 {n['money_range']}",
+                    delta_color="off", delta_arrow="off")
+        c[1].metric(f"반등 기회 5곳 {n['gap_year']}년 차이", n["gap5_base"], f"높음 {n['gap5_high']}",
+                    delta_color="off", delta_arrow="off")
+        c[2].metric("해외 트램 평균 (메타분석)", n["meta"], f"95% {n['meta_ci']}", delta_color="off", delta_arrow="off")
+        st.caption(f"같은 효과 %(기본 {n['base']})를 정거장 500m 안 2026 공시지가 총액 {n['value500']}에 곱한 값. "
+                   "공시지가 기준이라 시세로는 더 큼. 개통 초기 1~4년 최대치이며 6년 뒤에는 약 35%로 줄어듦.")
+        for f, cap in [("tram_impact_money.png", "상권별 증가액 (막대 = 기본, 선 = 낮음~높음)"),
+                       ("tram_with_without.png", "트램 없을 때 vs 있을 때 (반등 기회 5곳)"),
+                       ("tram_distance_bands.png", f"거리별 효과: 1호선 역 750m까지 비슷하게 오름 → 영향권을 750m로 넓히면 기본 {n['money_750']}"),
+                       ("tram_meta_forest.png", "해외 트램·경전철 개통 효과와 대전 값 비교")]:
+            if os.path.exists(f"{OUT}/{f}"):
+                st.image(f"{OUT}/{f}", caption=cap, use_container_width=True)
     with t5:
         st.dataframe(pd.DataFrame(FRAMEWORKS, columns=["용도", "프레임워크", "쓴 곳"]), hide_index=True,
                      use_container_width=True)

@@ -228,3 +228,20 @@ python tram_model/run_all.py --from train_analyze
 - 지금: 성장(+업종별 트램 효과)·땅값 흐름(+500m 안 비율 × 효과 수준)에 트램 예상 효과를 더하고, '건설 전' 20개 상권 분포에 대어 다시 점수화
   → 트램이 닿지 않는 상권은 점수 그대로, 닿는 상권만 오름 (기본 시나리오 최대 +8점, 높음 +16점, 내려가는 곳 0)
 - 가중치는 건설 전·후 같음 (성장 30 · 규모 20 · 특화도 15 · 생존 20 · 땅값 15). 시나리오별 열: score_after_low/base/high
+
+## 트램 효과 크기 보기 + 해외 메타분석 (2026-10-12)
+효과 %(낮음 0.9 / 기본 1.8 / 높음 5.8)는 그대로 두고, **보여 주는 단위**만 금액·거리·경로로 바꿈.
+
+| 스크립트 | 하는 일 | 출력 |
+|---|---|---|
+| analyze_tram_meta.py | 해외 트램·경전철 개통 전후 비교 10곳 랜덤효과 메타분석 (`data/literature_tram_meta.csv`), 대전 값은 `landprice_effects.csv` 에서 읽음 | tram_meta_estimates.csv, tram_meta_summary.csv, tram_meta_forest.png |
+| analyze_tram_impact.py | ① 정거장 500m 안 필지 2026 공시지가 총액 × 효과 % → 증가액(억 원) ② 1호선 역 거리 띠(100m 단위)별 효과 ③ 반등 기회 5곳 트램 없을 때/있을 때 경로와 차이 금액 | parcel_value.csv.gz(필지 면적·가격, 있으면 재사용), tram_impact_money.csv/.png, tram_impact_station.csv, tram_distance_bands.csv/.png, tram_with_without.csv/.png |
+
+- 필지 면적: 최신 개별공시지가 shp 의 폴리곤 면적(EPSG:5186, ㎡). dbf 의 A13 면적은 3%만 있어 쓰지 않음(있는 곳은 폴리곤과 상관 0.998)
+- 가격: 같은 dbf 의 2026 공시가(A9), 없으면 1·2년 전 값(A16·A17)
+- 도로·하천·구거·철도·제방·유지·공원은 합계에서 제외
+- 금액은 공시지가 기준(시세보다 낮음), 개통 초기 1~4년 최대치
+- 거리 띠 결과: 1호선 1단계 효과는 역 750m까지 비슷(+4.5~6.9%) → '역 바로 앞 집중'은 대전 자료로 확인되지 않음. 대신 영향권 750m 변형 금액(`ALL_750`)을 함께 계산
+- `landprice_long.pkl` 을 못 여는 환경(pyarrow 없음)에서는 원본 D151 에서 필요한 연도만 읽음
+- run_all: `analyze_tram_meta` 는 `analyze_tram_benchmark` 다음, `analyze_tram_impact` 는 `score_areas` 다음
+- 앱: '분석 방법' 팝업 첫 탭 '트램 효과 크기'(금액·경로·거리·메타 그림), 결론 띠에 '정거장 500m 안 땅값 +○억 원', 상권 상세 트램 지표에 상권별 금액
