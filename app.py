@@ -1,12 +1,12 @@
 import json, os, sys
 import numpy as np
 import streamlit as st, pandas as pd, pydeck as pdk, altair as alt
-from google import genai
 
 st.set_page_config(page_title="대전 트램 상권 지도", layout="wide", page_icon="🚈")
 sys.path.insert(0, "tram_model")
 from tram_route import route_paths
 from about_page import show_about                                      # 분석 방법 팝업
+import ai_comment as ac                                                # AI 상권 해설 (실시간 + 저장본)
 
 OUT, DATA = "tram_model/outputs", "tram_model/data"
 OPEN_YEAR = 2030                                           # 트램 2호선 개통 예정 연도
@@ -24,10 +24,23 @@ def read_json(path):
     return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else None
 
 
+def setting(name, default=None):
+    """secrets.toml → 환경변수 순서로 설정값을 찾음. 파일이 없거나 깨져도 오류 없이 default."""
+    try:
+        v = st.secrets.get(name)
+    except Exception:
+        v = None
+    return v or os.environ.get(name) or default
+
+
+@st.cache_data
+def load_ai_saved(mtime):                                  # 파일이 바뀌면(mtime) 다시 읽음
+    return ac.load_saved()
+
+
 stations = read_csv(f"{DATA}/tram_stations.csv")
 if stations is None:
     stations = read_csv(f"{DATA}/tram_stations_approx.csv")
-stations = stations.sort_values("station_no")
 prof = read_csv(f"{OUT}/area_profile.csv")
 gj = read_json(f"{OUT}/sangkwon_polygons.geojson")           # 상권 핵심 영역 (점포 밀집, 지표 계산 범위)
 rg = read_json(f"{OUT}/sangkwon_regions.geojson")            # 대전 전체를 나눈 권역 (표시용)
@@ -38,6 +51,16 @@ st_sum = read_csv(f"{OUT}/station_summary.csv")
 st_areas = read_csv(f"{OUT}/station_areas.csv")
 ind_area = read_csv(f"{OUT}/industry_by_area.csv")
 events = read_csv(f"{DATA}/area_events.csv")
+
+# 핵심 파일이 없으면 파이썬 오류 대신 안내를 띄우고 멈춤
+_miss = [k for k, v in {"상권 정보 (outputs/area_profile.csv)": prof, "트램 정거장 좌표 (data/tram_stations.csv)": stations,
+                        "상권 경계 (outputs/sangkwon_polygons.geojson)": gj}.items() if v is None]
+if _miss:
+    st.title("대전 트램 상권 지도")
+    st.error("앱을 여는 데 필요한 분석 결과 파일이 없습니다: " + ", ".join(_miss))
+    st.markdown("프로젝트 폴더에서 `python tram_model/run_all.py` 를 실행해 결과 파일을 만든 뒤 이 페이지를 새로 고치세요.")
+    st.stop()
+stations = stations.sort_values("station_no")
 
 # ── 색 (진단 4분류 색은 지도·배지·요약·표에서 똑같이 사용) ──
 QC = {"성장 지속": [34, 139, 84], "트램 반등 기회": [235, 130, 20], "쇠퇴 우려": [200, 50, 50], "정체·안정": [140, 140, 140]}
@@ -55,6 +78,7 @@ BREAKS = ["2023-03", "2024-12", "2026-06"]                 # 점포 자료 수�
 st.markdown("""<style>
 .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600;color:#fff;margin-left:6px;vertical-align:middle}
 .badge.gray{background:#eef0f3;color:#333}
+.ai-saved{display:inline-block;padding:2px 10px;border-radius:6px;font-size:13px;font-weight:600;color:#2a332a;background:#eff2e8;border:1px solid #c9d5c5}
 .card{border:1px solid #e3e6ea;border-radius:10px;padding:12px 16px;margin:4px 0 10px 0;background:#fafbfc}
 .card .t{font-size:20px;font-weight:700}.card .code{color:#888;font-size:14px;margin-right:6px}
 .card .k{margin-top:6px;color:#333;font-size:14px}.card .k b{font-size:16px}
@@ -233,50 +257,24 @@ NM = dict(zip(prof.code, prof.name))
 names = {c: f"{c} {n}" for c, n in NM.items()}
 order = list(prof.code)
 STN = dict(zip(stations.station_no.astype(int), stations.station_no.astype(str) + " " + stations.get("station_name", "")))
-TRAM_DEF = "개통 초기 1~4년, 정거장 500m 안 땅값 기준 추정 효과(%) · 매출 변화가 아님"
+TRAM_DEF = ac.TRAM_DEF
 
 # 트램 시나리오 (이름·설명은 결과 파일 tram_scenarios.csv 에서 → 실제 값과 항상 일치)
 _ts = read_csv(f"{OUT}/tram_scenarios.csv")
-_TS = {r.scenario: r for r in _ts.itertuples()} if _ts is not None else {}
-_COL = {"base": "tram_effect", "low": "tram_effect_low", "high": "tram_effect_high"}
-SCEN, SCEN_HELP = {}, []
-for _k in ("base", "low", "high"):
-    _r = _TS.get(_k)
-    _lab = f"{_r.label} {_r.effect_pct:+.1f}%" if _r is not None else {"base": "기본", "low": "낮음", "high": "높음"}[_k]
-    if _COL[_k] in prof.columns:
-        SCEN[_lab] = _COL[_k]
-        if _r is not None:
-            SCEN_HELP.append(f"{_r.label} {_r.effect_pct:+.1f}%: {_r.source}"
-                             + (f" (95% 구간 {_r.ci95}%)" if isinstance(_r.ci95, str) and _r.ci95 else ""))
+SCEN, SCEN_HELP, _TS = ac.scenarios(_ts, prof.columns)
 
 # 업종 점수 (score_industry.py)
 IS = read_csv(f"{OUT}/industry_scores.csv")
 ISW = read_csv(f"{OUT}/industry_score_weights.csv")
-_IND_ORDER = ["음식", "소매", "수리·개인", "교육", "보건의료", "숙박"]
-IND_LIST = ([i for i in _IND_ORDER if i in set(IS.industry)] + sorted(set(IS.industry) - set(_IND_ORDER))) \
-    if IS is not None else []
-W_DEF = {r.key: float(r.weight_before) for r in ISW.itertuples() if r.key != "tram"} if ISW is not None else {}
+IND_LIST = ac.ind_list(IS)
+W_DEF = ac.default_weights(ISW)
 ITEM = ISW.set_index("key").item.to_dict() if ISW is not None else {}
 ss.setdefault("ind_w", dict(W_DEF))
 
 
 def ind_scores(after, w=None):
-    """업종 점수 = 항목 점수(0~100) 가중 평균.
-    건설 후 = 성장·땅값 흐름에 트램 예상 효과를 더한 값을 '건설 전' 분포에 대어 다시 매긴 항목 점수를 씀
-    → 트램이 닿지 않는 상권은 점수 그대로, 닿는 상권만 오름."""
-    w = dict(w or ss.ind_w)
-    w = {k: v for k, v in w.items() if k != "tram"}
-    tot = sum(w.values()) or 1.0
-    w = {k: v / tot * 100 for k, v in w.items()}
-    sk = globals().get("SCEN_KEY", "base")
-    cols = {k: (f"s_{k}_after_{sk}" if after and f"s_{k}_after_{sk}" in IS.columns else f"s_{k}") for k in w}
-    S = IS[[cols[k] for k in w]].values
-    Wm = np.where(~np.isnan(S), np.array(list(w.values())), 0.0)
-    den = Wm.sum(1)
-    sc = np.where(den > 0, (np.nan_to_num(S) * Wm).sum(1) / np.where(den > 0, den, 1), np.nan)
-    out = IS.assign(score=np.round(sc, 1), **{f"sa_{k}": IS[cols[k]] for k in w})
-    out.loc[IS.score_before.isna(), "score"] = np.nan          # 업종 점포가 거의 없는 상권
-    return out, w
+    """업종 점수 (계산은 ai_comment.score_industries, AI 해설과 같은 식)."""
+    return ac.score_industries(IS, w or ss.ind_w, after, globals().get("SCEN_KEY", "base"))
 
 
 # ================================================================ 커버 화면 (처음 들어오면)
@@ -719,89 +717,65 @@ if PAGE == "map":
                 st.altair_chart(store_chart(sel), use_container_width=True)
 
     def area_context(code):
-        """AI 해설용 상권 정보 묶음."""
-        r = info.loc[code]
-        g = lambda k, nd=1: (None if k not in r or pd.isna(r[k]) else (round(float(r[k]), nd) if not isinstance(r[k], str) else r[k]))
-        ctx = {"상권": f"{code} {r['name']} ({r.gu}, {r.type})",
-               "유형(K-means)": g("type_name"), "진단": g("quadrant"),
-               "진단 안정도(15가지 변형 중 같은 진단 비율)": g("quadrant_stability", 2),
-               "상대 쇠퇴 위험 점수(0~100, 20개 상권 중 순위 기반)": g("risk_score", 0), "위험 주요 원인": g("risk_drivers"),
-               "상대 성장 가능 점수(0~100)": g("growth_score", 0), "성장 주요 근거": g("growth_drivers"),
-               "점포 수(2026-06)": g("n_stores", 0), "주요 업종": g("top3_mid"),
-               "대전 내 점포 비중 5년 변화(%)": g("store_share_chg_5y_pct"), "분기 폐업률(%, 최근 3년)": g("close_rate_q_pct", 2),
-               "공시지가 5년·10년 상승률(%)": (g("land_chg_5y_pct"), g("land_chg_10y_pct")),
-               "가까운 트램 정거장": f"{g('nearest_tram', 0)}번, {g('nearest_tram_m', 0)}m",
-               "트램 효과(개통 초기 1~4년, 땅값 기준 추정 %) 낮음/기본/높음": (g("tram_effect_low", 2), g("tram_effect", 2), g("tram_effect_high", 2))}
-        if fc is not None and code in set(fc.code):
-            f = fc[(fc.code == code)].set_index("year")
-            y = f.index.max()
-            ctx[f"{y}년 공시지가 예측(2026=100): 트램 없음 / 트램 기본 / 80% 범위"] = (
-                round(f.loc[y, "base_path"], 1), round(f.loc[y, "tram_base"], 1), f"{f.loc[y, 'lo80']:.0f}~{f.loc[y, 'hi80']:.0f}")
-        if "bad_pct" in r and pd.notna(r.get("bad_pct")):
-            ctx["2021 실태조사(소속 행정동)"] = f"{r.survey_dong}: 매출·이익 감소 {r.decline_pct:.0f}%, 폐업·전환 고려 " \
-                                          f"{r.closing_pct:.0f}% (대전 평균 74%·7%, 코로나 시기)"
-        if ind_area is not None and code in set(ind_area.iloc[:, 0]):
-            ia = ind_area.set_index(ind_area.columns[0]).loc[code]
-            ctx["업종 비율 변화 2016→2026(%p)"] = {c.replace("_변화p", ""): ia[c] for c in ia.index if c.endswith("_변화p")}
-        if IS is not None:
-            _b, _ = ind_scores(False)
-            _a, _ = ind_scores(True)
-            _b, _a = _b[_b.code == code].set_index("industry").score, _a[_a.code == code].set_index("industry").score
-            ctx["업종 점수(100점, 20개 상권 중 상대, 트램 건설 전→후)"] = {
-                i: (f"{_b[i]:.0f}→{_a[i]:.0f}" if pd.notna(_b.get(i)) else "점포 부족") for i in IND_LIST}
-        if events is not None:
-            ev = events[events.area_codes.fillna("").str.contains(code)]
-            if len(ev):
-                ctx["과거 사건"] = [f"{e.date} {e.description}" for e in ev.itertuples()]
-        if st_areas is not None:
-            sa = st_areas[st_areas.code == code]
-            if len(sa):
-                ctx["트램 정거장 500m 영향권에 드는 점포"] = [f"{int(x.station_no)}번 정거장 {int(x.stores_in_500m)}개"
-                                                   f"({x.share_of_area_pct:.0f}%)" for x in sa.itertuples()]
-        return ctx
+        """AI 해설용 상권 정보 묶음 (지금 화면의 시나리오·업종 가중치 기준)."""
+        return ac.area_context(code, info, fc, IS, ss.ind_w, ind_area, events, st_areas, SCEN_KEY)
 
     @st.cache_data(show_spinner=False)
     def ai_area(ctx_text, scen_text, nonce=0):
-        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-        prompt = f"""너는 대전 상권 분석가야. 아래는 우리 팀이 공공데이터로 분석한 상권 정보야.
-{ctx_text}
+        return ac.generate(ac.build_prompt(ctx_text, scen_text, SCEN_HELP),
+                           setting("GEMINI_API_KEY"), setting("GEMINI_MODEL", ac.DEFAULT_MODEL))
 
-[지표 설명]
-- 점수: 20개 상권 안 상대 순위(0~100). 절대적 쇠퇴 판정이 아님
-- 진단: 상대 쇠퇴 위험 50점 이상이면서 상권 점포 절반 이상이 트램 정거장 500m 안이면 '트램 반등 기회', 아니면 '쇠퇴 우려', 위험 50 미만이면 '성장 지속'/'정체·안정'. 진단 안정도가 0.8 미만이면 '불확실'이라고 꼭 말할 것
-- 트램 효과: {TRAM_DEF}. 시나리오 근거: {' / '.join(SCEN_HELP)}. 지하철 효과를 지상 트램에 빌려 쓴 것이라 과대일 수 있음. 선택된 시나리오: {scen_text}
-- 업종 점수: 성장·규모·특화도·생존·땅값(+건설 후 트램 효과)을 업종 안 20개 상권 순위로 합친 100점 점수
-- 공시지가 예측: 상권별 ARIMA + 트램 효과, 80% 범위가 넓어 비교용
-- 매출 금액은 위치별 실측이 없어 사용하지 않음
-
-[작성 형식] 한국어, 각 항목 1~2줄, 숫자 근거를 괄호로 인용
-1. 한 줄 요약 (현재 상태: 성장/정체/쇠퇴)
-2. 근거 수치 3개
-3. 트램 개통 기회
-4. 위험 요인
-5. 유리한 업종 2개와 조심할 업종 1개 (업종 점수·업종 비율 변화 근거)
-6. 상권 활성화 정책 제안 1개
-추정치는 '추정'이라고 표시하고, 위 정보에 없는 사실은 지어내지 마."""
-        return client.models.generate_content(model="gemini-3.8-flash", contents=prompt).text
+    def ai_error_box(err):
+        with st.expander("오류 내용 보기 (발표자용)"):
+            st.code(err, language=None)
 
     st.markdown("#### AI 상권 해설")
     key = (sel, scen)
     ss.setdefault("ai", {})
-    have = key in ss.ai
-    if st.button("AI 해설 다시 받기" if have else "AI 해설 받기", key="ai_btn"):
-        ctx = json.dumps(area_context(sel), ensure_ascii=False, default=str, indent=1)
-        with st.spinner("AI가 분석 중... (10초 정도)"):
+    res = ss.ai.get(key)
+    saved = ac.saved_entry(load_ai_saved(ac.SAVED_PATH.stat().st_mtime if ac.SAVED_PATH.exists() else 0), sel)
+    if st.button("AI 해설 다시 받기" if res else "AI 해설 받기", key="ai_btn"):
+        n = ss.get("_ai_n", 0) + (1 if res else 0)
+        with st.spinner("AI가 해설을 쓰는 중입니다. 10초쯤 걸립니다."):
             try:
-                ss.ai[key] = ai_area(ctx, scen, ss.get("_ai_n", 0) + (1 if have else 0))
-                ss._ai_n = ss.get("_ai_n", 0) + (1 if have else 0)
+                res = {"src": "live", "text": ai_area(ac.context_text(area_context(sel)), scen, n)}
+                ss._ai_n = n
             except Exception as e:
-                st.error(f"AI 호출 실패: {e}")
-    if key in ss.ai:
-        st.markdown(ss.ai[key])
-        with st.expander("AI 에게 보낸 정보 보기"):
+                k_ = setting("GEMINI_API_KEY")
+                err = f"{type(e).__name__}: {e}"
+                err = err.replace(k_, "****") if k_ else err          # 오류 원문에 키가 섞여도 화면에 나오지 않게
+                why = "API 키가 설정되어 있지 않습니다." if isinstance(e, ac.NoApiKey) else "인터넷 연결이나 AI 서비스에 문제가 있습니다."
+                if res and res["src"] == "live":                       # 앞서 받은 실시간 해설은 그대로 둠
+                    res = {**res, "err": err, "why": why}
+                else:
+                    res = {"src": "saved" if saved else "none", "err": err, "why": why}
+        ss.ai[key] = res
+
+    if res and res["src"] == "live":
+        if res.get("err"):
+            st.caption(f"새 해설을 받지 못해 앞서 받은 해설을 그대로 보여 드립니다. {res['why']}")
+        st.markdown(res["text"])
+        if res.get("err"):
+            ai_error_box(res["err"])
+        with st.expander("AI에게 보낸 정보 보기"):
             st.json(area_context(sel))
+    elif res and res["src"] == "saved" and saved:
+        st.markdown(f'<span class="ai-saved">미리 만들어 둔 해설({saved["generated_at"][:10]})</span>',
+                    unsafe_allow_html=True)
+        st.caption(f"지금은 AI 해설을 실시간으로 불러올 수 없어 미리 만들어 둔 해설을 보여 드립니다. {res['why']}"
+                   + (f" 이 해설은 '{saved['scenario']}' 시나리오와 기본 업종 가중치를 기준으로 만들었습니다."
+                      if saved["scenario"] else ""))
+        st.markdown(saved["text"])
+        ai_error_box(res["err"])
+        with st.expander("이 해설을 만들 때 쓴 정보 보기"):
+            st.json(ac.area_context(sel, info, fc, IS, W_DEF, ind_area, events, st_areas, "base"))
+    elif res:
+        st.warning(f"지금은 AI 해설을 불러올 수 없습니다. {res['why']} 잠시 뒤 'AI 해설 다시 받기'를 눌러 주세요.")
+        st.caption("미리 만들어 둔 해설도 없습니다. 발표 전에 python tram_model/make_ai_comments.py 를 실행해 두세요.")
+        ai_error_box(res["err"])
     else:
-        st.caption("진단·예측·트램 효과·업종 점수를 근거로 해설을 만듭니다. 받은 해설은 다른 상권을 보고 와도 남아 있습니다.")
+        st.caption("진단·예측·트램 효과·업종 점수를 근거로 해설을 만듭니다. 받은 해설은 다른 상권을 보고 와도 남아 있습니다."
+                   + (" 실시간 호출이 안 되면 미리 만들어 둔 해설을 보여 드립니다." if saved else ""))
 
 # ================================================================ 페이지 2: 업종 점수
 elif PAGE == "industry":
