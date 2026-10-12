@@ -1,0 +1,3 @@
+[theme]
+# DESIGN.md: 선택 상태·주 버튼 = 숲색 잉크 (Streamlit 기본 빨강은 진단 "쇠퇴 우려" 색과 겹침)
+primaryColor = "#0a1d08"
