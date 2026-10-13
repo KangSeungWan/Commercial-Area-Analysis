@@ -257,3 +257,10 @@ python tram_model/run_all.py --from train_analyze
 - 실행: `python tram_model/analyze_line1_permits.py` (약 20초), run_all 에서는 analyze_line1_trend 다음
 - 출력: `outputs/line1_permits_effects.csv`, `line1_permits_sector.csv`, `line1_permits_es.csv`, `line1_permits_series.csv`, 그림 `line1_permits.png`, `line1_permits_sector.png`
 - 결과(2026-10-13): 전체 점포 +4.7%(−3.3~+13.3, 무작위 p 0.17, 확인 안 됨) / **카페 +24.8%(+8.0~+44.2)**, **빵·과자 +18.3%(+3.3~+35.4)** 세 검사 통과 / 편의점(격자 24개로 적음)·간편식·주점·식사 음식점 효과 확인 안 됨. 효과는 개통 3년 뒤부터 커짐(2009~14 +5~9%)
+
+### 업종 점수에 1호선 인허가 결과 반영 (2026-10-13, `score_industry.py`)
+- 음식 업종의 '건설 후' 트램 효과 = 상권 음식점 중 업종 그룹 비중 × 대전 1호선 인허가 점포 효과 (`food_tram_effects()`)
+  - 기본: 카페 +24.8%, 빵·과자 +18.3%(세 검사 통과), 나머지 그룹 0 / 낮음: 두 그룹의 95% 하한 / 높음: 모든 그룹 추정치
+  - 상권 비중은 지금 영업 중인 인허가 점포를 상권 경계(sangkwon_polygons.geojson) 안에서 셈 → `outputs/industry_food_tram_mix.csv`
+  - 인허가 파일이 없으면 예전 방식(땅값 효과 × 해외 업종 비율)으로 자동 복귀. 다른 5개 업종은 그대로
+- 결과: 음식 트램 효과(기본) 대전역·중앙시장 1.77→4.34%, 대전복합터미널 1.52→4.23%(카페 비중 16~17%), 소제동 1.77→1.54%(카페 4%). 순위 변화는 만년동 7→6위, 대전복합터미널 14→12위
