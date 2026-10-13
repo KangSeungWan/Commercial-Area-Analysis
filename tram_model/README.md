@@ -245,3 +245,15 @@ python tram_model/run_all.py --from train_analyze
 - `landprice_long.pkl` 을 못 여는 환경(pyarrow 없음)에서는 원본 D151 에서 필요한 연도만 읽음
 - run_all: `analyze_tram_meta` 는 `analyze_tram_benchmark` 다음, `analyze_tram_impact` 는 `score_areas` 다음
 - 앱: '분석 방법' 팝업 첫 탭 '트램 효과 크기'(금액·경로·거리·메타 그림), 결론 띠에 '정거장 500m 안 땅값 +○억 원', 상권 상세 트램 지표에 상권별 금액
+
+
+## 1호선 개통 전후 점포 이중차분 — `analyze_line1_permits.py` (2026-10-13)
+- 데이터: 공공데이터포털 **행정안전부_식품_일반음식점·휴게음식점·제과점영업**(대전 부분, cp949) → `data/raw/permits/`
+  - 파일이 없으면 오픈API로: `python tram_model/download_permits_api.py 인증키` (대전 5개 구 코드 3640000~3680000)
+  - 폐업일 기록이 2001년부터 → 분석 기간 2002~2014 (그 전은 점포 수 과소)
+- 방법: 1호선 1단계(2006-03) 역 500m vs 1~3km, 250m 격자 × 연도, 격자·연도 고정효과 이중차분, 격자 군집 표준오차
+  - 검사: 반경 300/750m, 비교군 1~2km, 가짜 개통연도 2004, 가짜 처리군 200회(무작위 추론)
+  - 업종 그룹 6개(카페·빵·과자·편의점·간편식·주점·식사 음식점), 업태구분명으로 분류
+- 실행: `python tram_model/analyze_line1_permits.py` (약 20초), run_all 에서는 analyze_line1_trend 다음
+- 출력: `outputs/line1_permits_effects.csv`, `line1_permits_sector.csv`, `line1_permits_es.csv`, `line1_permits_series.csv`, 그림 `line1_permits.png`, `line1_permits_sector.png`
+- 결과(2026-10-13): 전체 점포 +4.7%(−3.3~+13.3, 무작위 p 0.17, 확인 안 됨) / **카페 +24.8%(+8.0~+44.2)**, **빵·과자 +18.3%(+3.3~+35.4)** 세 검사 통과 / 편의점(격자 24개로 적음)·간편식·주점·식사 음식점 효과 확인 안 됨. 효과는 개통 3년 뒤부터 커짐(2009~14 +5~9%)

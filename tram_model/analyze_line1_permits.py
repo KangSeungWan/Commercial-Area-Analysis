@@ -212,7 +212,8 @@ def _parse_date(s):
 def load_permits():
     files = sorted(glob.glob(os.path.join(RAW_DIR, "**", "*.csv"), recursive=True))
     if not files:
-        sys.exit(f"인허가 파일이 없습니다: {RAW_DIR} 에 csv 를 넣어 주세요.")
+        print(f"인허가 파일이 없어 건너뜀: {RAW_DIR} 에 csv 를 넣으면 실행됩니다.")
+        sys.exit(0)
     frames = []
     for path in files:
         df = _read_csv(path)
@@ -388,6 +389,54 @@ def pct(b):
     return 100 * (math.exp(b) - 1)
 
 
+# ---------------------------------------------------------------- 업종 그룹
+SECTOR_ORDER = ["카페", "빵·과자", "편의점", "간편식(분식·패스트푸드·조리판매)", "주점", "식사 음식점"]
+CAFE_KINDS = {"커피숍", "다방", "전통찻집", "떡카페", "키즈카페", "아이스크림", "까페", "라이브카페"}
+BAR_KINDS = {"호프/통닭", "정종/대포집/소주방", "감성주점"}
+SNACK_KINDS = {"패스트푸드", "일반조리판매", "기타 휴게음식점", "푸드트럭"}
+INSTITUTION_KINDS = {"백화점", "철도역구내", "유원지", "고속도로", "관광호텔", "극장"}
+
+
+def sector_of(df):
+    kind = df["kind"].fillna("").astype(str).str.strip()
+    svc = df["service"].fillna("").astype(str)
+    out = pd.Series("식사 음식점", index=df.index)
+    out[svc.str.contains("휴게")] = "간편식(분식·패스트푸드·조리판매)"
+    out[kind.isin(SNACK_KINDS)] = "간편식(분식·패스트푸드·조리판매)"
+    out[kind.isin(BAR_KINDS)] = "주점"
+    out[kind.isin(CAFE_KINDS)] = "카페"
+    out[kind == "편의점"] = "편의점"
+    out[svc.str.contains("제과") | (kind == "과자점")] = "빵·과자"
+    out[kind.isin(INSTITUTION_KINDS)] = "기타(시설 안 매점)"
+    return out
+
+
+def ri_test(panel, b_obs, n=200, seed=0):
+    """무작위 추론: 비교군 격자 중 처리군과 같은 수를 가짜 처리군으로 n번 뽑아 효과 분포를 만듦."""
+    rng = np.random.default_rng(seed)
+    ctrl = panel[panel.treat == 0].copy()
+    cells = ctrl["cell"].unique()
+    k = min(panel.loc[panel.treat == 1, "cell"].nunique(), len(cells) // 2)
+    draws = []
+    for _ in range(n):
+        fake = set(rng.choice(cells, size=k, replace=False))
+        ctrl["fake"] = ctrl["cell"].isin(fake).astype(int)
+        draws.append(did(ctrl, "fake", OPEN_YEAR)[0])
+    draws = np.array(draws)
+    p = float((np.abs(draws) >= abs(b_obs)).mean())
+    return p, (float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975)))
+
+
+def verdict(p_main, p_fake, p_ri):
+    if p_main < 0.05 and p_fake >= 0.1 and p_ri < 0.05:
+        return "확실 (세 검사 모두 통과)"
+    if p_main < 0.1 and p_fake >= 0.1 and p_ri < 0.1:
+        return "약한 근거"
+    if p_fake < 0.1:
+        return "개통 전부터 달랐음 (해석 주의)"
+    return "효과 확인 안 됨"
+
+
 # ---------------------------------------------------------------- 메인
 def build_sample(p, treat_r=TREAT_R, ctrl_min=CTRL_MIN, ctrl_max=CTRL_MAX):
     q = p.copy()
@@ -464,21 +513,40 @@ def main():
 
     print("6) 가짜 검정")
     add(f"가짜 개통연도 {FAKE_YEAR} ({YEARS[0]}~2005)", *did(cp, "treat", FAKE_YEAR, years=range(YEARS[0], 2006)), "0 근처여야 통과")
-    rng = np.random.default_rng(0)
-    ctrl_cells = cp.loc[cp.treat == 0, "cell"].unique()
-    fake = set(rng.choice(ctrl_cells, size=min(len(ctrl_cells) // 3, max(1, cp[cp.treat == 1].cell.nunique())), replace=False))
-    pc = cp[cp.treat == 0].copy()
-    pc["fake"] = pc.cell.isin(fake).astype(int)
-    add("가짜 처리군 (비교군 안 무작위)", *did(pc, "fake", OPEN_YEAR), "0 근처여야 통과")
+    b_main = did(cp, "treat", OPEN_YEAR)[0]
+    ri_p, ri_q = ri_test(cp, b_main)
+    note = f"가짜 효과 95% 범위 {pct(ri_q[0]):+.1f}~{pct(ri_q[1]):+.1f}%, 기본 효과보다 큰 비율(무작위 p) {ri_p:.3f}"
+    rows.append({"분석": "가짜 처리군 200회 (비교군 안 무작위)", "하한_%": round(pct(ri_q[0]), 1),
+                 "상한_%": round(pct(ri_q[1]), 1), "무작위_p": round(ri_p, 3), "격자수": cp.cell.nunique(), "비고": note})
+    print(f"  가짜 처리군 200회: {note}")
 
-    print("7) 업종별")
-    for svc, g in q.groupby("service"):
+    print("7) 업종 그룹별 (기본 + 가짜 개통연도 + 가짜 처리군 200회)")
+    q["sector"] = sector_of(q)
+    p["sector"] = sector_of(p)
+    print("  업종 그룹 점포 수:", q["sector"].value_counts().to_dict())
+    sec_rows = []
+    for sec in SECTOR_ORDER:
+        g = q[q.sector == sec]
         if g.cell.nunique() < 30:
             continue
         sp = panel_for(g)
         if sp.treat.nunique() < 2:
             continue
-        add(f"업종: {svc}", *did(sp, "treat", OPEN_YEAR))
+        b, se, G = did(sp, "treat", OPEN_YEAR)
+        bf, sef, _ = did(sp, "treat", FAKE_YEAR, years=range(YEARS[0], 2006))
+        rp, rq = ri_test(sp, b)
+        add(f"업종: {sec}", b, se, G, f"무작위 p={rp:.3f}")
+        rows[-1]["무작위_p"] = round(rp, 3)
+        sec_rows.append({"업종": sec, "점포수": len(g), "격자수": G,
+                         "효과_%": round(pct(b), 1), "하한_%": round(pct(b - 1.96 * se), 1),
+                         "상한_%": round(pct(b + 1.96 * se), 1), "p값": round(_pval(b / se), 3),
+                         "가짜연도_%": round(pct(bf), 1), "가짜연도_p": round(_pval(bf / sef), 3) if sef > 0 else np.nan,
+                         "무작위_p": round(rp, 3),
+                         "판정": verdict(_pval(b / se), _pval(bf / sef) if sef > 0 else 1, rp)})
+        print(f"    가짜 개통연도 {pct(bf):+.1f}% (p={_pval(bf / sef):.2f}), 판정: {sec_rows[-1]['판정']}")
+    sec_df = pd.DataFrame(sec_rows)
+    sec_df.to_csv(os.path.join(OUT_DIR, "line1_permits_sector.csv"), index=False, encoding="utf-8-sig")
+    plot_sector(sec_df)
 
     eff = pd.DataFrame(rows)
     eff.to_csv(os.path.join(OUT_DIR, "line1_permits_effects.csv"), index=False, encoding="utf-8-sig")
@@ -505,6 +573,43 @@ def main():
 
 def _pval(z):
     return math.erfc(abs(z) / math.sqrt(2))
+
+
+def _korean_font(plt):
+    from matplotlib import font_manager
+    for f in ("AppleGothic", "Apple SD Gothic Neo", "NanumGothic", "Noto Sans CJK KR", "Noto Sans CJK JP", "Malgun Gothic"):
+        if any(f == x.name for x in font_manager.fontManager.ttflist):
+            plt.rcParams["font.family"] = f
+            break
+    plt.rcParams["axes.unicode_minus"] = False
+
+
+def plot_sector(sec):
+    if sec.empty:
+        return
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    _korean_font(plt)
+    d = sec.iloc[::-1].reset_index(drop=True)
+    sure = d["판정"].str.startswith("확실")
+    fig, ax = plt.subplots(figsize=(9, 0.55 * len(d) + 1.6))
+    ax.axvline(0, color="#444", lw=0.8)
+    for i, r in d.iterrows():
+        c = "#2a6fdb" if sure[i] else "#9a9a9a"
+        ax.plot([r["하한_%"], r["상한_%"]], [i, i], color=c, lw=2)
+        ax.plot(r["효과_%"], i, "o", color=c, ms=8)
+        ax.text(max(r["상한_%"], 0) + 1.5, i, f"{r['효과_%']:+.1f}%  (점포 {r['점포수']:,})", va="center", fontsize=9,
+                color="#222" if sure[i] else "#777")
+    ax.set_yticks(range(len(d)))
+    ax.set_yticklabels(d["업종"])
+    ax.set_xlabel("역 500m 안 영업 중 점포, 1~3km 대비 변화 (%), 2002~2014")
+    ax.set_title("1호선 개통 뒤 늘어난 것은 카페와 빵·과자점 (파란색 = 세 가지 검사 통과)", fontsize=11, loc="left")
+    ax.set_xlim(min(-25, d["하한_%"].min() - 3), d["상한_%"].max() + 22)
+    ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUT_DIR, "line1_permits_sector.png"), dpi=150)
+    plt.close(fig)
 
 
 def plot(series, es):
