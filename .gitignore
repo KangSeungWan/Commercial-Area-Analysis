@@ -10,3 +10,4 @@ tram_model/outputs/landprice_parcels.csv.gz
 *.dwg
 *.dxf
 *.zip
+tram_model/outputs/parcel_value.csv.gz

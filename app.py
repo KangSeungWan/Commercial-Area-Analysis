@@ -6,6 +6,7 @@ st.set_page_config(page_title="대전 트램 상권 지도", layout="wide", page
 sys.path.insert(0, "tram_model")
 from tram_route import route_paths
 from about_page import show_about                                      # 분석 방법 팝업
+from tram_evidence_page import open_tram_evidence                      # 트램 효과 근거 팝업
 import ai_comment as ac                                                # AI 상권 해설 (실시간 + 저장본)
 
 OUT, DATA = "tram_model/outputs", "tram_model/data"
@@ -113,6 +114,11 @@ h1.page-t{font-family:'Newsreader','Noto Serif KR',serif;font-weight:300;font-si
 .maphead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px;
   border:1px solid #e1e6df;border-bottom:none;border-radius:10px 10px 0 0;padding:8px 12px;background:#fff;margin-bottom:-2px}
 .maphead .lg{margin:0}
+.st-key-mapbar{border:1px solid #e1e6df;border-bottom:none;border-radius:10px 10px 0 0;padding:4px 6px 4px 12px;background:#fff;margin-bottom:-2px}
+.maphead-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px}
+.maphead-in .lg{margin:0}.maphead-in .hint{font-size:12.5px;color:#4a6d47;font-weight:600}
+.st-key-tram_w label p{font-size:15px;font-weight:600;color:#0a1d08}   /* 건설 전/후 = 앱의 주 스위치 → 크게 */
+.st-key-tram_w button{min-height:2.75rem;padding:0 1.5rem}.st-key-tram_w button p{font-size:17px;font-weight:600}
 .sym{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#6b7860;flex-wrap:wrap}
 .sym .ln{display:inline-block;width:22px;height:3px;background:#23272e;border-radius:2px;margin-left:8px}
 .sym .st{display:inline-block;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid #23272e;margin-left:8px}
@@ -425,26 +431,23 @@ if st.sidebar.button("처음 화면으로", use_container_width=True, key="to_co
         pass
     st.rerun()
 
-# ================================================================ 조작 줄 (모든 화면 맨 위, 지도 화면은 결론 띠 아래)
-top = st.container() if PAGE == "map" else None           # 지도 화면: 결론 띠 자리 (값이 정해진 뒤 채움)
+# ================================================================ 조작 줄 (모든 화면 맨 위: 건설 전/후 + 시나리오)
 ss.tram_w, ss.mm_w, ss.scen_w = ss.tram_saved, ss.mm, ss.scen_saved
+_SCEN_ORD = ["tram_effect_low", "tram_effect", "tram_effect_high"]     # 화면 순서: 낮음 · 기본 · 높음
 with st.container(horizontal=True, vertical_alignment="bottom", gap="medium", key="ctlbar"):
     st.segmented_control("트램 2호선", TRAM_MODES, key="tram_w", required=True, on_change=_keep("tram_saved", "tram_w"),
                          help="건설 전: 트램이 없을 때의 진단·전망, 노선은 옅은 계획선 / "
-                              "건설 후: 땅값 기준 트램 효과를 넣은 진단·전망·업종 점수(트램이 닿는 상권만 오름)")
-    if PAGE == "map":
-        st.segmented_control("지도에 칠할 것", list(MAPM), key="mm_w", required=True, format_func=MAPM_SHORT.get,
-                             on_change=_keep("mm", "mm_w"), help="업종별 점수 지도는 '업종 점수' 화면에 있음")
-    with st.popover(f"땅값 기준 트램 효과 {ss.scen_saved}", icon=":material/tune:",
-                    help="땅값 기준 트램 효과 시나리오(낮음·기본·높음)" + (" · 지도 표시 설정" if PAGE == "map" else "")):
-        st.segmented_control("땅값 기준 트램 효과 시나리오", list(SCEN), key="scen_w", required=True,
-                             on_change=_keep("scen_saved", "scen_w"),
-                             help=" / ".join(SCEN_HELP) + " · 효과 = 수준 × 업종 비율 × 상권 중 500m 안 비율")
-        st.caption(f"땅값 기준 트램 효과 = {TRAM_DEF} · {src(SRC_TRAM, 'outputs/landprice_effects.csv (대전 1호선 원 추정)')}")
-        if PAGE == "map":
-            st.divider()
-            ss.show_region = rg is not None and st.toggle("대전 전체를 상권 권역으로 채우기", value=ss.show_region)
-            ss.show_label = st.toggle("상권 이름 표시", value=ss.show_label)
+                              "건설 후: 트램 효과(땅값)를 넣은 진단·전망·업종 점수(트램이 닿는 상권만 오름)")
+    st.segmented_control("트램 효과(땅값) 시나리오", sorted(SCEN, key=lambda k: _SCEN_ORD.index(SCEN[k])), key="scen_w",
+                         required=True, on_change=_keep("scen_saved", "scen_w"), disabled=ss.tram_saved != "건설 후",
+                         help=" / ".join(SCEN_HELP) + " · 효과 = 수준 × 업종 비율 × 상권 중 500m 안 비율 · "
+                              f"트램 효과(땅값) = {TRAM_DEF} · 건설 전에는 쓰지 않음")
+top = st.container() if PAGE == "map" else None           # 지도 화면: 결론 띠 자리 (값이 정해진 뒤 채움)
+if PAGE == "map":
+    st.segmented_control("지도에 칠할 것", list(MAPM), key="mm_w", required=True, format_func=MAPM_SHORT.get,
+                         on_change=_keep("mm", "mm_w"), help="업종별 점수 지도는 '업종 점수' 화면에 있음")
+if ss.pop("open_tram_ev", False):                          # 결론 띠의 '트램 효과 근거' 버튼 → 팝업 (컨테이너 밖에서 열기)
+    open_tram_evidence(st)
 tram_mode = ss.tram_saved
 tram_after = tram_mode == "건설 후"
 am = ss.mm
@@ -640,15 +643,19 @@ if PAGE == "map":
                      label_visibility="collapsed")
         if "quadrant" in prof:
             cnt = prof.quadrant.value_counts()
-            st.markdown('<div class="kpi">' + "".join(
-                f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
-                for q in QC if cnt.get(q, 0))
-                + (f'<span class="sep">땅값 기준 트램 효과({scen}) 상권 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
-                     f'({tram_range(prof[["tram_effect_low", "tram_effect_high"]].mean())})</span>'
-                   if tram_after else "")
-                + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
-                   f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
-                + '</div>', unsafe_allow_html=True)
+            with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                st.markdown('<div class="kpi">' + "".join(
+                    f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
+                    for q in QC if cnt.get(q, 0))
+                    + (f'<span class="sep">트램 효과(땅값) 상권 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
+                         f'({tram_range(prof[["tram_effect_low", "tram_effect_high"]].mean())})</span>'
+                       if tram_after else "")
+                    + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
+                       f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
+                    + '</div>', unsafe_allow_html=True, width="content")
+                st.button("트램 효과 근거", icon=":material/fact_check:", type="tertiary", key="tram_ev_top",
+                          on_click=lambda: ss.update(open_tram_ev=True),
+                          help="트램 효과 숫자의 근거: 대전 1호선 땅값·점포 분석, 해외 트램 사례, 앱에 쓰는 방식")
             st.caption(src(f"{SRC_AREA} (진단·상권 값)", f"{SRC_TRAM} (트램 효과 수준)"))
 
     # ================================================================ ③ 지도 | 선택 상권
@@ -729,13 +736,20 @@ if PAGE == "map":
                 layers.append(pdk.Layer("GeoJsonLayer", lab_txt, id="label_txt", filled=True, stroked=False, pickable=False,
                                         get_fill_color="properties.fill"))
 
-        st.markdown(f'<div class="maphead">{legend}<div class="sym">'
-                    + (f'<span class="ln"></span>트램 2호선' if tram_after else
-                       '<span class="ln" style="background:#8c929a;height:2px"></span>트램 2호선(계획)')
-                    + f'<span class="st"></span>정거장'
-                    f'<span class="sq strong"></span>상권 핵심(점포 밀집)'
-                    + ('<span class="sq weak"></span>영향 권역' if show_region else "")
-                    + '</div></div>', unsafe_allow_html=True)
+        with st.container(key="mapbar"):                   # 지도 머리줄: 범례·기호·안내 | 표시 설정(⚙)
+            h_l, h_r = st.columns([24, 1], vertical_alignment="center", gap="small")
+            h_l.markdown(f'<div class="maphead-in">{legend}<div class="sym">'
+                         + (f'<span class="ln"></span>트램 2호선' if tram_after else
+                            '<span class="ln" style="background:#8c929a;height:2px"></span>트램 2호선(계획)')
+                         + f'<span class="st"></span>정거장'
+                         f'<span class="sq strong"></span>상권 핵심(점포 밀집)'
+                         + ('<span class="sq weak"></span>영향 권역' if show_region else "")
+                         + '</div><span class="hint">지도를 눌러 상권·정거장 보기</span></div>', unsafe_allow_html=True)
+            with h_r.popover("", icon=":material/settings:", type="tertiary", help="지도 표시 설정"):
+                ss.region_w, ss.label_w = ss.show_region, ss.show_label
+                st.toggle("대전 전체를 상권 권역으로 채우기", key="region_w", disabled=rg is None,
+                          on_change=_keep("show_region", "region_w"))
+                st.toggle("상권 이름 표시", key="label_w", on_change=_keep("show_label", "label_w"))
         show_map(deck(layers, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>"
                                        "<div><span style='color:{qcolor}'>●</span> {type}</div>{val_label}"},
                       view=pdk.ViewState(**VIEW_MAP, min_zoom=10, max_zoom=16)), height=MAP_H)
@@ -765,7 +779,7 @@ if PAGE == "map":
                           f"5년 {t.land_growth_5y_pct:+.1f}%" if pd.notna(t.get("land_growth_5y_pct")) else None,
                           delta_color="off", delta_arrow="off")
                 te = t.get(f"tram_effect_{SCEN_KEY}")
-                k4.metric("땅값 기준 트램 효과", ("없음 (건설 전)" if not tram_after else f"{te:+.1f}%") if pd.notna(te)
+                k4.metric("트램 효과(땅값)", ("없음 (건설 전)" if not tram_after else f"{te:+.1f}%") if pd.notna(te)
                           else "분석 상권 밖", tram_range(t, "tram_effect_low", "tram_effect_high") or None,
                           delta_color="off", delta_arrow="off", help=TRAM_DEF)
                 a = st_areas[st_areas.station_no == ss.sel_station] if st_areas is not None else pd.DataFrame()
@@ -838,7 +852,7 @@ if PAGE == "map":
         m3.metric("분기 폐업률", f"{r.close_rate_q_pct:.1f}%" if pd.notna(r.get("close_rate_q_pct")) else "-",
                   help=HELP["close_rate_q_pct"])
         _mv = money_of(sel, SCEN_KEY)
-        m4.metric("땅값 기준 트램 효과", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
+        m4.metric("트램 효과(땅값)", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
                   ((f"500m 안 땅값 +{eok(_mv)} · " if _mv else "") + tram_range(r)) if tram_after
                   else f"건설 후 {r.tram_sel:+.1f}% ({scen})" + (f" · +{eok(_mv)}" if _mv else ""),
                   delta_color="off", delta_arrow="off",
@@ -864,6 +878,7 @@ if PAGE == "map":
         pass
 
     # ================================================================ ④ 상세 탭 (이름 고정 → 다시 그려도 보던 탭 유지)
+    st.subheader(f"{short(sel)} 자세히 보기", anchor=False)
     t_fc, t_land, t_store, t_ai = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "AI 해설"], key="detail_tab")
     with t_fc:
         if fc is not None and lp is not None and sel in set(fc.code):
