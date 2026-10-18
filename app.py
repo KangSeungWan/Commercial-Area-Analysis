@@ -8,6 +8,10 @@ from tram_route import route_paths
 from about_page import show_about                                      # 분석 방법 팝업
 from tram_evidence_page import open_tram_evidence                      # 트램 효과 근거 팝업
 import ai_comment as ac                                                # AI 상권 해설 (실시간 + 저장본)
+try:
+    import map3d                                                       # 3D 지도 (deck.gl 부품)
+except Exception:                                                      # 파일이 없으면 3D 선택지만 숨김
+    map3d = None
 
 OUT, DATA = "tram_model/outputs", "tram_model/data"
 OPEN_YEAR = 2030                                           # 트램 2호선 개통 예정 연도
@@ -23,6 +27,15 @@ def read_csv(path, **kw):
 @st.cache_data
 def read_json(path):
     return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else None
+
+
+def _mtimes(*paths):
+    return tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in paths)
+
+
+@st.cache_data(show_spinner=False)
+def map3d_data(mtimes):                                    # 결과 파일이 바뀌면(mtimes) 다시 만듦
+    return map3d.make_data()
 
 
 def setting(name, default=None):
@@ -414,6 +427,10 @@ ss.setdefault("tram_saved", "건설 후")
 ss.setdefault("scen_saved", list(SCEN)[0])
 ss.setdefault("show_region", True)
 ss.setdefault("show_label", True)
+ss.setdefault("map_view", "평면")
+MAP_VIEWS = ["평면", "3D"] if map3d is not None else ["평면"]
+if ss.map_view not in MAP_VIEWS:
+    ss.map_view = "평면"
 if ss.scen_saved not in SCEN:
     ss.scen_saved = list(SCEN)[0]
 
@@ -538,6 +555,13 @@ for _mk in ("map", "map_ind"):                            # 지도 페이지·�
         ss[f"_last_area_{_mk}"] = click_area; ss.sel_area = click_area
     if click_stn is not None and click_stn != ss.get("_last_stn"):
         ss._last_stn = click_stn; ss.sel_station = int(click_stn)
+_m3 = ss.get("map3d")                                     # 3D 지도 클릭: {"area" | "station": 값, "t": 누른 시각}
+if isinstance(_m3, dict) and _m3.get("t") != ss.get("_last_m3"):
+    ss._last_m3 = _m3.get("t")
+    if _m3.get("area") in order:
+        ss.sel_area = _m3["area"]
+    if _m3.get("station") is not None and int(_m3["station"]) in STN:
+        ss.sel_station = int(_m3["station"]); ss._last_stn = ss.sel_station
 sel = ss.sel_area
 
 # 트램 노선·정거장 (지도 두 곳에서 같이 씀)
@@ -737,22 +761,40 @@ if PAGE == "map":
                                         get_fill_color="properties.fill"))
 
         with st.container(key="mapbar"):                   # 지도 머리줄: 범례·기호·안내 | 표시 설정(⚙)
-            h_l, h_r = st.columns([24, 1], vertical_alignment="center", gap="small")
-            h_l.markdown(f'<div class="maphead-in">{legend}<div class="sym">'
-                         + (f'<span class="ln"></span>트램 2호선' if tram_after else
-                            '<span class="ln" style="background:#8c929a;height:2px"></span>트램 2호선(계획)')
-                         + f'<span class="st"></span>정거장'
-                         f'<span class="sq strong"></span>상권 핵심(점포 밀집)'
-                         + ('<span class="sq weak"></span>영향 권역' if show_region else "")
-                         + '</div><span class="hint">지도를 눌러 상권·정거장 보기</span></div>', unsafe_allow_html=True)
+            h_l, h_v, h_r = st.columns([19, 5, 1], vertical_alignment="center", gap="small")
+            ss.mv_w = ss.map_view
+            h_v.segmented_control("지도 보기", MAP_VIEWS, key="mv_w", required=True, label_visibility="collapsed",
+                                  on_change=_keep("map_view", "mv_w"),
+                                  help="3D: 상권을 기둥으로 세워 2026→2034 땅값 변화와 트램 운행을 재생 (기둥 높이는 지도 안에서 고름)")
+            if ss.map_view == "3D":
+                h_l.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 진단 4분류 · 기둥 높이·연도는 지도 안에서 고름'
+                             '</div><span class="hint">기둥·정거장을 누르면 오른쪽·아래에 표시</span></div>', unsafe_allow_html=True)
+            else:
+                h_l.markdown(f'<div class="maphead-in">{legend}<div class="sym">'
+                           + (f'<span class="ln"></span>트램 2호선' if tram_after else
+                              '<span class="ln" style="background:#8c929a;height:2px"></span>트램 2호선(계획)')
+                           + f'<span class="st"></span>정거장'
+                           f'<span class="sq strong"></span>상권 핵심(점포 밀집)'
+                           + ('<span class="sq weak"></span>영향 권역' if show_region else "")
+                           + '</div><span class="hint">지도를 눌러 상권·정거장 보기</span></div>', unsafe_allow_html=True)
             with h_r.popover("", icon=":material/settings:", type="tertiary", help="지도 표시 설정"):
                 ss.region_w, ss.label_w = ss.show_region, ss.show_label
                 st.toggle("대전 전체를 상권 권역으로 채우기", key="region_w", disabled=rg is None,
                           on_change=_keep("show_region", "region_w"))
                 st.toggle("상권 이름 표시", key="label_w", on_change=_keep("show_label", "label_w"))
-        show_map(deck(layers, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>"
-                                       "<div><span style='color:{qcolor}'>●</span> {type}</div>{val_label}"},
-                      view=pdk.ViewState(**VIEW_MAP, min_zoom=10, max_zoom=16)), height=MAP_H)
+        if ss.map_view == "3D":
+            try:
+                map3d.show(map3d_data(_mtimes(f"{OUT}/area_profile.csv", f"{OUT}/forecast_land.csv",
+                                              f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv")),
+                           tram="after" if tram_after else "before", scen=SCEN_KEY,
+                           metric={"land_fc": "land", "tram_sel": "tram"}.get(am), sel=sel, height=MAP_H)
+            except Exception as e:                         # 3D가 안 되면 평면 지도로 대신 (시연 중 빈 칸 방지)
+                st.warning(f"3D 지도를 열지 못해 평면 지도로 보여 줍니다: {e}")
+                ss.map_view = "평면"
+        if ss.map_view != "3D":
+            show_map(deck(layers, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>"
+                                           "<div><span style='color:{qcolor}'>●</span> {type}</div>{val_label}"},
+                          view=pdk.ViewState(**VIEW_MAP, min_zoom=10, max_zoom=16)), height=MAP_H)
         stn_opts = [0] + list(STN)                         # 0 = 선택 안 함 (None 이면 빈 칸으로 보여서)
         ss.stn_w = ss.sel_station if ss.sel_station in STN else 0
         c_cap, c_stn = st.columns([3, 2], vertical_alignment="center")

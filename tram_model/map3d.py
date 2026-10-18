@@ -8,7 +8,8 @@
 
 사용:
     python tram_model/map3d.py            → outputs/map3d.html (브라우저로 바로 열 수 있음)
-    app_3d.py 에서 make_html() 을 불러 Streamlit 화면에 넣음
+    app.py 지도 화면의 '3D' 보기 → show() (Streamlit 부품, 클릭하면 앱 선택 상권이 바뀜)
+    app_3d.py → make_html() 단독 화면
 """
 import json, math, os
 from pathlib import Path
@@ -22,7 +23,8 @@ except ImportError:                                    # app_3d.py 처럼 프로
 
 HERE = Path(__file__).resolve().parent
 OUT, DATA = HERE / "outputs", HERE / "data"
-TEMPLATE = HERE / "map3d_template.html"
+COMP_DIR = HERE / "map3d_component"                    # Streamlit 부품 폴더 (index.html = 화면 원본)
+TEMPLATE = COMP_DIR / "index.html"
 OPEN_YEAR = 2030                                       # app.py 와 같음
 QUAD = ["성장 지속", "트램 반등 기회", "쇠퇴 우려", "정체·안정"]
 
@@ -56,6 +58,13 @@ def _simplify_geojson(gj, step=2):
     return out
 
 
+def _quad_before(r):
+    """트램이 없을 때의 진단: '반등 기회'만 정거장 없이 다시 분류 (app.py · score_areas.py 와 같은 규칙)."""
+    if r.quadrant != "트램 반등 기회":
+        return r.quadrant if r.quadrant in QUAD else "정체·안정"
+    return "쇠퇴 우려" if r.risk_score >= 50 else "성장 지속" if r.growth_score >= 50 else "정체·안정"
+
+
 def make_data():
     prof = _csv(OUT / "area_profile.csv")
     gj = json.load(open(OUT / "sangkwon_polygons.geojson", encoding="utf-8"))
@@ -80,6 +89,7 @@ def make_data():
                  type_name=getattr(r, "type_name", ""), poly=_ring(f["geometry"]),
                  center=[_r(p.get("center_lon")), _r(p.get("center_lat"))],
                  n_stores=int(r.n_stores), risk=_r(r.risk_score, 1), growth=_r(r.growth_score, 1),
+                 qb=_quad_before(r),
                  eff={"low": _r(r.tram_effect_low, 2), "base": _r(r.tram_effect, 2), "high": _r(r.tram_effect_high, 2)},
                  nearest=f"{int(r.nearest_tram)}번 정거장 {int(r.nearest_tram_m)}m" if pd.notna(r.nearest_tram) else "")
         if fc is not None:
@@ -124,15 +134,31 @@ def make_data():
     return data
 
 
+_COMPONENT = None
+
+
+def show(data, tram="after", scen="base", metric=None, sel=None, height=600, key="map3d"):
+    """앱(app.py) 지도 칸에 3D 지도를 넣음. 기둥·정거장을 누르면 {"area"|"station": …, "t": …} 를 돌려줌.
+    tram: "after"/"before", scen: "low"/"base"/"high", metric: "land"/"tram"/"stores"/"risk" (None 이면 3D 안에서 고름)."""
+    global _COMPONENT
+    import streamlit.components.v1 as components
+    if _COMPONENT is None:
+        _COMPONENT = components.declare_component("map3d", path=str(COMP_DIR))
+    state = {"tram": tram, "scen": scen, "sel": sel}
+    if metric:
+        state["metric"] = metric
+    return _COMPONENT(data=data, state=state, height=height, key=key, default=None)
+
+
 def make_html(data=None, standalone=True):
-    """standalone=True 이면 브라우저로 바로 여는 완성 문서, False 면 본문만(아티팩트 게시용)."""
+    """standalone=True 이면 브라우저로 바로 여는 완성 문서, False 면 본문만(아티팩트 게시용).
+    index.html 은 Streamlit 부품이 그대로 쓰는 완성 문서 → 데이터 자리(/*__DATA__*/null)만 채움."""
     data = data or make_data()
-    body = TEMPLATE.read_text(encoding="utf-8").replace(
+    html = TEMPLATE.read_text(encoding="utf-8").replace(
         "/*__DATA__*/null", json.dumps(data, ensure_ascii=False, separators=(",", ":")))
-    if standalone:
-        body = ('<!doctype html><html lang="ko"><head><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width,initial-scale=1"></head><body>' + body + "</body></html>")
-    return body
+    if not standalone:
+        html = html.split("<body>", 1)[1].rsplit("</body>", 1)[0]
+    return html
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
 <title>대전 트램 3D 상권 지도</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -86,6 +87,14 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
   .card{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));width:auto;bottom:10px;z-index:3}
   .hint{display:none}
 }
+/* 앱 지도 칸 안(약 560×600)에 들어갈 때: 건설 전/후·시나리오는 앱 위쪽 조작으로, 제목·카드 숨김 */
+#app.embed{min-height:0}
+#app.embed .eyebrow,#app.embed h1,#app.embed .hint,#app.embed #row-tram,#app.embed #row-scen,#app.embed .note,#app.embed .card{display:none}
+#app.embed .panel{top:10px;left:10px;right:auto;width:232px;padding:10px 12px;gap:8px}
+#app.embed .clock{top:10px;right:10px;min-width:0;padding:6px 10px}
+#app.embed .clock .y{font-size:26px}
+#app.embed .legend{left:10px;right:auto;bottom:10px;max-width:250px;padding:8px 11px}
+#app.embed .seg button{font-size:12.5px;padding:4px 9px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -95,7 +104,7 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
   <section class="float panel" aria-label="지도 조작">
     <div class="phead"><p class="eyebrow">대전 트램 2호선 · 3D 시제품</p><button class="fold" id="fold" aria-expanded="true">조작 접기</button></div>
     <h1>트램이 지날 길 위의 스무 상권</h1>
-    <div class="row"><span class="lab" id="l-tram">트램 2호선</span>
+    <div class="row" id="row-tram"><span class="lab" id="l-tram">트램 2호선</span>
       <div class="seg big" id="seg-tram" role="group" aria-labelledby="l-tram">
         <button id="t-before" data-v="before">건설 전</button><button id="t-after" data-v="after">건설 후</button></div></div>
     <div class="row opt"><span class="lab" id="l-metric">기둥 높이</span>
@@ -134,19 +143,24 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script>
 (function () {
-const D = /*__DATA__*/null;
+const INLINE = /*__DATA__*/null;                     // 단독 HTML: 데이터가 여기 박힘 / Streamlit 부품: null → 앱이 보내 줌
 const $ = (id) => document.getElementById(id);
+
+function boot(D, OPT) {
 if (!window.deck) {
   $("map").innerHTML = '<div class="err">3D 지도 라이브러리(deck.gl)를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로 고치세요.</div>';
-  return;
+  return null;
 }
+const EMBED = !!OPT.embed, emit = OPT.emit || (() => {});
+if (EMBED) $("app").classList.add("embed");
 const QK = {"성장 지속": "--q-grow", "트램 반등 기회": "--q-rebound", "쇠퇴 우려": "--q-decline", "정체·안정": "--q-stable"};
 const Y0 = D.years[0], Y1 = D.years[D.years.length - 1], OPEN = D.open_year;
 const MAXH = 2600, FLOOR = 40;                       // 가장 높은 기둥 2.6km, 값이 0이어도 바닥 40m는 보이게
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const short = (n) => n.split("(")[0];
+const quad = (a) => (S.tram === "before" && a.qb ? a.qb : a.quadrant);   // 건설 전에는 반등 기회 → 다른 진단 (app.py 와 같은 규칙)
 let dirty = true, last = 0;
-const S = {tram: "after", metric: "land", scen: "base", yf: Y0, T: 0, playing: false, rotate: false, sel: null, hover: null};
+const S = {tram: OPT.tram || "after", metric: OPT.metric || "land", scen: OPT.scen || "base", yf: Y0, T: 0, playing: false, rotate: false, sel: null, hover: null};
 
 // ── 색 (CSS 토큰 → deck.gl RGB) ──
 let C = {};
@@ -234,10 +248,10 @@ function layers() {
     updateTriggers: {getColor: rc}}));
   out.push(new deck.PolygonLayer({id: "areas", data: D.areas, getPolygon: d => d.poly, extruded: true,
     pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 70],
-    getElevation: height, getFillColor: d => { const c = C.q[d.quadrant]; return [c[0], c[1], c[2], S.sel && S.sel !== d.code ? 120 : 235]; },
+    getElevation: height, getFillColor: d => { const c = C.q[quad(d)]; return [c[0], c[1], c[2], S.sel && S.sel !== d.code ? 120 : 235]; },
     material: {ambient: .55, diffuse: .65, shininess: 24, specularColor: [60, 64, 70]},
     transitions: S.playing ? {} : {getElevation: {duration: 700}},
-    updateTriggers: {getElevation: [S.metric, S.tram, S.scen, S.yf], getFillColor: [S.sel, C.q]}}));
+    updateTriggers: {getElevation: [S.metric, S.tram, S.scen, S.yf], getFillColor: [S.sel, C.q, S.tram]}}));
   if (built) {
     const tc = C.tram;
     for (const [i, ln] of lines.entries()) out.push(new deck.TripsLayer({id: "trips" + i, data: ln.trips, getPath: d => d.path,
@@ -278,7 +292,7 @@ const lighting = new deck.LightingEffect({
   ambient: new deck.AmbientLight({color: [255, 255, 255], intensity: 1.0}),
   key: new deck.DirectionalLight({color: [255, 255, 255], intensity: 0.9, direction: [-3, -9, -6]}),
   fill: new deck.DirectionalLight({color: [255, 255, 255], intensity: 0.45, direction: [4, 6, -3]})});
-const vsOf = (v) => ({longitude: v.center[0], latitude: v.center[1], zoom: v.zoom, pitch: v.pitch, bearing: v.bearing,
+const vsOf = (v) => ({longitude: v.center[0], latitude: v.center[1], zoom: v.zoom - (EMBED ? 0.55 : 0), pitch: v.pitch, bearing: v.bearing,
                       minZoom: 9.5, maxZoom: 16.5, maxPitch: 72});
 let curVS = vsOf(D.views["전체"]), flyUntil = 0;
 let deckgl = null;
@@ -291,12 +305,16 @@ deckgl = new deck.Deck({
     const st = {background: "var(--paper)", color: "var(--moss)", border: "1px solid var(--mist)", borderRadius: "8px",
                 padding: "7px 10px", fontSize: "12.5px", fontFamily: "var(--f-body)", boxShadow: "var(--shadow)"};
     if (layer.id === "areas") return {style: st, html: `<b style="color:var(--ink);font-size:13.5px">${short(object.name)}</b><br>`
-      + `${object.quadrant} · ${DESC[S.metric].split(" (")[0]} <b style="color:var(--ink)">${fmt[S.metric](value(object))}</b>`};
+      + `${quad(object)} · ${DESC[S.metric].split(" (")[0]} <b style="color:var(--ink)">${fmt[S.metric](value(object))}</b>`};
     if (layer.id === "stations") return {style: st, html: `<b style="color:var(--ink)">${object.no}번 ${object.name}</b><br>500m 안 점포 ${object.n.toLocaleString()}개`};
     return null;
   },
   onHover: ({object, layer}) => { const h = object && layer && layer.id === "areas" ? object.code : null; if (h !== S.hover) { S.hover = h; dirty = true; } },
-  onClick: ({object, layer}) => { if (object && layer && layer.id === "areas") select(object.code, true); else if (!object) select(null); },
+  onClick: ({object, layer}) => {
+    if (object && layer && layer.id === "areas") { select(object.code, !EMBED); emit({area: object.code, t: Date.now()}); }
+    else if (object && layer && layer.id === "stations") emit({station: object.no, t: Date.now()});
+    else if (!object && !EMBED) select(null);
+  },
 });
 function flyTo(v) {
   flyUntil = performance.now() + 1700;
@@ -328,16 +346,16 @@ $("card-x").addEventListener("click", () => select(null));
 const panel = document.querySelector(".panel");
 function fold(min) { panel.classList.toggle("min", min); $("fold").textContent = min ? "조작 펼치기" : "조작 접기"; $("fold").setAttribute("aria-expanded", !min); }
 $("fold").addEventListener("click", () => fold(!panel.classList.contains("min")));
-fold(innerWidth < 900 || innerHeight < 640);
+fold(!EMBED && (innerWidth < 900 || innerHeight < 640));
 
 function select(code, fly) {
   S.sel = code; dirty = true;
   const a = D.areas.find(x => x.code === code), card = $("card");
   if (!a) { card.hidden = true; return; }
-  const q = getComputedStyle(document.documentElement).getPropertyValue(QK[a.quadrant]).trim();
-  const fg = a.quadrant === "트램 반등 기회" || a.quadrant === "정체·안정" ? "#0a1d08" : "#ffffff";
+  const qa = quad(a), q = getComputedStyle(document.documentElement).getPropertyValue(QK[qa]).trim();
+  const fg = qa === "트램 반등 기회" || qa === "정체·안정" ? "#0a1d08" : "#ffffff";
   $("c-name").textContent = short(a.name);
-  $("c-meta").innerHTML = `<span class="badge" style="background:${q};color:${fg}">${a.quadrant}</span><span>${a.code} · ${a.gu}${a.type_name ? " · " + a.type_name : ""}</span>`;
+  $("c-meta").innerHTML = `<span class="badge" style="background:${q};color:${fg}">${qa}</span><span>${a.code} · ${a.gu}${a.type_name ? " · " + a.type_name : ""}</span>`;
   const f = a.fc, last = f ? f.none.length - 1 : 0;
   $("c-kv").innerHTML = [
     f && ["땅값 지수 2034 (트램 없음)", f.none[last].toFixed(1)],
@@ -345,7 +363,7 @@ function select(code, fly) {
     ["땅값 기준 트램 효과", `${a.eff.low.toFixed(1)} ~ ${a.eff.high.toFixed(1)}% (기본 ${a.eff.base.toFixed(1)}%)`],
     ["점포 수", a.n_stores.toLocaleString() + "개"], ["쇠퇴 위험 · 성장 가능", `${a.risk.toFixed(0)} · ${a.growth.toFixed(0)}점`],
     a.nearest && ["가까운 정거장", a.nearest]].filter(Boolean).map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
-  card.hidden = false;
+  card.hidden = EMBED;
   if (fly) flyTo({center: a.center, zoom: 12.9, pitch: 55, bearing: curVS.bearing || -20});
 }
 
@@ -386,6 +404,28 @@ readColors();
 const reTheme = () => { readColors(); dirty = true; if (S.sel) select(S.sel); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reTheme);
 new MutationObserver(reTheme).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
-setRotate(false); sync(); requestAnimationFrame(tick);
+setRotate(false); if (OPT.sel) select(OPT.sel, false); sync(); requestAnimationFrame(tick);
+let prev = {...OPT};
+return {set(o) {                                     // 앱에서 바뀐 값만 반영 (3D 안에서 고른 기둥 높이·연도는 유지)
+  for (const k of ["tram", "scen", "metric"]) if (o[k] && o[k] !== prev[k]) S[k] = o[k];
+  if (o.sel !== prev.sel) select(o.sel || null, !!o.sel);
+  prev = {...o}; sync();
+}};
+}
+
+if (INLINE) { boot(INLINE, {}); return; }
+// ── Streamlit 부품 통신 (components.declare_component 규약: 준비 → render 받기 → 값 보내기) ──
+const send = (type, extra) => parent.postMessage(Object.assign({isStreamlitMessage: true, type}, extra), "*");
+let api = null;
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || m.type !== "streamlit:render") return;
+  const a = m.args || {};
+  send("streamlit:setFrameHeight", {height: a.height || 600});
+  if (!api) api = boot(a.data, Object.assign({embed: true, emit: (v) => send("streamlit:setComponentValue", {value: v, dataType: "json"})}, a.state || {}));
+  else api.set(a.state || {});
+});
+send("streamlit:componentReady", {apiVersion: 1});
 })();
 </script>
+</body></html>

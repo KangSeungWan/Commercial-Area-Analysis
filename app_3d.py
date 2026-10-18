@@ -3,7 +3,7 @@
     streamlit run app_3d.py
 
 분석 결과 파일(tram_model/outputs)을 그대로 읽으므로 run_all.py 를 다시 돌릴 필요 없음.
-지도·조작은 HTML 한 장(tram_model/map3d_template.html) 안에서 돌아가서 재생·회전이 끊기지 않음.
+지도·조작은 HTML 한 장(tram_model/map3d_component/index.html) 안에서 돌아가서 재생·회전이 끊기지 않음.
 """
 import os, sys
 import streamlit as st
@@ -23,7 +23,7 @@ def html(mtimes):                                                     # 결과 �
 
 
 _files = ["outputs/area_profile.csv", "outputs/forecast_land.csv", "outputs/sangkwon_polygons.geojson",
-          "outputs/station_summary.csv", "outputs/buildings_3d.geojson", "map3d_template.html"]
+          "outputs/station_summary.csv", "outputs/buildings_3d.geojson", "map3d_component/index.html"]
 _mt = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in (os.path.join(map3d.HERE, f) for f in _files))
 try:
     components.html(html(_mt), height=780)
