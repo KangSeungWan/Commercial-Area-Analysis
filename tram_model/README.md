@@ -264,3 +264,14 @@ python tram_model/run_all.py --from train_analyze
   - 상권 비중은 지금 영업 중인 인허가 점포를 상권 경계(sangkwon_polygons.geojson) 안에서 셈 → `outputs/industry_food_tram_mix.csv`
   - 인허가 파일이 없으면 예전 방식(땅값 효과 × 해외 업종 비율)으로 자동 복귀. 다른 5개 업종은 그대로
 - 결과: 음식 트램 효과(기본) 대전역·중앙시장 1.77→4.34%, 대전복합터미널 1.52→4.23%(카페 비중 16~17%), 소제동 1.77→1.54%(카페 4%). 순위 변화는 만년동 7→6위, 대전복합터미널 14→12위
+
+
+## 3D 지도 시제품 (B안) — `map3d.py` (2026-10-18)
+- 실행: `streamlit run app_3d.py` (본 앱 app.py 와 따로). 브라우저로 바로 보려면 `python tram_model/map3d.py` → `outputs/map3d.html`
+- 구성: `map3d.py`(결과 파일 → 데이터) + `map3d_template.html`(deck.gl 9.1 3D 화면, jsdelivr 에서 불러옴 → 인터넷 필요)
+- 읽는 파일: `area_profile.csv`, `sangkwon_polygons.geojson`, `forecast_land.csv`, `station_summary.csv`, `tram_scenarios.csv`, `dong_polygons.geojson`, `data/tram_stations.csv` → run_all 재실행 불필요(결과가 바뀌면 자동 반영)
+- 화면: 상권 20개 핵심 영역을 기둥으로 세움(높이 = 땅값 전망 지수 / 땅값 기준 트램 효과 / 점포 수 / 쇠퇴 위험, 색 = 진단 4분류), 2026→2034 재생, 2030 개통 후 트램 운행(연출), 보는 곳 4곳(전체·원도심·둔산·유성), 천천히 돌리기, 기둥 클릭 → 상권 카드
+- 높이 눈금은 지표마다 고정(연도·시나리오를 바꿔도 같은 자), 땅값 지수는 바닥 80 기준
+- 배경 지도 타일 없음(행정동 경계를 바닥으로 그림) → 지도 서버 키·차단 문제 없음
+- 실제 건물(선택): `outputs/buildings_3d.geojson`(Polygon, 속성 `height_m`)을 두면 회색 건물로 함께 올림. GIS건물통합정보(국가공간정보포털·브이월드)에서 트램 노선 500m 안만 잘라 만들 예정, 변환 스크립트는 아직 없음
+- 한계: 트램 운행 간격·속도는 화면용(실제 시간표 아님), 정거장 일부 좌표 추정값, 트램 효과 높이 차이는 작음(95% 구간 0 포함)
