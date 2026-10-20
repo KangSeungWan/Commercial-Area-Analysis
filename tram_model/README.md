@@ -272,6 +272,10 @@ python tram_model/run_all.py --from train_analyze
   - '지도에 칠할 것'이 땅값 전망·트램 효과이면 기둥 높이도 같은 지표로 맞춤. 나머지는 3D 안에서 고름
   - 구현: Streamlit 부품 v1(`components.declare_component`, 폴더 `map3d_component/index.html`). 클릭 → `{"area"|"station", "t"}` 값 → `ss.map3d` 로 받아 선택 상권 변경
   - 3D 를 못 열면(라이브러리 로드 실패 등) 경고 후 평면 지도로 대신 보여 줌
+- **'3D 지도' 화면** (사이드바, 2026-10-19): 3D 만 화면 너비 전체·높이 780px 로 크게 봄 (`map3d.show(..., mode="full", key="map3d_full")`)
+  - 왼쪽 위 조작판(기둥 높이·연도·보는 곳·회전), 오른쪽 아래 상권 카드. 건설 전/후·시나리오는 앱 위쪽 조작을 따름
+  - 카드의 '이 상권 진단 보기' → `{"goto": 코드}` → 그 상권을 고른 채 지도 화면으로 이동
+  - 지도 화면 3D 칸의 '크게 보기' 버튼 → 이 화면으로 이동
 - **단독 화면**: `streamlit run app_3d.py`, 또는 `python tram_model/map3d.py` → `outputs/map3d.html` 을 브라우저로 바로 열기
 - 화면 원본은 `map3d_component/index.html` 하나 (단독 화면은 여기에 데이터를 끼워 넣음). deck.gl 9.1 을 jsdelivr 에서 불러옴 → 인터넷 필요
 - 읽는 파일: `area_profile.csv`, `sangkwon_polygons.geojson`, `forecast_land.csv`, `station_summary.csv`, `tram_scenarios.csv`, `dong_polygons.geojson`, `data/tram_stations.csv` → run_all 재실행 불필요(결과가 바뀌면 자동 반영)

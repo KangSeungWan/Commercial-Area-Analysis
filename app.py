@@ -225,6 +225,7 @@ def _bbox(geo):
 # 지도 화면: 지도가 화면 왼쪽 약 60%로 줄어듦 → 20개 상권 핵심 영역 + 정거장 전체가 들어가게 맞춤
 # (상권은 남북 약 17km로 세로가 김 → 높이가 줌을 정함. 폭은 1440px 화면의 지도 칸 약 560px 기준)
 MAP_H, MAP_W = 600, 560
+MAP3D_H = 780                                              # '3D 지도' 화면 높이 (노트북 한 화면에 조작 줄과 함께 들어가게)
 _xs, _ys = _bbox(gj)
 VIEW_MAP = fit_view(_xs + stations.lon.tolist(), _ys + stations.lat.tolist(), MAP_W, MAP_H)
 IND_H = 460                                                # 업종 점수 화면 지도 (본문 폭 약 1000px)
@@ -400,7 +401,7 @@ if ss.page == "cover":
     st.stop()
 
 # ================================================================ 사이드바
-PAGES = {"map": "지도", "industry": "업종 점수", "compare": "20개 상권 비교"}
+PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "20개 상권 비교"}
 if ss.page not in PAGES:
     ss.page = "map"
 st.sidebar.title("대전 트램 상권 지도")
@@ -555,13 +556,18 @@ for _mk in ("map", "map_ind"):                            # 지도 페이지·�
         ss[f"_last_area_{_mk}"] = click_area; ss.sel_area = click_area
     if click_stn is not None and click_stn != ss.get("_last_stn"):
         ss._last_stn = click_stn; ss.sel_station = int(click_stn)
-_m3 = ss.get("map3d")                                     # 3D 지도 클릭: {"area" | "station": 값, "t": 누른 시각}
-if isinstance(_m3, dict) and _m3.get("t") != ss.get("_last_m3"):
-    ss._last_m3 = _m3.get("t")
+for _mk in ("map3d", "map3d_full"):                       # 3D 지도 클릭: {"area" | "station" | "goto": 값, "t": 누른 시각}
+    _m3 = ss.get(_mk)
+    if not (isinstance(_m3, dict) and _m3.get("t") != ss.get(f"_last_{_mk}")):
+        continue
+    ss[f"_last_{_mk}"] = _m3.get("t")
     if _m3.get("area") in order:
         ss.sel_area = _m3["area"]
     if _m3.get("station") is not None and int(_m3["station"]) in STN:
         ss.sel_station = int(_m3["station"]); ss._last_stn = ss.sel_station
+    if _m3.get("goto") in order:                          # '3D 지도' 화면 카드의 '이 상권 진단 보기' → 지도 화면
+        ss.sel_area, ss.page = _m3["goto"], "map"
+        st.rerun()
 sel = ss.sel_area
 
 # 트램 노선·정거장 (지도 두 곳에서 같이 씀)
@@ -767,8 +773,12 @@ if PAGE == "map":
                                   on_change=_keep("map_view", "mv_w"),
                                   help="3D: 상권을 기둥으로 세워 2026→2034 땅값 변화와 트램 운행을 재생 (기둥 높이는 지도 안에서 고름)")
             if ss.map_view == "3D":
-                h_l.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 진단 4분류 · 기둥 높이·연도는 지도 안에서 고름'
-                             '</div><span class="hint">기둥·정거장을 누르면 오른쪽·아래에 표시</span></div>', unsafe_allow_html=True)
+                with h_l, st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                    st.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 진단 4분류 · 기둥 높이·연도는 지도 안에서 고름'
+                                '</div><span class="hint">기둥·정거장을 누르면 오른쪽·아래에 표시</span></div>',
+                                unsafe_allow_html=True, width="content")
+                    st.button("크게 보기", icon=":material/open_in_full:", type="tertiary", key="to_map3d",
+                              on_click=lambda: ss.update(page="map3d"), help="3D 지도만 넓은 화면으로 보기")
             else:
                 h_l.markdown(f'<div class="maphead-in">{legend}<div class="sym">'
                            + (f'<span class="ln"></span>트램 2호선' if tram_after else
@@ -1010,6 +1020,22 @@ if PAGE == "map":
 
     with t_ai:
         ai_panel()
+
+# ================================================================ 페이지 1-2: 3D 지도 (넓게)
+elif PAGE == "map3d":
+    st.markdown('<h1 class="page-t">3D 지도</h1>', unsafe_allow_html=True)
+    st.caption("상권 20곳을 기둥으로 세워 2026→2034 땅값 변화와 2030 개통 후 트램 운행을 재생합니다. "
+               "위쪽 '트램 2호선'·'시나리오'가 그대로 적용되고, 기둥 높이·연도·보는 곳은 지도 안에서 고릅니다. "
+               "기둥을 누르면 상권 카드가 뜨고 '이 상권 진단 보기'로 지도 화면에 갈 수 있습니다.")
+    try:
+        map3d.show(map3d_data(_mtimes(f"{OUT}/area_profile.csv", f"{OUT}/forecast_land.csv",
+                                      f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv")),
+                   tram="after" if tram_after else "before", scen=SCEN_KEY, sel=sel, height=MAP3D_H,
+                   key="map3d_full", mode="full")
+    except Exception as e:
+        st.error(f"3D 지도를 열지 못했습니다: {e}  \n인터넷 연결(지도 라이브러리)과 tram_model/map3d_component 폴더를 확인하세요.")
+    st.caption(src(SRC_AREA, "outputs/forecast_land.csv (땅값 전망)", "outputs/sangkwon_polygons.geojson (상권 경계)")
+               + " · 트램 운행 모습은 연출이며 실제 배차와 다릅니다")
 
 # ================================================================ 페이지 2: 업종 점수
 elif PAGE == "industry":

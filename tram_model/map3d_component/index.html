@@ -95,6 +95,10 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
 #app.embed .clock .y{font-size:26px}
 #app.embed .legend{left:10px;right:auto;bottom:10px;max-width:250px;padding:8px 11px}
 #app.embed .seg button{font-size:12.5px;padding:4px 9px}
+#app.full #row-tram,#app.full #row-scen{display:none}
+.goto{margin-top:10px;width:100%;font:inherit;font-size:13px;font-weight:500;border:none;border-radius:8px;padding:8px 10px;
+  background:var(--ink);color:var(--linen);cursor:pointer}
+.goto:hover{opacity:.9}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
@@ -137,6 +141,7 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
   <section class="float card" id="card" hidden aria-live="polite">
     <button class="x" id="card-x" aria-label="닫기">×</button>
     <h2 id="c-name"></h2><div class="meta" id="c-meta"></div><div class="kv" id="c-kv"></div>
+    <button class="goto" id="c-goto" hidden>이 상권 진단 보기 →</button>
   </section>
 </div>
 
@@ -153,6 +158,9 @@ if (!window.deck) {
 }
 const EMBED = !!OPT.embed, emit = OPT.emit || (() => {});
 if (EMBED) $("app").classList.add("embed");
+if (OPT.full) $("app").classList.add("full");                // 앱의 '3D 지도' 화면: 넓은 화면 구성, 건설 전/후·시나리오는 앱 위쪽 조작을 따름
+$("c-goto").hidden = !OPT.full;
+$("c-goto").addEventListener("click", () => { if (S.sel) emit({goto: S.sel, t: Date.now()}); });
 const QK = {"성장 지속": "--q-grow", "트램 반등 기회": "--q-rebound", "쇠퇴 우려": "--q-decline", "정체·안정": "--q-stable"};
 const Y0 = D.years[0], Y1 = D.years[D.years.length - 1], OPEN = D.open_year;
 const MAXH = 2600, FLOOR = 40;                       // 가장 높은 기둥 2.6km, 값이 0이어도 바닥 40m는 보이게
@@ -311,7 +319,7 @@ deckgl = new deck.Deck({
   },
   onHover: ({object, layer}) => { const h = object && layer && layer.id === "areas" ? object.code : null; if (h !== S.hover) { S.hover = h; dirty = true; } },
   onClick: ({object, layer}) => {
-    if (object && layer && layer.id === "areas") { select(object.code, !EMBED); emit({area: object.code, t: Date.now()}); }
+    if (object && layer && layer.id === "areas") { select(object.code, true); emit({area: object.code, t: Date.now()}); }
     else if (object && layer && layer.id === "stations") emit({station: object.no, t: Date.now()});
     else if (!object && !EMBED) select(null);
   },
@@ -408,7 +416,7 @@ setRotate(false); if (OPT.sel) select(OPT.sel, false); sync(); requestAnimationF
 let prev = {...OPT};
 return {set(o) {                                     // 앱에서 바뀐 값만 반영 (3D 안에서 고른 기둥 높이·연도는 유지)
   for (const k of ["tram", "scen", "metric"]) if (o[k] && o[k] !== prev[k]) S[k] = o[k];
-  if (o.sel !== prev.sel) select(o.sel || null, !!o.sel);
+  if (o.sel !== prev.sel && (o.sel || null) !== S.sel) select(o.sel || null, !!o.sel);   // 3D 안에서 누른 상권이면 이미 이동함
   prev = {...o}; sync();
 }};
 }
@@ -422,7 +430,7 @@ window.addEventListener("message", (e) => {
   if (!m || m.type !== "streamlit:render") return;
   const a = m.args || {};
   send("streamlit:setFrameHeight", {height: a.height || 600});
-  if (!api) api = boot(a.data, Object.assign({embed: true, emit: (v) => send("streamlit:setComponentValue", {value: v, dataType: "json"})}, a.state || {}));
+  if (!api) api = boot(a.data, Object.assign({embed: a.mode !== "full", full: a.mode === "full", emit: (v) => send("streamlit:setComponentValue", {value: v, dataType: "json"})}, a.state || {}));
   else api.set(a.state || {});
 });
 send("streamlit:componentReady", {apiVersion: 1});

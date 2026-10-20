@@ -137,9 +137,10 @@ def make_data():
 _COMPONENT = None
 
 
-def show(data, tram="after", scen="base", metric=None, sel=None, height=600, key="map3d"):
+def show(data, tram="after", scen="base", metric=None, sel=None, height=600, key="map3d", mode="panel"):
     """앱(app.py) 지도 칸에 3D 지도를 넣음. 기둥·정거장을 누르면 {"area"|"station": …, "t": …} 를 돌려줌.
-    tram: "after"/"before", scen: "low"/"base"/"high", metric: "land"/"tram"/"stores"/"risk" (None 이면 3D 안에서 고름)."""
+    tram: "after"/"before", scen: "low"/"base"/"high", metric: "land"/"tram"/"stores"/"risk" (None 이면 3D 안에서 고름).
+    mode: "panel" = 지도 화면 칸 안(좁게), "full" = '3D 지도' 화면(넓게, 상권 카드의 '이 상권 진단 보기' → {"goto": 코드})."""
     global _COMPONENT
     import streamlit.components.v1 as components
     if _COMPONENT is None:
@@ -147,7 +148,7 @@ def show(data, tram="after", scen="base", metric=None, sel=None, height=600, key
     state = {"tram": tram, "scen": scen, "sel": sel}
     if metric:
         state["metric"] = metric
-    return _COMPONENT(data=data, state=state, height=height, key=key, default=None)
+    return _COMPONENT(data=data, state=state, mode=mode, height=height, key=key, default=None)
 
 
 def make_html(data=None, standalone=True):
