@@ -78,7 +78,8 @@ def _inside(lon, lat, ring):
 
 def food_tram_effects():
     """상권별 음식 업종 트램 효과(%) = Σ 업종 그룹 비중 × 대전 1호선 인허가 점포 효과.
-    낮음 = 확실한 그룹(카페·빵과자)의 95% 하한, 기본 = 확실한 그룹 추정치(나머지 0), 높음 = 모든 그룹 추정치.
+    낮음 = 확실한 그룹(카페)의 95% 하한, 기본 = 카페 추정치(나머지 0), 높음 = 모든 그룹 추정치(빵·과자 포함).
+    빵·과자는 개수 효과는 있으나 비중 변화가 없어(근거 점검) 낮음·기본에서 뺌.
     인허가 파일이나 결과가 없으면 None → 예전 방식(땅값 × 해외 업종 비율)."""
     import contextlib, io, json
     f = C.OUT_DIR / "line1_permits_sector.csv"
@@ -91,6 +92,8 @@ def food_tram_effects():
     p["sector"] = AP.sector_of(p)
     p = p[p.close.isna() & p.sector.isin(FOOD_SECTORS)]          # 지금 영업 중인 음식 업종
     sure = sec["판정"].astype(str).str.startswith("확실")
+    # 근거 점검(check_sector_evidence.py): 빵·과자는 개수만 늘고 음식점 중 비중은 1·2단계 모두 변화 없음 → 낮음·기본에서 제외
+    sure = sure & (sec.index != "빵·과자")
     eff = {"low": sec["하한_%"].where(sure, 0.0), "base": sec["효과_%"].where(sure, 0.0), "high": sec["효과_%"]}
     gj = json.loads((C.OUT_DIR / "sangkwon_polygons.geojson").read_text(encoding="utf-8"))
     out = {}

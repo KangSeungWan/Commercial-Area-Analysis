@@ -20,13 +20,21 @@ ss = st.session_state
 
 # ── 파일 읽기 (한 번 읽고 캐시 → 클릭 반응 빠르게) ──
 @st.cache_data
+def _read_csv(path, mtime, **kw):                          # mtime: 파일이 바뀌면(run_all 재실행) 다시 읽음
+    return pd.read_csv(path, encoding="utf-8-sig", **kw)
+
+
 def read_csv(path, **kw):
-    return pd.read_csv(path, encoding="utf-8-sig", **kw) if os.path.exists(path) else None
+    return _read_csv(path, os.path.getmtime(path), **kw) if os.path.exists(path) else None
 
 
 @st.cache_data
+def _read_json(path, mtime):
+    return json.load(open(path, encoding="utf-8"))
+
+
 def read_json(path):
-    return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else None
+    return _read_json(path, os.path.getmtime(path)) if os.path.exists(path) else None
 
 
 def _mtimes(*paths):
@@ -73,6 +81,11 @@ dgj = read_json(f"{OUT}/dong_map.geojson")                  # 행정동 경계 +
 comp89 = read_csv(f"{OUT}/composition_forecast.csv", dtype={"key": str})   # 업종 구성 예상 (build_composition.py)
 rentp = read_csv(f"{OUT}/rent_pressure.csv", dtype={"key": str})           # 임대료 부담 위험 (build_rent_pressure.py)
 rsurv = read_csv(f"{OUT}/rent_survey_area.csv")                            # 부동산원 임대동향 (build_rent_survey.py)
+cnow = read_csv(f"{OUT}/composition_now.csv", dtype={"key": str})            # 업종 구성 현재
+dyp = read_csv(f"{OUT}/dong_year_panel.csv", dtype={"dong_id": str})        # 행정동 연도 패널 (땅값)
+dfl = read_csv(f"{OUT}/dong_forecast_land.csv", dtype={"code": str})        # 행정동 땅값 예측
+dps = read_csv(f"{OUT}/dong_panel_store.csv", dtype={"period": str, "dong_id": str})   # 행정동 점포 분기
+d89 = read_csv(f"{OUT}/8989/dong_panel_8989.csv", dtype={"plcCd": str, "stdrYm": str, "adm_cd2": str})  # 행정동 월 카드매출
 RENT_C = {"높음": [106, 42, 140], "보통": [166, 120, 198], "낮음": [221, 208, 234], "해당 없음": [228, 230, 233]}
 RENT_HEX = {k: "#%02x%02x%02x" % tuple(v) for k, v in RENT_C.items()}  # 8989 월간 보고서 골목상권 누적 변화 (parse_8989_reports)
 SRC_8989 = "대전 소상공인 상권분석 서비스(8989.daejeon.go.kr, 대전신용보증재단) 카드매출"
@@ -731,7 +744,7 @@ def store_chart(code):
     s["date"] = pd.to_datetime(s.period, format="%Y%m")
     br = pd.DataFrame({"date": pd.to_datetime(BREAKS), "설명": "수집 기준 변경 (급변은 자료 탓일 수 있음)"})
     line = alt.Chart(s).mark_line(strokeWidth=2.5, color="#1f4fa3", point=alt.OverlayMarkDef(size=18)).encode(
-        x=alt.X("date:T", title=None), y=alt.Y("n_stores:Q", title="점포 수", scale=alt.Scale(zero=False)),
+        x=alt.X("date:T", title=None, axis=alt.Axis(format="%Y", tickCount={"interval": "year", "step": 1})), y=alt.Y("n_stores:Q", title="점포 수", scale=alt.Scale(zero=False)),
         tooltip=[alt.Tooltip("date:T", format="%Y-%m"), "n_stores"])
     rule = alt.Chart(br).mark_rule(color="#6b7860", strokeDash=[4, 3]).encode(x="date:T", tooltip=["설명"])
     return (line + rule).properties(height=280)
@@ -760,6 +773,122 @@ def forecast_chart(code, with_tram):
     op = alt.Chart(pd.DataFrame({"year": [OPEN_YEAR], "t": ["트램 개통"]}))
     return (a_ + l_ + op.mark_rule(color="#23272e", strokeDash=[2, 2]).encode(x="year:Q")
             + op.mark_text(align="left", dx=4, color="#23272e").encode(x="year:Q", y=alt.value(10), text="t")).properties(height=280)
+
+
+COMP_GROUPS = ["카페", "빵·과자", "식사·주점", "소매", "생활서비스", "교육", "보건의료", "기타"]
+
+
+def comp_table(level, key):
+    """업종 구성: 지금 vs 2034(지금 고른 시나리오, 트램 건설 후). 카페(·빵) 수만 늘고 나머지는 그대로라 비중이 조금 옅어짐."""
+    if cnow is None or comp89 is None:
+        return None
+    n = cnow[(cnow.level == level) & (cnow.key == str(key))]
+    f = comp89[(comp89.level == level) & (comp89.key == str(key)) & (comp89.scenario == SCEN_KEY) & (comp89.year == comp89.year.max())]
+    if not len(n) or not len(f):
+        return None
+    n, f = n.iloc[0], f.iloc[0]
+    add = {"카페": f.get("add_카페", 0.0), "빵·과자": f.get("add_빵·과자", 0.0)}
+    tot34 = n.n_stores + sum(add.values())
+    rows = []
+    for g in COMP_GROUPS:
+        rows.append({"업종": g, "시점": "지금 (2026-06)", "비중": n[f"share_{g}"] * 100, "점포": n[f"n_{g}"]})
+        if tram_after:
+            k = n[f"n_{g}"] + add.get(g, 0.0)
+            rows.append({"업종": g, "시점": "2034 (트램 건설 후)", "비중": k / tot34 * 100, "점포": k})
+    return pd.DataFrame(rows), n, f
+
+
+def comp_chart(T):
+    dom = ["지금 (2026-06)", "2034 (트램 건설 후)"]
+    return alt.Chart(T).mark_bar().encode(
+        x=alt.X("업종:N", sort=COMP_GROUPS, title=None, axis=alt.Axis(labelAngle=0)),
+        xOffset=alt.XOffset("시점:N", sort=dom),
+        y=alt.Y("비중:Q", title="전체 점포 중 비중 (%)"),
+        color=alt.Color("시점:N", scale=alt.Scale(domain=dom, range=["#b8bfb3", "#7f4f24"]), legend=alt.Legend(orient="top", title=None)),
+        tooltip=["업종", "시점", alt.Tooltip("비중:Q", format=".2f"), alt.Tooltip("점포:Q", format=",.0f")]).properties(height=280)
+
+
+def comp_tab(level, key, name):
+    r = comp_table(level, key)
+    if r is None:
+        st.info("업종 구성 결과가 없습니다. python tram_model/run_all.py --from build_composition 을 실행하세요.")
+        return
+    T, n, f = r
+    st.caption("대전 1호선 근거: 역 500m 안 카페 수 +25%, 음식점 중 카페 비중 +1.4%p(1단계)·+4.0%p(2단계에서 따로 재현), "
+               "개통 뒤 8년 동안 계속 커짐. 다른 업종(빵집 포함)은 근거가 약해 그대로 둠 → 바뀌는 것은 카페 몫")
+    st.altair_chart(comp_chart(T))
+    if tram_after:
+        st.markdown(f"**{name}**: 카페 {int(n['n_카페'])}곳 중 {n['near500_카페'] * 100:.0f}%가 정거장 500m 안 → "
+                    f"2034년까지 카페 약 **{f['add_카페']:.0f}곳** 늘어 카페·빵집 비중 {f.cafe_bakery_share_now * 100:.1f}% → "
+                    f"**{f.cafe_bakery_share * 100:.1f}%** ({scen.split()[0]} 시나리오)")
+    else:
+        st.caption("위에서 '건설 후'를 고르면 2034년 예상 구성이 함께 나옵니다.")
+    st.caption(src("outputs/composition_now.csv (상가정보 2026-06)", "outputs/composition_forecast.csv", "outputs/sector_evidence_share.csv (근거 점검)"))
+
+
+def dong_forecast_chart(k, with_tram):
+    f = dfl[dfl.code == k].set_index("year")
+    h = dyp[dyp.dong_id == k].set_index("year").land_idx.dropna()
+    if not len(f) or not len(h):
+        return None
+    b = h.iloc[-1] / 100
+    band = pd.DataFrame({"year": f.index, "lo": f.lo80 * b, "hi": f.hi80 * b})
+    parts = [pd.DataFrame({"year": h.loc[2015:].index, "v": h.loc[2015:].values, "구분": "실제"}),
+             pd.DataFrame({"year": f.index, "v": f.base_path.values * b, "구분": "예측 (트램 없음)"})]
+    dom, rng, dash = ["실제", "예측 (트램 없음)"], ["#222222", "#9aa0a6"], [[1, 0], [5, 4]]
+    if with_tram:
+        col = {"base": "tram_base", "low": "tram_low", "high": "tram_high"}[SCEN_KEY]
+        parts.append(pd.DataFrame({"year": f.index, "v": f[col].values * b, "구분": "예측 (트램 건설 후)"}))
+        dom, rng, dash = dom + ["예측 (트램 건설 후)"], rng + [TRAM_INK], dash + [[1, 0]]
+    ln = pd.concat(parts)
+    a_ = alt.Chart(band).mark_area(opacity=.22, color="#9aa0a6").encode(
+        x=alt.X("year:Q", axis=alt.Axis(format="d"), title=None),
+        y=alt.Y("lo:Q", title="지수 (2015=100)", scale=alt.Scale(zero=False)), y2="hi:Q")
+    l_ = alt.Chart(ln).mark_line(strokeWidth=2.5).encode(
+        x="year:Q", y="v:Q", color=alt.Color("구분:N", scale=alt.Scale(domain=dom, range=rng), legend=alt.Legend(orient="top", title=None)),
+        strokeDash=alt.StrokeDash("구분:N", scale=alt.Scale(domain=dom, range=dash), legend=None),
+        tooltip=["구분", "year", alt.Tooltip("v:Q", format=".1f")])
+    op = alt.Chart(pd.DataFrame({"year": [OPEN_YEAR], "t": ["트램 개통"]}))
+    return (a_ + l_ + op.mark_rule(color="#23272e", strokeDash=[2, 2]).encode(x="year:Q")
+            + op.mark_text(align="left", dx=4, color="#23272e").encode(x="year:Q", y=alt.value(10), text="t")).properties(height=280)
+
+
+def dong_land_chart(k, name):
+    h = dyp[dyp.dong_id == k][["year", "land_idx"]].dropna().assign(구분=name)
+    a = lp[lp.code == "ALL"][["year", "idx"]].rename(columns={"idx": "land_idx"}).assign(구분="대전 전체") if lp is not None else None
+    t = pd.concat([h, a]) if a is not None else h
+    return alt.Chart(t).mark_line(strokeWidth=2.5).encode(
+        x=alt.X("year:Q", title=None, axis=alt.Axis(format="d")),
+        y=alt.Y("land_idx:Q", title="지수 (2015=100)", scale=alt.Scale(zero=False)),
+        color=alt.Color("구분:N", scale=alt.Scale(domain=[name, "대전 전체"], range=["#1f4fa3", "#9aa0a6"]), legend=alt.Legend(orient="top", title=None)),
+        tooltip=["구분", "year", alt.Tooltip("land_idx:Q", format=".1f")]).properties(height=280)
+
+
+def dong_store_chart(k):
+    s = dps[dps.dong_id == k].copy()
+    s["date"] = pd.to_datetime(s.period, format="%Y%m")
+    br = pd.DataFrame({"date": pd.to_datetime(BREAKS), "설명": "수집 기준 변경 (급변은 자료 탓일 수 있음)"})
+    line = alt.Chart(s).mark_line(strokeWidth=2.5, color="#1f4fa3", point=alt.OverlayMarkDef(size=18)).encode(
+        x=alt.X("date:T", title=None, axis=alt.Axis(format="%Y", tickCount={"interval": "year", "step": 1})), y=alt.Y("n_stores:Q", title="점포 수", scale=alt.Scale(zero=False)),
+        tooltip=[alt.Tooltip("date:T", format="%Y-%m"), "n_stores"])
+    return (line + alt.Chart(br).mark_rule(color="#6b7860", strokeDash=[4, 3]).encode(x="date:T", tooltip=["설명"])).properties(height=280)
+
+
+def dong_sales_chart(k):
+    s = d89[(d89.adm_cd2 == k) & d89.useAmount_합계.notna()].copy()
+    if not len(s):
+        return None
+    s["date"] = pd.to_datetime(s.stdrYm, format="%Y%m")
+    s = s[["date"] + [c for c in s.columns if c.startswith("useAmount_") and c != "useAmount_합계"]]
+    L = s.melt("date", var_name="업종", value_name="억").dropna()
+    L["업종"] = L.업종.str.replace("useAmount_", ""); L["억"] = L.억 / 1e8
+    top = L.groupby("업종").억.sum().sort_values(ascending=False).index[:4]
+    L = L[L.업종.isin(top)]
+    return alt.Chart(L).mark_line(strokeWidth=2.2, point=alt.OverlayMarkDef(size=14)).encode(
+        x=alt.X("date:T", title=None, axis=alt.Axis(format="%y-%m")),
+        y=alt.Y("억:Q", title="월 카드매출 (억 원)"),
+        color=alt.Color("업종:N", legend=alt.Legend(orient="top", title=None)),
+        tooltip=["업종", alt.Tooltip("date:T", format="%Y-%m"), alt.Tooltip("억:Q", format=",.1f")]).properties(height=280)
 
 
 # ================================================================ 페이지 1: 지도 (상권 상세)
@@ -1246,10 +1375,43 @@ if PAGE == "map":
 
     # ================================================================ ④ 상세 탭 (이름 고정 → 다시 그려도 보던 탭 유지)
     if DONG:
-        st.caption("행정동별 땅값·점포 그래프와 AI 해설은 준비 중입니다. 핵심 상권 보기에서는 지금도 볼 수 있습니다.")
+        k_, dn_ = ss.sel_dong, dinfo.loc[ss.sel_dong, "name"]
+        st.subheader(f"{dinfo.loc[k_, 'dong']} 자세히 보기", anchor=False)
+        d_fc, d_land, d_store, d_sales, d_comp = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "카드매출", "업종 구성"], key="dong_tab")
+        with d_fc:
+            ch_ = dong_forecast_chart(k_, tram_after) if dfl is not None and dyp is not None else None
+            if ch_ is not None:
+                st.caption("회색 띠 = 트램 없는 예측의 80% 범위 · 남색 선 = 트램 건설 후 (동 점포 중 500m 안 비율만큼 효과)")
+                st.altair_chart(ch_)
+                st.caption(src("outputs/dong_forecast_land.csv", "outputs/dong_year_panel.csv (실제 값)"))
+            else:
+                st.info("이 동의 땅값 예측 결과가 없습니다.")
+        with d_land:
+            if dyp is not None:
+                st.caption("대전 전체와 비교 (공시지가 같은 필지 지수, 2015=100)")
+                st.altair_chart(dong_land_chart(k_, dn_))
+                st.caption(src("outputs/dong_year_panel.csv", "outputs/landprice_area_panel.csv (대전 전체)"))
+        with d_store:
+            if dps is not None:
+                st.caption("회색 점선 = 자료 수집 기준이 바뀐 분기 (그때의 급변은 자료 탓일 수 있음)")
+                st.altair_chart(dong_store_chart(k_))
+                st.caption(src("outputs/dong_panel_store.csv"))
+        with d_sales:
+            ch_ = dong_sales_chart(k_) if d89 is not None else None
+            if ch_ is not None:
+                st.caption("매출이 큰 업종 대분류 4개의 월 카드매출 (2025-01~). 실측이지만 카드사·79개 업종 범위라 금액보다 흐름으로 보세요"
+                           + (" · 전통시장이 많은 동이라 현금 거래가 빠져 금액이 작게 나옴" if bool(dinfo.loc[k_].get("s89_market_caveat", False)) else ""))
+                st.altair_chart(ch_)
+                st.caption(src("outputs/8989/dong_panel_8989.csv", SRC_8989))
+            else:
+                st.info("카드매출 자료가 없습니다 (대전 소상공인 상권분석 서비스 자료 필요).")
+        with d_comp:
+            comp_tab("행정동", k_, dinfo.loc[k_, "dong"])
     else:
         st.subheader(f"{short(sel)} 자세히 보기", anchor=False)
-        t_fc, t_land, t_store, t_ai = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "AI 해설"], key="detail_tab")
+        t_fc, t_land, t_store, t_comp, t_ai = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "업종 구성", "AI 해설"], key="detail_tab")
+        with t_comp:
+            comp_tab("상권", sel, short(sel))
         with t_fc:
             if fc is not None and lp is not None and sel in set(fc.code):
                 st.caption("회색 띠 = 트램 없는 예측의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선 = 트램 건설 후 · "
@@ -1459,8 +1621,10 @@ elif PAGE == "industry":
                 st.dataframe(br, hide_index=True, use_container_width=True, column_config={
                     "항목 점수": CC.ProgressColumn("항목 점수 (20개 중 상대)", min_value=0, max_value=100, format="%.0f"),
                     "기여 점수": CC.NumberColumn("기여 점수", format="%.1f", help="항목 점수 × 가중치 ÷ 가중치 합. 다 더하면 총점")})
-                st.caption(f"트램: 이 상권 점포의 {rb_.in500 * 100:.0f}%가 정거장 500m 안 · {cur} 상권 가치(땅값) 기준 트램 효과 "
-                           f"{rb_[f'tram_effect_{SCEN_KEY}']:.2f}% ({scen}) · 건설 후에는 이 효과를 성장·땅값 흐름에 더해 다시 매김"
+                st.caption(f"트램: 이 상권 점포의 {rb_.in500 * 100:.0f}%가 정거장 500m 안 · {cur} 업종 트램 효과 "
+                           f"{rb_[f'tram_effect_{SCEN_KEY}']:.2f}% ({scen.split()[0]} 시나리오, "
+                           + ("대전 1호선 카페 인허가 근거" if cur == "음식" else "상권 가치(땅값) × 해외 업종 비율") + ")"
+                           + f" · 건설 후에는 이 효과를 성장·땅값 흐름에 더해 다시 매김"
                            + (f" · 비고: {rb_.flag}" if isinstance(rb_.flag, str) and rb_.flag else ""))
         with t2:
             dd = T.dropna(subset=["before"]).assign(short=lambda d: d.name.str.split("(").str[0])
