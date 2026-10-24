@@ -58,6 +58,8 @@ STEPS = [
     ("score_dongs", "행정동 쇠퇴 위험·성장 점수·진단", None),
     ("analyze_tram_impact_dongs", "행정동 트램 효과 금액 (약 1분)", None),
     ("build_dong_map_profile", "지도용 행정동 요약표·GeoJSON·정거장 요약", None),
+    ("build_composition", "업종 구성 현재·트램 개통 후 예상 (카페·빵집, 1호선 인허가 근거)", None),
+    ("build_rent_pressure", "임대료 부담 위험 순위 (상권·행정동)", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 
