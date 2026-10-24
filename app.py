@@ -81,6 +81,7 @@ dgj = read_json(f"{OUT}/dong_map.geojson")                  # 행정동 경계 +
 comp89 = read_csv(f"{OUT}/composition_forecast.csv", dtype={"key": str})   # 업종 구성 예상 (build_composition.py)
 rentp = read_csv(f"{OUT}/rent_pressure.csv", dtype={"key": str})           # 임대료 부담 위험 (build_rent_pressure.py)
 rsurv = read_csv(f"{OUT}/rent_survey_area.csv")                            # 부동산원 임대동향 (build_rent_survey.py)
+dss = read_csv(f"{OUT}/dong_station_summary.csv", dtype={"dong_id": str})  # 정거장 500m 에 걸친 행정동
 cnow = read_csv(f"{OUT}/composition_now.csv", dtype={"key": str})            # 업종 구성 현재
 dyp = read_csv(f"{OUT}/dong_year_panel.csv", dtype={"dong_id": str})        # 행정동 연도 패널 (땅값)
 dfl = read_csv(f"{OUT}/dong_forecast_land.csv", dtype={"code": str})        # 행정동 땅값 예측
@@ -427,7 +428,7 @@ if ss.page == "cover":
     st.stop()
 
 # ================================================================ 사이드바
-PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "20개 상권 비교"}
+PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "상권·행정동 비교"}
 if ss.page not in PAGES:
     ss.page = "map"
 st.sidebar.title("대전 트램 상권 지도")
@@ -486,7 +487,7 @@ if st.sidebar.button("처음 화면으로", use_container_width=True, key="to_co
 ss.tram_w, ss.mm_w, ss.scen_w, ss.unit_w = ss.tram_saved, ss.mm, ss.scen_saved, ss.unit_saved
 _SCEN_ORD = ["tram_effect_low", "tram_effect", "tram_effect_high"]     # 화면 순서: 낮음 · 기본 · 높음
 with st.container(horizontal=True, vertical_alignment="bottom", gap="medium", key="ctlbar"):
-    if PAGE == "map" and len(UNITS) > 1:
+    if PAGE in ("map", "compare") and len(UNITS) > 1:
         st.segmented_control("보기 단위", UNITS, key="unit_w", required=True, on_change=_keep("unit_saved", "unit_w"),
                              help="핵심 상권 20: 점포가 모인 상권(트램 500m 효과를 재는 단위) / "
                                   "행정동 82: 대전 전체를 행정동으로 나눠 같은 방식으로 진단(82개 동 안 상대 순위)")
@@ -1253,19 +1254,42 @@ if PAGE == "map":
                           else "분석 상권 밖", tram_range(t, "tram_effect_low", "tram_effect_high") or None,
                           delta_color="off", delta_arrow="off", help=TRAM_DEF)
                 a = st_areas[st_areas.station_no == ss.sel_station] if st_areas is not None else pd.DataFrame()
-                if len(a):
-                    cols = {"code": "코드", "name": "영향권에 걸친 상권", "stores_in_500m": "영향권 안 점포",
-                            "share_of_area_pct": "상권 점포 중 비율(%)", "quadrant": "진단"}
-                    a = a.assign(quadrant=a.code.map(info.quadrant))   # 진단은 지금 고른 건설 전/후 기준
+                ad = dss[dss.station_no == ss.sel_station] if DONG and dss is not None else pd.DataFrame()
+                if DONG and len(ad):
+                    ad = ad.assign(quadrant=ad.dong_id.map(dinfo.quadrant), comp=ad.dong_id.map(dinfo.comp),
+                                   rent=ad.dong_id.map(dinfo.rent), share=ad.dong_id.map(dinfo.tram500_share) * 100)
+                    tbd = ad[["dong_id", "dong", "dist_m", "share", "quadrant", "comp", "rent"]].reset_index(drop=True)
+                    cfg_d = {"dong_id": None, "dong": st.column_config.TextColumn("500m 안에 걸친 행정동"),
+                             "dist_m": st.column_config.NumberColumn("정거장까지", format="%d m", help="0 = 정거장이 이 동 안"),
+                             "share": st.column_config.NumberColumn("동 점포 중 500m 안", format="%.0f%%"),
+                             "quadrant": "진단", "comp": st.column_config.NumberColumn("업종 변화", format="+%.1f%%p", help=HELP["comp"]),
+                             "rent": st.column_config.TextColumn("임대료 부담", help=HELP["rent"])}
+                    evd = st.dataframe(tbd, hide_index=True, on_select="rerun", selection_mode="single-row", key="stn_tbl_d", column_config=cfg_d)
+                    rws_ = evd.selection.rows if evd is not None else []
+                    if rws_ and tbd.dong_id.iloc[rws_[0]] != ss.sel_dong:
+                        ss.sel_dong = tbd.dong_id.iloc[rws_[0]]; st.rerun()
+                    st.caption(src("outputs/dong_station_summary.csv", SRC_DONG))
+                elif DONG:
+                    st.caption("이 정거장 500m 안에 걸친 행정동 정보가 없습니다.")
+                elif len(a):
+                    cols = {"code": "코드", "name": "걸친 상권", "stores_in_500m": "500m 안 점포",
+                            "share_of_area_pct": "상권 중 %", "quadrant": "진단", "comp": "업종 변화", "rent": "임대료 부담"}
+                    a = a.assign(quadrant=a.code.map(info.quadrant),   # 진단은 지금 고른 건설 전/후 기준
+                                 comp=a.code.map(info.comp) if "comp" in info else None, rent=a.code.map(info.rent) if "rent" in info else None)
                     tb = a[[c for c in cols if c in a.columns]].rename(columns=cols).round(1).reset_index(drop=True)
-                    ev = st.dataframe(tb, hide_index=True, on_select="rerun", selection_mode="single-row", key="stn_tbl")
+                    tb["걸친 상권"] = tb["걸친 상권"].str.split("(").str[0]
+                    ev = st.dataframe(tb, hide_index=True, on_select="rerun", selection_mode="single-row", key="stn_tbl",
+                                      column_config={"코드": None, "상권 중 %": st.column_config.NumberColumn(format="%.0f%%"),
+                                                     "업종 변화": st.column_config.NumberColumn(format="+%.1f%%p", help=HELP["comp"]),
+                                                     "임대료 부담": st.column_config.TextColumn(help=HELP["rent"])})
                     rows = ev.selection.rows if ev is not None else []
                     if rows and tb["코드"].iloc[rows[0]] != sel:
                         ss.sel_area = tb["코드"].iloc[rows[0]]; ss._last_area_map = ss.sel_area
                         st.rerun()
                 else:
                     st.caption(f"이 정거장 500m 안에는 20개 분석 상권이 없습니다 · 주요 업종: {t.top3_mid}")
-                st.caption(src("outputs/station_summary.csv", "outputs/station_areas.csv"))
+                if not DONG:
+                    st.caption(src("outputs/station_summary.csv", "outputs/station_areas.csv"))
 
     if DONG:
         dong_panel()
@@ -1531,6 +1555,10 @@ elif PAGE == "industry":
 
         ss.ind_panel = cur
         st.markdown('<h1 class="page-t">업종 점수</h1>', unsafe_allow_html=True)
+        st.markdown('<div class="rentnote">트램은 가게 수보다 <b>업종 구성</b>을 바꿉니다 — 대전 1호선 역 500m 안에서 '
+                    '<b>카페 비중이 늘고</b>(음식점 중 +1.4%p, 2단계 역 +4.0%p로 다시 확인) 식사 음식점 비중은 줄었고, '
+                    '전체 가게 수와 점포당 매출 차이는 뚜렷하지 않았습니다. 그래서 음식 점수의 트램 효과는 카페 근거로, '
+                    '다른 업종은 상권 가치(땅값) × 해외 업종 비율로 계산합니다.</div>', unsafe_allow_html=True)
         st.radio("업종", IND_LIST, key="ind_panel", horizontal=True, on_change=_ind_cb, label_visibility="collapsed")
         B, wb = ind_scores(False)
         A, wa = ind_scores(True)
@@ -1672,46 +1700,64 @@ elif PAGE == "industry":
                 b2.caption("조정한 가중치로 지도·순위를 계산 중 (기본: " +
                            ", ".join(f"{ITEM.get(k, k)} {v:.0f}" for k, v in W_DEF.items()) + ")")
 
-# ================================================================ 페이지 3: 20개 상권 비교
+# ================================================================ 페이지 3: 상권·행정동 비교
 else:
-    st.markdown('<h1 class="page-t">20개 상권 비교</h1>', unsafe_allow_html=True)
-    keep = ["code", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "tram_sel",
-            "land_chg_5y_pct", "store_share_chg_5y_pct", "close_rate_q_pct", "n_stores"]   # 유형은 지도 화면 상권 패널에
-    tb = prof[[c for c in keep if c in prof.columns]].copy()
-    tb["name"] = [("▶ " if c == sel else "") + n.split("(")[0] for c, n in zip(tb.code, tb.name)]   # 표 폭: 괄호 설명 생략
-    tb.insert(tb.columns.get_loc("tram_sel") + 1, "tram_range",
-              [tram_range(x).replace("낮음 ", "").replace("높음 ", "") for _, x in prof.iterrows()])
-    if ind_now:
-        tb.insert(3, "map_val", prof.map_val)
-    sort_col = "map_val" if ind_now else (am if am != "quadrant" else "risk_score")
-    tb = tb.sort_values(sort_col, ascending=False).reset_index(drop=True)
-    st.markdown(f"**20개 상권** · '{LABEL.get(sort_col, sort_col)}' 순 정렬 (지도에 칠한 지표) · 행을 누르면 상세로 이동")
+    CDONG = ss.unit_saved == "행정동 82" and dprof is not None
     CC = st.column_config
-    cfg = {"code": None, "name": CC.TextColumn("상권", width=150, help="▶ = 지금 지도 화면에서 고른 상권"),
-           "quadrant": CC.TextColumn("진단", width=100),
-           "quadrant_stability": CC.NumberColumn("진단 안정도", format="percent",
-                                                 help="15가지 변형 중 같은 진단 비율. 80% 미만 = 불확실"),
-           "risk_score": CC.ProgressColumn("상대 위험", min_value=0, max_value=100, format="%.0f", width=100,
-                                           help=HELP["risk_score"]),
-           "growth_score": CC.ProgressColumn("상대 성장", min_value=0, max_value=100, format="%.0f", width=100,
-                                             help=HELP["growth_score"]),
-           "tram_sel": CC.NumberColumn("상권 가치(땅값) 기준 트램 효과", format="%+.1f%%",
-                                       help=TRAM_DEF + f" · 지금 시나리오: {scen}"),
-           "tram_range": CC.TextColumn("낮음 ~ 높음", help="같은 상권의 낮음·높음 시나리오 값 (%)"),
-           "land_chg_5y_pct": CC.NumberColumn("땅값 5년", format="%+.1f%%"),
-           "store_share_chg_5y_pct": CC.NumberColumn("점포 비중", format="%+.1f%%",
-                                                     help="5년 변화 · " + HELP["store_share_chg_5y_pct"]),
-           "close_rate_q_pct": CC.NumberColumn("분기 폐업률", format="%.1f%%"),
-           "n_stores": CC.NumberColumn("점포 수", format="%d")}
-    if ind_now:
-        cfg["map_val"] = CC.ProgressColumn(f"{ind_now} 점수", min_value=0, max_value=100, format="%.0f")
+    st.markdown(f'<h1 class="page-t">{"82개 행정동" if CDONG else "20개 상권"} 비교</h1>', unsafe_allow_html=True)
+    base_cfg = {"quadrant": CC.TextColumn("진단", width=100),
+                "quadrant_stability": CC.NumberColumn("진단 안정도", format="percent", help="15가지 변형 중 같은 진단 비율. 80% 미만 = 불확실"),
+                "risk_score": CC.ProgressColumn("상대 위험", min_value=0, max_value=100, format="%.0f", width=100, help=HELP["risk_score"]),
+                "growth_score": CC.ProgressColumn("상대 성장", min_value=0, max_value=100, format="%.0f", width=100, help=HELP["growth_score"]),
+                "tram_sel": CC.NumberColumn("상권 가치 효과", format="%+.1f%%", help=TRAM_DEF + f" · 지금 시나리오: {scen}"),
+                "tram_range": CC.TextColumn("낮음 ~ 높음", help="같은 곳의 낮음·높음 시나리오 값 (%)"),
+                "comp": CC.NumberColumn("업종 변화", format="+%.1f%%p", help=HELP.get("comp", "")),
+                "rent": CC.TextColumn("임대료 부담", help=HELP.get("rent", "")),
+                "land_chg_5y_pct": CC.NumberColumn("땅값 5년", format="%+.1f%%"),
+                "store_share_chg_5y_pct": CC.NumberColumn("점포 비중", format="%+.1f%%", help="5년 변화 · " + HELP["store_share_chg_5y_pct"]),
+                "close_rate_q_pct": CC.NumberColumn("분기 폐업률", format="%.1f%%"),
+                "s89_sales_yoy_pct": CC.NumberColumn("카드매출 증감", format="%+.1f%%", help="2025→2026 1~8월 같은 달 비교 (대전 소상공인 상권분석 서비스)"),
+                "n_stores": CC.NumberColumn("점포 수", format="%d"), "rent_score": None}
+    R_ORD = {"높음": 3, "보통": 2, "낮음": 1, "해당 없음": 0}
+    if CDONG:
+        keep = ["dong_id", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "tram_sel", "comp", "rent", "rent_score",
+                "land_chg_5y_pct", "store_share_chg_5y_pct", "s89_sales_yoy_pct", "n_stores"]
+        tb = dprof[[c for c in keep if c in dprof.columns]].copy()
+        tb["name"] = [("▶ " if k == ss.get("sel_dong") else "") + n for k, n in zip(tb.dong_id, tb.name)]
+        tb.insert(tb.columns.get_loc("tram_sel") + 1, "tram_range",
+                  [tram_range(x).replace("낮음 ", "").replace("높음 ", "") for _, x in dprof.iterrows()])
+        key_col, cfg = "dong_id", {**base_cfg, "dong_id": None, "name": CC.TextColumn("행정동", width=130, help="▶ = 지도 화면에서 고른 동")}
+        unit_txt, src_txt = "82개 행정동", f"{SRC_DONG} (진단·점수·지표)"
+    else:
+        keep = ["code", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "tram_sel", "comp", "rent", "rent_score",
+                "land_chg_5y_pct", "store_share_chg_5y_pct", "close_rate_q_pct", "n_stores"]
+        tb = prof[[c for c in keep if c in prof.columns]].copy()
+        tb["name"] = [("▶ " if c == sel else "") + n.split("(")[0] for c, n in zip(tb.code, tb.name)]
+        tb.insert(tb.columns.get_loc("tram_sel") + 1, "tram_range",
+                  [tram_range(x).replace("낮음 ", "").replace("높음 ", "") for _, x in prof.iterrows()])
+        if ind_now:
+            tb.insert(3, "map_val", prof.map_val)
+        key_col, cfg = "code", {**base_cfg, "code": None, "name": CC.TextColumn("상권", width=150, help="▶ = 지도 화면에서 고른 상권")}
+        if ind_now:
+            cfg["map_val"] = CC.ProgressColumn(f"{ind_now} 점수", min_value=0, max_value=100, format="%.0f")
+        unit_txt, src_txt = "20개 상권", f"{SRC_AREA} (진단·점수·지표)"
+    if "rent" in tb:
+        tb["rent_score"] = tb.rent.map(R_ORD) * 1000 + tb.get("rent_score", 0).fillna(0)
+    sort_col = "map_val" if (ind_now and not CDONG) else ("rent_score" if am == "rent" else (am if am in tb.columns and am != "quadrant" else "risk_score"))
+    tb = tb.sort_values(sort_col, ascending=False).reset_index(drop=True)
+    st.markdown(f"**{unit_txt}** · '{LABEL.get('rent' if sort_col == 'rent_score' else sort_col, sort_col)}' 순 정렬 (지도 화면에서 칠한 지표) · "
+                "행을 누르면 지도 화면으로 이동 · 위의 '보기 단위'로 상권·행정동 전환")
     try:
         ev = st.dataframe(tb, hide_index=True, use_container_width=True, column_config=cfg, height=740,
-                          on_select="rerun", selection_mode="single-row", key="cmp_tbl")
+                          on_select="rerun", selection_mode="single-row", key="cmp_tbl_d" if CDONG else "cmp_tbl")
         rws = ev.selection.rows if ev is not None else []
     except TypeError:
         st.dataframe(tb, hide_index=True, use_container_width=True, column_config=cfg); rws = []
-    if rws and tb.code.iloc[rws[0]] != sel:
-        ss.sel_area = tb.code.iloc[rws[0]]; ss._last_area_map = ss.sel_area
+    if rws:
+        k = tb[key_col].iloc[rws[0]]
+        if CDONG:
+            ss.sel_dong = k
+        else:
+            ss.sel_area = k; ss._last_area_map = k
         ss.page = "map"; st.rerun()
-    st.caption(src(f"{SRC_AREA} (진단·점수·지표)", f"{SRC_TRAM} (트램 효과 수준)"))
+    st.caption(src(src_txt, f"{SRC_TRAM} (트램 효과 수준)", "outputs/composition_forecast.csv (업종 변화)", "outputs/rent_pressure.csv (임대료 부담)"))
