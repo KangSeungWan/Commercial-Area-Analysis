@@ -417,7 +417,15 @@ if ss.page == "cover":
               "base": f"{_TS['base'].effect_pct:+.1f}%" if "base" in _TS else "-",
               "low": f"{_TS['low'].effect_pct:+.1f}%" if "low" in _TS else "-",
               "high": f"{_TS['high'].effect_pct:+.1f}%" if "high" in _TS else "-",
-              "n_scores": int(IS.score_before.notna().sum()) if IS is not None else "-"}
+              "n_scores": int(IS.score_before.notna().sum()) if IS is not None else "-", "rb_rent": "-", "cafe_add": "-", "cafe_rng": "-"}
+    if rentp is not None and "quadrant" in rentp:
+        _rb = rentp[(rentp.level == "상권") & (rentp.quadrant == "트램 반등 기회")]
+        _stats["rb_rent"] = int((_rb.rent_pressure == "높음").sum())
+    if comp89 is not None:
+        _cd = comp89[(comp89.level == "대전") & (comp89.year == comp89.year.max())].set_index("scenario")["add_카페"]
+        if {"low", "base", "high"} <= set(_cd.index):
+            _stats["cafe_add"] = f"+{_cd['base']:.0f}"
+            _stats["cafe_rng"] = f"{_cd['low']:.0f}~{_cd['high']:.0f}곳"
     if render_cover(st, stations, route_paths, _stats, lambda: open_about(st)):
         ss.page = "map"
         try:
@@ -1210,9 +1218,10 @@ if PAGE == "map":
         if _mv3d:
             try:
                 map3d.show(map3d_data(_mtimes(f"{OUT}/area_profile.csv", f"{OUT}/forecast_land.csv",
-                                              f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv")),
+                                              f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv",
+                                              f"{OUT}/composition_forecast.csv", f"{OUT}/rent_pressure.csv")),
                            tram="after" if tram_after else "before", scen=SCEN_KEY,
-                           metric={"land_fc": "land", "tram_sel": "tram"}.get(am), sel=sel, height=MAP_H)
+                           metric={"land_fc": "land", "tram_sel": "tram", "comp": "comp", "rent": "rent"}.get(am), sel=sel, height=MAP_H)
             except Exception as e:                         # 3D가 안 되면 평면 지도로 대신 (시연 중 빈 칸 방지)
                 st.warning(f"3D 지도를 열지 못해 평면 지도로 보여 줍니다: {e}")
                 ss.map_view = "평면"
@@ -1528,12 +1537,14 @@ if PAGE == "map":
 # ================================================================ 페이지 1-2: 3D 지도 (넓게)
 elif PAGE == "map3d":
     st.markdown('<h1 class="page-t">3D 지도</h1>', unsafe_allow_html=True)
-    st.caption("상권 20곳을 기둥으로 세워 2026→2034 땅값 변화와 2030 개통 후 트램 운행을 재생합니다. "
+    st.caption("상권 20곳을 기둥으로 세워 2026→2034 땅값·업종(카페) 변화와 2030 개통 후 트램 운행을 재생합니다. "
+               "기둥 높이는 땅값 전망·상권 가치 효과·업종 변화·임대료 부담·점포 수·쇠퇴 위험 중에서 고릅니다. "
                "위쪽 '트램 2호선'·'시나리오'가 그대로 적용되고, 기둥 높이·연도·보는 곳은 지도 안에서 고릅니다. "
                "기둥을 누르면 상권 카드가 뜨고 '이 상권 진단 보기'로 지도 화면에 갈 수 있습니다.")
     try:
         map3d.show(map3d_data(_mtimes(f"{OUT}/area_profile.csv", f"{OUT}/forecast_land.csv",
-                                      f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv")),
+                                      f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv",
+                                              f"{OUT}/composition_forecast.csv", f"{OUT}/rent_pressure.csv")),
                    tram="after" if tram_after else "before", scen=SCEN_KEY, sel=sel, height=MAP3D_H,
                    key="map3d_full", mode="full")
     except Exception as e:

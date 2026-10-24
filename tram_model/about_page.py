@@ -172,6 +172,68 @@ def _lgbm_status():
         return "이 컴퓨터: LightGBM 없음 → scikit-learn 모델로 대체 중 (python -m pip install lightgbm 으로 설치 가능)"
 
 
+def _story(n):
+    """트램이 바꾸는 것 / 잘 안 바꾸는 것 — 근거 4줄 (땅값·업종·매출·임대). 결과 파일에서 수치를 읽음."""
+    v = dict(cafe="+24.8% [8.0, 44.2]", cafe_pp="+1.4%p", cafe_pp2="+27.5%", dens="+18.7%", stores="+4.7% [−3.3, 13.3]",
+             bake_pp="+0.1%p", add="+272곳 (88~484)", pp="+0.3%p", land32="+32%", sales7="+7%", sales_ci="", ratio="0.24",
+             rent_hi="6곳", rent_rb="", idx="−1%", vac="14%")
+    c = _read("sector_evidence_checks.csv")
+    if c is not None:
+        g = lambda k: c[c["검사"].str.startswith(k) & (c["업종"] == "카페")]
+        for key, k, unit in (("cafe", "0 ", "%"), ("cafe_pp", "3 ", "%p"), ("cafe_pp2", "5 ", "%"), ("dens", "6 ", "%")):
+            r = g(k)
+            if len(r):
+                r = r.iloc[0]
+                v[key] = f"{r['효과_퍼센트']:+.1f}{unit}" + (f" [{r['하한']:.1f}, {r['상한']:.1f}]" if key == "cafe" else "")
+    e = _read("composition_evidence.csv")
+    if e is not None:
+        r = e[e["대상"] == "빵·과자 비중(음식점 중)"]
+        if len(r):
+            v["bake_pp"] = f"{r['효과_퍼센트'].iloc[0]:+.1f}%p"
+        r = e[e["대상"] == "전체 점포 수"]
+        if len(r):
+            r = r.iloc[0]; v["stores"] = f"{r['효과_퍼센트']:+.1f}% [{r['하한']:.1f}, {r['상한']:.1f}]"
+    f = _read("composition_forecast.csv")
+    if f is not None:
+        d = f[(f.level == "대전") & (f.year == f.year.max())].set_index("scenario")
+        if {"low", "base", "high"} <= set(d.index):
+            v["add"] = f"+{d.loc['base', 'add_카페']:.0f}곳 ({d.loc['low', 'add_카페']:.0f}~{d.loc['high', 'add_카페']:.0f})"
+            v["pp"] = f"+{d.loc['base', 'cafe_bakery_pp']:.1f}%p"
+    sp = _read("station_sales_premium.csv")
+    if sp is not None:
+        sp = sp.set_index("model")
+        if "땅값: 기본" in sp.index and "전체: 기본" in sp.index:
+            v["land32"] = f"{sp.loc['땅값: 기본', 'premium_pct']:+.0f}%"
+            t = sp.loc["전체: 기본"]
+            v["sales7"] = f"{t.premium_pct:+.0f}%"; v["ratio"] = f"{t.ratio_to_land:.2f}"
+            v["sales_ci"] = f" (95% {(pow(2.718281828, t.lo) - 1) * 100:+.0f}~{(pow(2.718281828, t.hi) - 1) * 100:+.0f}%)"
+    rp = _read("rent_pressure.csv")
+    if rp is not None:
+        a = rp[rp.level == "상권"]
+        v["rent_hi"] = f"{(a.rent_pressure == '높음').sum()}곳"
+        rb = a[a.quadrant == "트램 반등 기회"]
+        v["rent_rb"] = f", 반등 기회 {len(rb)}곳 중 {(rb.rent_pressure == '높음').sum()}곳"
+    rs = _read("rent_survey_area.csv")
+    if rs is not None:
+        u = rs.drop_duplicates("region")
+        v["idx"] = f"{u.idx_chg_all_24_26.mean():+.1f}%"; v["vac"] = f"{u.vac_mid_4q.median():.0f}%"
+    return [
+        ("① 상권 가치(땅값)", "바꿈", "대전 1호선 역 500m 공시지가 이중차분 + 가짜 처리군·가짜 개통연도",
+         f"1단계 {n['ph1']}, 합산 {n['pool']} → 트램 시나리오 낮음 {n['low']} · 기본 {n['base']} · 높음 {n['high']}",
+         "지하철 효과를 트램에 빌려 씀, 95% 구간이 0 포함"),
+        ("② 업종 구성(카페)", "바꿈", "대전 1호선 음식점 인허가 이중차분(2002~2014) + 사전 추세·2단계 재현·밀도 맞춤",
+         f"역 500m 카페 수 {v['cafe']}, 음식점 중 카페 비중 {v['cafe_pp']}, 2단계 재현 {v['cafe_pp2']}, 밀도 맞춤 {v['dens']} "
+         f"→ 2034 대전 카페 {v['add']}, 대전 카페·빵 비중 {v['pp']}",
+         f"전체 점포 수 효과는 불확실({v['stores']}), 빵집은 개수만 늘고 비중 {v['bake_pp']}"),
+        ("③ 점포당 매출", "잘 안 바꿈", "8989 행정동 카드매출(2026-01~08) 단면 회귀, 동 특성 통제",
+         f"1호선 역세권 땅값 {v['land32']} 차이 vs 점포당 매출 {v['sales7']}{v['sales_ci']} → 땅값 효과의 {v['ratio']}배",
+         "단면이라 인과 아님, 2025~ 자료만 있음"),
+        ("④ 임대료 부담", "위험", "땅값-매출 격차 · 폐업률 · 업종 교체 백분위 평균 + 부동산원 임대동향",
+         f"위험 '높음' 상권 {v['rent_hi']}{v['rent_rb']}. 지금 시장은 임대가격지수 {v['idx']}(2024→2026), 중대형 공실률 {v['vac']}",
+         "금액 아닌 위험 순위, 부동산원 상권 경계 ≠ 분석 상권"),
+    ]
+
+
 LIMITS = [
     "**매출 금액**: 격자 매출은 '구 매출 ÷ 점포 수' 합성값 → 매출 예측·잔차는 참고용. 2026-10부터 대전 소상공인 상권분석 서비스(8989)의 "
     "행정동 82개 카드매출(2025-01~)을 상권 점포 비율로 배분해 '실측 참고값'으로 함께 표시 — 전통시장 동(중앙동)은 현금 거래가 빠져 과소, 카드사 범위 미확인",
@@ -186,6 +248,8 @@ LIMITS = [
     "하지만 20개 상권 위험 점수와는 ρ {rho_area}로 검증되지 않음 (코로나 시기 조사). "
     "8989 실측 카드매출(2025→2026 1~8월)로는 위험 점수가 높을수록 매출 증감이 낮음(ρ −0.41, p 0.05, n 20) → 진단 방향과 일치. "
     "다만 매출 증감은 주민 인구 변화(ρ +0.55, 재개발 입주)와 가장 강하게 움직임",
+    "**업종 변화(카페)**: 대전 1호선(지하철) 인허가 근거 → 지상 트램은 다를 수 있어 낮음~높음 범위로 표시. 카페 외 업종(빵·편의점·주점·식사)은 확실한 근거 없음",
+    "**임대료 부담**: 임대료 금액 예측이 아니라 '개통 후 잠재 위험' 순위. 부동산원 임대동향 지역은 분석 상권과 경계가 달라 설명 자료로만 사용",
     "**진단은 상대 비교**: 20개 상권 안 순위라 언제나 약 절반이 '위험 50 이상' → 절대적 쇠퇴 판정이 아님",
 ]
 
@@ -198,7 +262,14 @@ def _body(st):
     c[1].metric("지가 1년 예측 오차", n["land_rmse"], n.get("land_best", ""), delta_color="off", delta_arrow="off")
     c[2].metric("상권 유형", f"{n['k']}개", f"안정성 ARI {n['ari']}", delta_color="off", delta_arrow="off")
     c[3].metric("분석 단위", "20개 상권", "82개 행정동 · 293개 격자", delta_color="off", delta_arrow="off")
-    t0, t1, t2, t5, t3, t4 = st.tabs(["트램 효과 크기", "데이터", "분석·모델", "프레임워크", "참고 논문", "검증·한계"])
+    t6, t0, t1, t2, t5, t3, t4 = st.tabs(["트램이 바꾸는 것", "트램 효과 크기", "데이터", "분석·모델", "프레임워크", "참고 논문", "검증·한계"])
+    with t6:
+        st.markdown("**트램은 가게의 매출보다 상권의 가치와 업종 구성을 바꿉니다.** 그 결과 생기는 위험이 임대료 부담입니다.")
+        for what, verdict, how, res, lim in _story(n):
+            with st.container(border=True):
+                st.markdown(f"**{what}** — 트램이 **{verdict}**  \n{res}")
+                st.caption(f"근거: {how} · 한계: {lim}")
+        st.caption("처방은 시점별로: 개통 초(공실 많고 임대료 하락 중) → 빈 점포 채우기·업종 전환 지원, 땅값이 오른 뒤 → 상생 협약·임대료 안정 장치")
     with t0:
         c = st.columns(3)
         c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음~높음 {n['money_range']}",

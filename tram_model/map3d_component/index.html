@@ -114,6 +114,7 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
     <div class="row opt"><span class="lab" id="l-metric">기둥 높이</span>
       <div class="seg" id="seg-metric" role="group" aria-labelledby="l-metric">
         <button id="m-land" data-v="land">땅값 전망</button><button id="m-tram" data-v="tram">상권 가치 효과</button>
+        <button id="m-comp" data-v="comp">업종 변화(카페)</button><button id="m-rent" data-v="rent">임대료 부담</button>
         <button id="m-stores" data-v="stores">점포 수</button><button id="m-risk" data-v="risk">쇠퇴 위험</button></div></div>
     <div class="row opt" id="row-scen"><span class="lab" id="l-scen">트램 효과 시나리오</span>
       <div class="seg" id="seg-scen" role="group" aria-labelledby="l-scen">
@@ -194,19 +195,23 @@ const fcKey = () => (S.tram === "after" ? S.scen : "none");
 function value(a) {
   if (S.metric === "land") return a.fc ? at(a.fc[fcKey()], S.yf) : 100;
   if (S.metric === "tram") return S.tram === "after" && a.fc ? (at(a.fc[S.scen], S.yf) / at(a.fc.none, S.yf) - 1) * 100 : 0;
+  if (S.metric === "comp") return S.tram === "after" && a.comp ? at(a.comp[S.scen], S.yf) : 0;
+  if (S.metric === "rent") return S.tram === "after" && a.rent && a.rent.score != null ? a.rent.score : 0;
   if (S.metric === "stores") return a.n_stores;
   return a.risk;
 }
 // 높이 눈금은 지표마다 고정 (연도·시나리오를 바꿔도 같은 자 → 높이 비교가 정직)
 const SC = (() => {
-  let land = 100, tram = 0.01;
+  let land = 100, tram = 0.01, comp = 0.01;
+  for (const a of D.areas) if (a.comp) for (const k of ["low", "base", "high"]) comp = Math.max(comp, ...a.comp[k]);
   for (const a of D.areas) if (a.fc) for (const k of ["none", "low", "base", "high"]) a.fc[k].forEach((v, i) => {
     land = Math.max(land, v); tram = Math.max(tram, (v / a.fc.none[i] - 1) * 100); });
-  return {land: [80, land], tram: [0, tram], stores: [0, Math.max(...D.areas.map(a => a.n_stores))], risk: [0, 100]};
+  return {land: [80, land], tram: [0, tram], comp: [0, comp], rent: [0, 100], stores: [0, Math.max(...D.areas.map(a => a.n_stores))], risk: [0, 100]};
 })();
 function height(a) { const [lo, hi] = SC[S.metric]; return FLOOR + Math.max(0, (value(a) - lo) / (hi - lo)) * MAXH; }
-const fmt = {land: v => v.toFixed(1), tram: v => (v >= 0 ? "+" : "") + v.toFixed(2) + "%", stores: v => Math.round(v).toLocaleString() + "개", risk: v => v.toFixed(0) + "점"};
+const fmt = {land: v => v.toFixed(1), tram: v => (v >= 0 ? "+" : "") + v.toFixed(2) + "%", comp: v => "+" + v.toFixed(1) + "%p", rent: v => v.toFixed(0) + "점", stores: v => Math.round(v).toLocaleString() + "개", risk: v => v.toFixed(0) + "점"};
 const DESC = {land: "땅값 지수 (2026년 = 100, 바닥 = 80)", tram: "트램이 있을 때와 없을 때의 땅값 차이",
+              comp: "음식점 중 카페·빵집 비중 증가 (%p, 트램 개통 후)", rent: "임대료 부담 위험 점수 (0~100, 트램 건설 후)",
               stores: "상권 안 점포 수 (현재)", risk: "쇠퇴 위험 점수 (0~100)"};
 
 // ── 트램 운행 (연출: 순환선 양방향 각 10대, 지선 2대) ──
@@ -369,6 +374,8 @@ function select(code, fly) {
     f && ["땅값 지수 2034 (트램 없음)", f.none[last].toFixed(1)],
     f && [`땅값 지수 2034 (트램 ${D.scen_label[S.scen].split(" ")[0]})`, f[S.scen][last].toFixed(1)],
     ["상권 가치(땅값) 효과", `${a.eff.low.toFixed(1)} ~ ${a.eff.high.toFixed(1)}% (기본 ${a.eff.base.toFixed(1)}%)`],
+    a.comp && ["업종 변화 2034 (카페·빵 비중)", S.tram === "after" ? fmt.comp(a.comp[S.scen][a.comp[S.scen].length - 1]) : "건설 전 0"],
+    a.rent && ["임대료 부담 위험", S.tram === "after" ? a.rent.grade + (a.rent.drivers ? ` · ${a.rent.drivers}` : "") : "건설 전 해당 없음"],
     ["점포 수", a.n_stores.toLocaleString() + "개"], ["쇠퇴 위험 · 성장 가능", `${a.risk.toFixed(0)} · ${a.growth.toFixed(0)}점`],
     a.nearest && ["가까운 정거장", a.nearest]].filter(Boolean).map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
   card.hidden = EMBED;
@@ -379,7 +386,7 @@ function sync() {
   for (const [id, key] of [["seg-tram", "tram"], ["seg-metric", "metric"], ["seg-scen", "scen"]])
     $(id).querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S[key]));
   $("seg-view").querySelectorAll("button[data-v]").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === curView));
-  $("row-scen").hidden = !(S.tram === "after" && (S.metric === "land" || S.metric === "tram"));
+  $("row-scen").hidden = !(S.tram === "after" && (S.metric === "land" || S.metric === "tram" || S.metric === "comp"));
   yr.value = S.yf;
   $("play-ico").setAttribute("d", S.playing ? "M3 1.5h3v11H3zM8 1.5h3v11H8z" : "M3 1.5v11l9-5.5z");
   $("play").setAttribute("aria-label", S.playing ? "멈춤" : "2026년부터 재생");
@@ -391,7 +398,10 @@ function sync() {
   const mn = Math.min(...D.areas.map(value));
   $("hgt").innerHTML = `기둥 높이 = ${DESC[S.metric]}<br>` + (mx - mn < 1e-6 ? `지금은 모든 상권이 <b>${fmt[S.metric](mx)}</b>로 같습니다`
     : `지금 가장 높은 곳: <b>${short(top.name)} ${fmt[S.metric](mx)}</b>`);
-  $("note").textContent = S.metric === "tram" && S.tram === "before" ? "건설 전에는 트램 효과가 0이라 기둥이 모두 바닥 높이입니다. ‘건설 후’를 눌러 보세요."
+  $("note").textContent = (S.metric === "tram" || S.metric === "comp" || S.metric === "rent") && S.tram === "before"
+      ? "트램이 생겨야 생기는 변화라 건설 전에는 기둥이 모두 바닥 높이입니다. ‘건설 후’를 눌러 보세요."
+    : S.metric === "comp" ? "대전 1호선 역 주변 카페 인허가 근거(지하철)로 계산했습니다. 개통 뒤 해마다 커지며, 범위는 시나리오로 보세요."
+    : S.metric === "rent" ? "금액이 아닌 위험 순위입니다(땅값-매출 격차·폐업률·업종 교체). 지금은 공실이 많고 임대료가 내려가는 중입니다."
     : S.metric === "tram" ? "트램 효과는 땅값 기준 추정치이고 95% 구간이 0을 포함합니다. 높이 차이는 작게 읽어 주세요."
     : "트램 운행 모습은 연출이며 실제 배차와 다릅니다. 정거장 일부 좌표는 공개 도면 기준 추정값입니다.";
   if (S.sel) select(S.sel);

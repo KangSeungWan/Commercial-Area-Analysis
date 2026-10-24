@@ -49,6 +49,7 @@ _HTML = """
   <div class="cv-copy cv-hero">
     <span class="cv-tag">대전 트램 2호선 · 2030년 개통</span>
     <h1><span class="line"><span>트램이 지날 길 위의</span></span><span class="line"><span>스무 상권</span></span></h1>
+    <p class="cv-sub">트램은 가게 매출보다 <b>상권의 가치</b>와 <b>업종 구성</b>을 바꿉니다.<br>그래서 먼저 살필 것은 오르는 임대료입니다.</p>
     <div class="cv-actions">
       <button type="button" class="cv-cta" data-act="open">지도 열기</button>
       <button type="button" class="cv-ghost" data-act="about">분석 방법 보기</button>
@@ -58,21 +59,21 @@ _HTML = """
   <!-- 2. 무엇을 보나: 세 가지 분석 (오른쪽에서 들어와 왼쪽으로 빠짐) -->
   <div class="cv-panel cv-p1">
     <div class="cv-card cv-rows">
-      <div class="cv-row"><h3>상권 진단</h3><p>땅값·점포 흐름과 정거장 거리로 20개 상권을 네 가지 상태로 나눕니다. 진단이 흔들리는 상권은 따로 표시합니다.</p>
-        <div class="cv-num"><b data-stat="rebound"></b>곳이 트램 반등 기회</div></div>
-      <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 트램 정거장 500m 안의 효과를 추정합니다. 숫자 하나가 아니라 범위로 보여 줍니다.</p>
+      <div class="cv-row"><h3>상권 진단</h3><p>땅값·점포 흐름과 정거장 거리로 20개 상권(82개 행정동)을 네 가지 상태로 나누고, 개통 뒤 임대료 부담 위험을 함께 봅니다.</p>
+        <div class="cv-num"><b data-stat="rebound"></b>곳이 트램 반등 기회 · 그중 <span data-stat="rb_rent"></span>곳 임대료 부담 높음</div></div>
+      <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 정거장 500m 안의 효과를 추정합니다. 같은 역세권에서 점포당 매출 차이는 땅값의 4분의 1 수준이었습니다.</p>
         <div class="cv-num"><b data-stat="base"></b>기본 시나리오 (<span data-stat="low"></span> ~ <span data-stat="high"></span>)</div></div>
-      <div class="cv-row"><h3>업종 점수</h3><p>음식·소매 등 6개 업종을 상권마다 100점으로 매기고, 트램 건설 전과 후의 순위를 나란히 비교합니다.</p>
-        <div class="cv-num"><b data-stat="n_scores"></b>개 상권·업종 점수</div></div>
+      <div class="cv-row"><h3>업종 구성 변화</h3><p>1호선 역 주변에서는 카페가 늘고 음식점 중 카페 비중이 커졌습니다. 같은 근거로 2034년까지 늘어날 카페를 상권마다 계산합니다.</p>
+        <div class="cv-num">대전 카페 <b data-stat="cafe_add"></b>곳 (<span data-stat="cafe_rng"></span>)</div></div>
     </div>
   </div>
 
   <!-- 3. 어떻게 분석했나: 네 단계 -->
   <div class="cv-panel cv-p2">
     <div class="cv-card cv-steps">
-      <div class="cv-step"><b><span>1</span>자료 모으기</b>공시지가 1990~2026, 상가정보 42분기, 정거장 45곳 좌표</div>
-      <div class="cv-step"><b><span>2</span>효과 추정</b>1호선 역 500m 안과 1~3km 밖 같은 필지의 개통 전후 비교</div>
-      <div class="cv-step"><b><span>3</span>진단과 점수</b>상권 4분류, 업종별 100점, 땅값 예측</div>
+      <div class="cv-step"><b><span>1</span>자료 모으기</b>공시지가 1990~2026, 상가정보 42분기, 음식점 인허가, 카드매출, 임대동향</div>
+      <div class="cv-step"><b><span>2</span>효과 추정</b>1호선 역 500m 안과 1~3km 밖의 개통 전후 비교 (땅값·업종)</div>
+      <div class="cv-step"><b><span>3</span>진단과 예측</b>상권 4분류, 땅값·카페 수 예측, 임대료 부담 위험</div>
       <div class="cv-step"><b><span>4</span>지도에서 보기</b>상권·정거장을 눌러 근거와 AI 해설 확인</div>
     </div>
   </div>
@@ -88,7 +89,8 @@ _HTML = """
       </div>
     </div>
     <div class="cv-foot">자료: 국토교통부 개별공시지가, 소상공인시장진흥공단 상가(상권)정보, 대전시 트램 2호선 정거장 자료,
-      2021 대전 소상공인 실태조사. 상권 가치(땅값) 기준 트램 효과는 추정값이며 매출 변화가 아닙니다.</div>
+      행정안전부 음식점 인허가, 대전 소상공인 상권분석 서비스 카드매출, 한국부동산원 임대동향, 2021 대전 소상공인 실태조사.
+      상권 가치(땅값) 기준 트램 효과는 추정값이며 매출 변화가 아닙니다.</div>
   </div>
 </section>
 </div>
@@ -111,6 +113,9 @@ _CSS = """
 .cv-nav-cta { padding: 8px 18px !important; font-size: 14px !important; visibility: hidden; opacity: 0; }
 
 .cv-copy { position: absolute; left: var(--gutter); top: clamp(110px, 20vh, 220px); max-width: 620px; color: var(--fg); }
+.cv-sub { font-size: 17px; line-height: 1.6; color: #2a332a; margin: 18px 0 0 0; max-width: 34em; word-break: keep-all; }
+.cv-sub b { color: #0a1d08; font-weight: 650; }
+.cv-hero .cv-sub + .cv-actions { margin-top: 26px; }
 .cv-tag { display: inline-block; font-size: 13px; color: var(--tag-fg); background: var(--tag-bg); border: 1px solid var(--tag-line);
           border-radius: 999px; padding: 5px 13px; margin-bottom: 26px; }
 .cv-copy h1 { font-family: "Newsreader", "Noto Serif KR", serif; font-weight: 300; font-size: clamp(40px, 4.6vw, 80px); line-height: 1.1;
@@ -408,7 +413,7 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
   } else {
     render();
     tweens.push(gsap.from(rootEl.querySelectorAll(".cv-hero h1 .line > span"), { yPercent: 115, duration: 1.3, ease: "expo.out", stagger: .12, delay: .4 }));
-    tweens.push(gsap.from([q(".cv-hero .cv-tag"), q(".cv-hero .cv-actions")], { opacity: 0, y: 14, duration: .9, ease: "power3.out", stagger: .5, delay: .6 }));
+    tweens.push(gsap.from([q(".cv-hero .cv-tag"), q(".cv-hero .cv-sub"), q(".cv-hero .cv-actions")], { opacity: 0, y: 14, duration: .9, ease: "power3.out", stagger: .5, delay: .6 }));
     tweens.push(gsap.to(S, { intro: 1, duration: 1.8, ease: "expo.out" }));     // 언덕이 아래에서 솟아오름
     // 레이아웃이 자리 잡은 뒤 스크롤 상자를 찾아 연결 (지도에서 돌아오면 맨 위부터)
     requestAnimationFrame(() => {
@@ -471,7 +476,7 @@ def _route(stations, route_paths):
 
 def render_cover(st, stations, route_paths, stats, open_about):
     """커버 화면. '지도 열기' 를 누르면 True. '분석 방법 보기' 는 분석 방법 창을 엶.
-    stats: 스크롤하면 나오는 세 가지 분석의 수치 {rebound, base, low, high, n_scores}."""
+    stats: 스크롤하면 나오는 세 가지 분석의 수치 {rebound, rb_rent, base, low, high, cafe_add, cafe_rng}."""
     st.html(_PAGE_CSS)
     res = _COVER(key="cover", data={"route": _route(stations, route_paths), "stats": stats},
                  on_open_change=lambda: None, on_about_change=lambda: None)

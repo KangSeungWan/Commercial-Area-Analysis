@@ -1,6 +1,6 @@
 """3D 지도 시제품 (B안) — 분석 결과 파일을 읽어 deck.gl 3D 지도 HTML 한 장을 만든다.
 
-- 상권 20개 핵심 영역을 기둥처럼 세움 (높이 = 땅값 전망 / 상권 가치(땅값) 기준 트램 효과 / 점포 수 / 쇠퇴 위험)
+- 상권 20개 핵심 영역을 기둥처럼 세움 (높이 = 땅값 전망 / 상권 가치(땅값) 기준 트램 효과 / 업종 변화(카페 비중) / 임대료 부담 / 점포 수 / 쇠퇴 위험)
 - 색 = 진단 4분류 (app.py 와 같은 색)
 - 2026→2034 연도 재생, 2030 개통 후 트램이 노선을 따라 달림 (운행 간격은 연출용, 실제 시간표 아님)
 - 바닥 = 행정동 경계 (배경 지도 타일 없이 그림 → 인터넷 지도 서버에 기대지 않음)
@@ -76,6 +76,12 @@ def make_data():
     ssum = _csv(OUT / "station_summary.csv")
     scen = _csv(OUT / "tram_scenarios.csv")
     dong_p = OUT / "dong_polygons.geojson"
+    comp = _csv(OUT / "composition_forecast.csv")       # 업종 변화: 카페·빵 비중 증가 %p (연도·시나리오별)
+    rent = _csv(OUT / "rent_pressure.csv")              # 임대료 부담 위험 (점수 0~100, 등급)
+    if comp is not None:
+        comp = comp[comp.level == "상권"]
+    if rent is not None:
+        rent = rent[rent.level == "상권"].set_index("key")
 
     poly = {f["properties"]["code"]: f for f in gj["features"]}
     years = sorted(fc.year.unique().tolist()) if fc is not None else []
@@ -96,6 +102,14 @@ def make_data():
             g = fc[fc.code == r.code].set_index("year").reindex(years)
             a["fc"] = {k: [_r(v, 2) for v in g[c].ffill().tolist()]
                        for k, c in [("none", "base_path"), ("low", "tram_low"), ("base", "tram_base"), ("high", "tram_high")]}
+        if comp is not None and years:
+            g = comp[comp.key == r.code]
+            a["comp"] = {s: [_r(v, 2) for v in g[g.scenario == s].set_index("year").cafe_bakery_pp.reindex(years).fillna(0).tolist()]
+                         for s in ("low", "base", "high")}
+        if rent is not None and r.code in rent.index:
+            rr = rent.loc[r.code]
+            a["rent"] = dict(grade=str(rr.rent_pressure), score=_r(rr.rent_pressure_score, 1) if pd.notna(rr.rent_pressure_score) else None,
+                             drivers=str(rr.rent_drivers) if pd.notna(rr.rent_drivers) else "")
         areas.append(a)
 
     n500 = dict(zip(ssum.station_no, ssum.n_stores)) if ssum is not None else {}
@@ -139,7 +153,7 @@ _COMPONENT = None
 
 def show(data, tram="after", scen="base", metric=None, sel=None, height=600, key="map3d", mode="panel"):
     """앱(app.py) 지도 칸에 3D 지도를 넣음. 기둥·정거장을 누르면 {"area"|"station": …, "t": …} 를 돌려줌.
-    tram: "after"/"before", scen: "low"/"base"/"high", metric: "land"/"tram"/"stores"/"risk" (None 이면 3D 안에서 고름).
+    tram: "after"/"before", scen: "low"/"base"/"high", metric: "land"/"tram"/"comp"/"rent"/"stores"/"risk" (None 이면 3D 안에서 고름).
     mode: "panel" = 지도 화면 칸 안(좁게), "full" = '3D 지도' 화면(넓게, 상권 카드의 '이 상권 진단 보기' → {"goto": 코드})."""
     global _COMPONENT
     import streamlit.components.v1 as components
