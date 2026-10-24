@@ -54,6 +54,7 @@ STEPS = [
     ("cluster_dongs", "행정동 유형 (K-means)", None),
     ("forecast_dongs", "행정동 지가·점포 예측 + 트램 시나리오 (약 1분)", None),
     ("score_dongs", "행정동 쇠퇴 위험·성장 점수·진단", None),
+    ("analyze_tram_impact_dongs", "행정동 트램 효과 금액 (약 1분)", None),
     ("build_dong_map_profile", "지도용 행정동 요약표·GeoJSON·정거장 요약", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]

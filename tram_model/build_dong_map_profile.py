@@ -37,13 +37,18 @@ def main():
         for c in ("sales_2026_m", "sales_yoy_pct", "sales_per_store_2026", "floating_2026", "resident_2026", "resident_chg_24_26_pct", "closure_rate_12m_pct"):
             D["s89_" + c] = D.dong_id.map(E[c])
         D["s89_market_caveat"] = D.dong_id.isin(E[E.sales_per_store_2026 < 1.5e6].index)   # 전통시장 동: 점포당 150만 원 미만 → 카드매출 과소
+    fm = OUT / "dong_tram_money.csv"
+    if fm.exists():
+        Mo = pd.read_csv(fm, dtype={"dong_id": str}, encoding="utf-8-sig").set_index("dong_id")
+        for c in ("value_total_eok", "value_500_eok", "share_500_value", "gain_low_eok", "gain_base_eok", "gain_high_eok", "gap2034_base_eok"):
+            D["money_" + c] = D.dong_id.map(Mo[c])
     D["tram_group"] = np.select([D.tram500_share >= 0.5, D.tram500_share >= 0.1], ["트램 영향권", "일부"], "영향권 밖")
     D = D.round(4)
     D.to_csv(OUT / "dong_map_profile.csv", index=False, encoding="utf-8-sig")
 
     gj = json.load(open(OUT / "dong_polygons.geojson", encoding="utf-8"))
     keep = ["dong_id", "name", "si", "dong", "type_name", "cluster", "risk_score", "growth_score", "quadrant", "quadrant_uncertain", "tram_effect", "tram500_share", "tram_group",
-            "nearest_tram", "nearest_tram_m", "n_stores", "small", "land_rel_idx", "land_chg_5y_pct", "land_2034_base", "land_2034_tram", "s89_sales_yoy_pct", "s89_sales_per_store_2026", "s89_market_caveat", "areas"]
+            "nearest_tram", "nearest_tram_m", "n_stores", "small", "land_rel_idx", "land_chg_5y_pct", "land_2034_base", "land_2034_tram", "money_gain_base_eok", "money_value_500_eok", "s89_sales_yoy_pct", "s89_sales_per_store_2026", "s89_market_caveat", "areas"]
     Di = D.set_index("dong_id")
     for ft in gj["features"]:
         k = str(ft["properties"]["id"]); r = Di.loc[k] if k in Di.index else None
