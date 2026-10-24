@@ -60,6 +60,7 @@ STEPS = [
     ("build_dong_map_profile", "지도용 행정동 요약표·GeoJSON·정거장 요약", None),
     ("build_composition", "업종 구성 현재·트램 개통 후 예상 (카페·빵집, 1호선 인허가 근거)", None),
     ("build_rent_pressure", "임대료 부담 위험 순위 (상권·행정동)", None),
+    ("build_rent_survey", "부동산원 임대동향(임대료·지수·공실률) 상권 대응 (data/raw/rent_survey 있으면)", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 
