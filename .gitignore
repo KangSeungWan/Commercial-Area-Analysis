@@ -11,3 +11,6 @@ tram_model/outputs/landprice_parcels.csv.gz
 *.dxf
 *.zip
 tram_model/outputs/parcel_value.csv.gz
+
+# 8989 상권분석 원본 (대용량, 약관상 재배포 금지)
+tram_model/data/raw/8989/raw/
