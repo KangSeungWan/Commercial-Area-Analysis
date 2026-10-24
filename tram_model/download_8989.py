@@ -108,6 +108,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--meta", action="store_true", help="코드표·경계만")
     ap.add_argument("--trdar", action="store_true", help="골목상권 164개도 수집")
+    ap.add_argument("--trdar2024", action="store_true", help="골목상권 2024년 카드매출(기준월 202412)을 업종별로 수집 (골목상권만 2024 매출 있음)")
     ap.add_argument("--industries", default="all", choices=["all", "core"])
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--sleep", type=float, default=0.3)
@@ -130,7 +131,8 @@ def main():
         trdar = pd.read_csv(META/"trdar_opt.csv", dtype=str)
         trdar = trdar[trdar.mjrNm != "축제"]
         for plc in trdar.mnrCd:
-            for ym in YM_POP_ONLY: jobs.append(("trdarAnal", plc, inds[0], ym))
+            for i in (inds if a.trdar2024 else inds[:1]):
+                for ym in YM_POP_ONLY: jobs.append(("trdarAnal", plc, i, ym))
             for i in inds:
                 for ym in YM_MAIN: jobs.append(("trdarAnal", plc, i, ym))
     if a.limit: jobs = jobs[:a.limit]

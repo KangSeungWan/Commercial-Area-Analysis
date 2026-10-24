@@ -49,6 +49,8 @@ STEPS = [
     ("build_station_summary", "정거장 45개 500m 영향권 요약", None),
     ("build_8989_tables", "8989 상권분석 서비스 원본 → 표 (data/raw/8989/raw 있으면)", None),
     ("analyze_8989", "8989 실측 카드매출: 행정동 요약·검증·상권 배분", None),
+    ("analyze_station_sales", "1호선 역세권 매출 차이 (8989, 땅값 환산 비율)", None),
+    ("analyze_8989_trdar", "8989 골목상권 144곳 매출 증감·핵심 상권 대응", None),
     ("parse_8989_reports", "8989 월간 상권동향 PDF (data/raw/8989/reports 있으면)", None),
     ("build_dong_year_panel", "행정동 82개 × 연도 패널", None),
     ("cluster_dongs", "행정동 유형 (K-means)", None),
