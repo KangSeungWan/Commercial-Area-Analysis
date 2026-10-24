@@ -7,13 +7,21 @@
 """
 import re
 from pathlib import Path
-import pandas as pd, pdfplumber
+import pandas as pd
+try:
+    import pdfplumber
+except ImportError:                                    # PDF 읽기 도구가 없으면 이미 만든 결과를 그대로 씀
+    pdfplumber = None
 
 HERE = Path(__file__).resolve().parent
 RDIR = HERE / "data" / "raw" / "8989" / "reports"; OUT = HERE / "outputs" / "8989"; OUT.mkdir(parents=True, exist_ok=True)
 import sys
 if not list(RDIR.glob("*.pdf")):
     print("월간 보고서 PDF 없음 (data/raw/8989/reports) → 건너뜀"); sys.exit(0)
+if pdfplumber is None:
+    if (OUT / "report_city_monthly.csv").exists():
+        print("pdfplumber 없음 → 기존 결과(outputs/8989/report_*.csv) 사용, 건너뜀 (새 PDF를 읽으려면: python -m pip install pdfplumber)"); sys.exit(0)
+    sys.exit("pdfplumber 가 필요합니다: python -m pip install pdfplumber")
 PCT = re.compile(r"^[+-]?\d+(\.\d+)?%$")
 TYPES = ["전통시장", "상점가", "골목형상점가", "상권활성화구역"]
 

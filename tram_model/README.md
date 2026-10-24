@@ -283,3 +283,33 @@ python tram_model/run_all.py --from train_analyze
 - 높이 눈금은 지표마다 고정(연도·시나리오를 바꿔도 같은 자), 땅값 지수는 바닥 80 기준. 배경 지도 타일 없음(행정동 경계를 바닥으로 그림)
 - 실제 건물(선택): `outputs/buildings_3d.geojson`(Polygon, 속성 `height_m`)을 두면 회색 건물로 함께 올림. 변환 스크립트는 아직 없음(GIS건물통합정보, 노선 500m 안)
 - 한계: 트램 운행 간격·속도는 화면용(실제 시간표 아님), 정거장 일부 좌표 추정값, 트램 효과 높이 차이는 작음(95% 구간 0 포함)
+
+## 행정동 82 · 8989 · 업종 구성 · 임대료 부담 (2026-10-20~25)
+
+방향: **트램이 바꾸는 것 = 상권 가치(땅값) + 업종 구성(카페)**, 점포당 매출은 잘 안 바뀜(검증·근거용), 그 결과 위험 = 임대료 부담.
+8989 수집·표 만들기 자세한 설명은 `README_8989.md`.
+
+| 순서 | 스크립트 | 하는 일 | 주요 출력 (`outputs/`) |
+|---|---|---|---|
+| 1 | `check_sector_evidence.py` | 1호선 인허가 업종 근거 점검: 사전 추세, 비중, 거리 띠, 2단계 재현, 밀도 맞춤, Bonferroni | `sector_evidence_checks/es/share.csv` |
+| 2 | `build_8989_tables.py` | 8989 원본(json) → 행정동·상권 표 | `8989/*.csv`, `dong_panel_8989.csv`, `dong_code_map.csv` |
+| 3 | `analyze_8989.py` | 행정동 매출 요약, 진단 외부 검증, 상권 배분 | `area_sales_summary.csv` |
+| 4 | `analyze_station_sales.py` | 1호선 역세권 땅값 vs 점포당 매출 (+32% vs +7%, 0.24배) | `station_sales_premium.csv`, `station_sales_dong.csv` |
+| 5 | `analyze_8989_trdar.py` | 골목상권 144곳 증감(금액은 격자 합이라 증감·비중만) | `trdar_summary.csv`, `area_trdar_match.csv` |
+| 6 | `parse_8989_reports.py` | 월간 상권동향 PDF → 표 | `report_*.csv` |
+| 7~10 | `build_dong_year_panel.py` → `cluster_dongs.py` → `forecast_dongs.py` → `score_dongs.py` | 행정동 82 패널·유형·예측·진단 (82개 안 백분위) | `dong_year_panel.csv`, `dong_*` |
+| 11 | `analyze_tram_impact_dongs.py` | 동별 정거장 500m 땅값 증가액 (합계 4,349억) | `dong_tram_money.csv` |
+| 12 | `build_dong_map_profile.py` | 지도용 행정동 표·경계, 정거장–동 표 | `dong_map_profile.csv`, `dong_map.geojson`, `dong_station_summary.csv` |
+| 13 | `build_composition.py` | 업종 구성 현재·2034 예상 (카페만 기본 효과, 빵·과자는 높음에만) | `composition_now/forecast/evidence.csv` |
+| 14 | `build_rent_pressure.py` | 임대료 부담 위험 = 땅값-매출 격차·폐업률·업종 교체 백분위 평균 | `rent_pressure.csv` |
+| 15 | `build_rent_survey.py` | 부동산원 임대동향(임대료·지수·공실률) → 상권 대응·검증 | `rent_survey_long/area/validation.csv` |
+
+실행: `python tram_model/run_all.py --from check_sector_evidence` (모두 `run_all.py` STEPS 에 등록)
+
+앱 반영 (B1~B4)
+- 지도 '보기 단위' 20개 상권 ↔ 82개 행정동, '칠할 것'에 업종 변화(카페)·임대료 부담, 결론 띠 ⚠
+- 상세 탭: 상권 = 땅값 예측·흐름·점포 수·업종 구성·AI 해설 / 행정동 = + 카드매출
+- 정거장 패널 행정동 표, '상권·행정동 비교' 화면, 업종 점수 근거 띠
+- 3D 지도 기둥 높이: + 업종 변화(카페)·임대료 부담 (`map3d.py` 가 `composition_forecast.csv`·`rent_pressure.csv` 읽음)
+- 커버 부제·통계 카드, 분석 방법 팝업 첫 탭 '트램이 바꾸는 것'(`about_page._story`, 수치 자동)
+- 주의: `tram_model/` 부품(cover_page·about_page·map3d)을 고치면 앱을 껐다 켜야 반영됨
