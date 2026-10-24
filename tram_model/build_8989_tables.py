@@ -117,8 +117,8 @@ wide["useAmount_합계"] = s.groupby(["plcCd","stdrYm"]).useAmount.sum().values 
 p = pm[(pm.anal=="dongAnal") & (pm.level=="dong")].pivot_table(index=["plcCd","stdrYm"], columns="var", values="value", aggfunc="first").reset_index()
 panel = cm.rename(columns={"admdstCd":"plcCd"}).merge(p, on="plcCd", how="left").merge(wide, on=["plcCd","stdrYm"], how="left")
 cl = dfs["closures_month"]; cl = cl[cl.anal=="dongAnal"]
-cl_m = cl.groupby(["plcCd","stdrYm"], as_index=False).agg(clsbiz=("clsbizStorCo","sum"))
-sv = dfs["store_survived"]; sv = sv[sv.anal=="dongAnal"].groupby(["plcCd","baseYm"], as_index=False).survivedCnt.sum().rename(columns={"baseYm":"stdrYm","survivedCnt":"stores_survived_at_baseYm"})
+cl_m = cl.drop_duplicates(["plcCd","sclasCd","stdrYm"]).groupby(["plcCd","stdrYm"], as_index=False).agg(clsbiz=("clsbizStorCo","sum"))   # 기준월 2개 창 겹침 제거
+sv = dfs["store_survived"]; sv = sv[sv.anal=="dongAnal"].drop_duplicates(["plcCd","baseYm","lclasCd"]).groupby(["plcCd","baseYm"], as_index=False).survivedCnt.sum().rename(columns={"baseYm":"stdrYm","survivedCnt":"stores_survived_at_baseYm"})   # stor01은 업종과 무관하게 같은 값 → 중복 제거
 panel = panel.merge(cl_m, on=["plcCd","stdrYm"], how="left").merge(sv, on=["plcCd","stdrYm"], how="left")
 panel = panel.sort_values(["sgg","dong","stdrYm"])
 panel.to_csv(OUT/"dong_panel_8989.csv", index=False, encoding="utf-8-sig")
