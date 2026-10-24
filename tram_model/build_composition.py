@@ -8,9 +8,11 @@
       outputs/composition_evidence.csv  업종 효과 근거 한 표 (대전 1호선 + 해외)
 방법
 - 업종 그룹: 카페(비알코올/카페), 빵·과자(빵/도넛), 식사·주점(그 밖의 음식), 소매, 생활서비스(수리·개인), 교육, 보건의료, 기타
-- 트램 효과는 1호선 인허가 이중차분에서 확실했던 카페 +24.8% [8.0, 44.2], 빵·과자 +18.3% [3.3, 35.4]만 적용, 나머지 업종 0
-  (전체 점포 수 효과 +4.7%는 유의하지 않음 → 점포 수는 늘리지 않고 구성만 바뀐다고 봄)
-- 단위 효과 = 그 업종 점포 중 정거장 500m 안 비율 × 업종 효과 × 연차 모양(인허가 사건연구: 개통 후 서서히 커짐, 2006~2014 평균=1)
+- 트램 효과는 1호선 인허가 이중차분 근거 점검(check_sector_evidence.py) 결과대로
+  · 카페 = 주 효과: 개수 +24.8% [8.0, 44.2] (낮음=하한·기본·높음=상한). 비중 +1.4%p(1단계)·+4.0%p(2단계 독립 재현), 사전 추세 없음
+  · 빵·과자 = 참고: 개수 +18.3%지만 음식점 중 비중은 변화 없음 → 낮음·기본 0, 높음에만 개수 효과
+  · 나머지 업종 0 (전체 점포 수 효과는 불확실: 기본 +4.7% 유의 X, 번화도 맞춤 +12.4%) → 기준은 다른 업종 수 유지
+- 단위 효과 = 그 업종 점포 중 정거장 500m 안 비율 × 업종 효과 × 연차 모양(카페 고유 사건연구: 개통 후 계속 커짐, 2006~2014 평균=1)
 - 기준(트램 없음) = 현재 점포 수 유지 → '트램 때문에 달라지는 몫'만 보여 줌. 지하철 근거라 트램에서는 더 작을 수 있음(낮음 시나리오 참고)
 """
 import json
@@ -48,11 +50,19 @@ def pip(x, y, poly):
 
 
 def shape_years():
-    """1호선 인허가 사건연구 → 개통 후 k년 효과 비율 (2006~2014 평균 = 1, 줄지 않고 서서히 커짐)"""
-    es = pd.read_csv(OUT / "line1_permits_es.csv", encoding="utf-8-sig").set_index("year").b
-    post = es[(es.index >= 2006) & (es.index <= 2014)]
-    s = (post / post.mean()).clip(lower=0); s.index = s.index - 2006
-    return lambda k: 0.0 if k < 0 else float(s.get(min(k, s.index.max()), s.iloc[-1]))
+    """개통 후 k년 효과 비율 (개통 후 2006~2014 평균 = 1). 카페 고유 사건연구(check_sector_evidence.py) 우선:
+    개통 해 +4% → 8년 뒤 +56%로 줄지 않고 커짐. 없으면 1호선 전체 점포 사건연구."""
+    f = OUT / "sector_evidence_es.csv"
+    if f.exists():
+        E = pd.read_csv(f, encoding="utf-8-sig"); E = E[(E.업종 == "카페") & (E.정의 == "기존")].set_index("year").b
+        src = "카페 고유"
+    else:
+        E = pd.read_csv(OUT / "line1_permits_es.csv", encoding="utf-8-sig").set_index("year").b; src = "전체 점포"
+    post = E[(E.index >= 2006) & (E.index <= 2014)]
+    s_ = (post / post.mean()).clip(lower=0); s_.index = s_.index - 2006
+    fn = lambda k: 0.0 if k < 0 else float(s_.get(min(k, s_.index.max()), s_.iloc[-1]))
+    fn.src = src
+    return fn
 
 
 def main():
@@ -94,6 +104,8 @@ def main():
 
     eff = pd.read_csv(OUT / "line1_permits_sector.csv", encoding="utf-8-sig").set_index("업종")
     E = {gr: {"low": eff.loc[s, "하한_%"] / 100, "base": eff.loc[s, "효과_%"] / 100, "high": eff.loc[s, "상한_%"] / 100} for gr, s in EFFECT_GROUPS.items()}
+    # 빵·과자: 개수는 늘었지만 음식점 중 비중은 1·2단계 모두 변화 없음(sector_evidence_share.csv) → 구성 변화 근거로는 약함
+    E["빵·과자"] = {"low": 0.0, "base": 0.0, "high": eff.loc["빵·과자", "효과_%"] / 100}
     shp = shape_years(); out = []
     for _, r in N.iterrows():
         for sc in ("low", "base", "high"):
@@ -119,6 +131,12 @@ def main():
                비고="역 500m vs 1~3km, 2002~2014") for s in eff.index]
     tot = pd.read_csv(OUT / "line1_permits_effects.csv", encoding="utf-8-sig").iloc[0]
     ev.insert(0, dict(근거="대전 1호선 인허가 이중차분", 대상="전체 점포 수", 효과_퍼센트=tot["효과_%"], 하한=tot["하한_%"], 상한=tot["상한_%"], 판정="유의하지 않음", 비고=tot["분석"]))
+    fs = OUT / "sector_evidence_share.csv"
+    if fs.exists():
+        for _, r in pd.read_csv(fs, encoding="utf-8-sig").iterrows():
+            if "비중" in r.지표 or "전체" in r.지표:
+                ev.append(dict(근거=f"대전 1호선 {r.단계} 인허가 이중차분 (근거 점검)", 대상=r.지표, 효과_퍼센트=r.효과, 하한=r.하한, 상한=r.상한,
+                               판정=("확실" if r.p값 < 0.01 else "유의(5%)" if r.p값 < 0.05 else "유의하지 않음") + f" p={r.p값:.3f}", 비고=f"단위 {r.단위}"))
     ev += [dict(근거="마르세유 트램 (Credit 외)", 대상="신규 업체 중 숙박·음식 비중", 효과_퍼센트=np.nan, 하한=np.nan, 상한=np.nan, 판정="5% → 14%", 비고="트램 개통 후 노선 주변"),
            dict(근거="서울 9호선", 대상="음식점 생존율", 효과_퍼센트=12.7, 하한=np.nan, 상한=np.nan, 판정="보고값", 비고="개통 후 역세권"),
            dict(근거="피렌체 트램", 대상="업종 구성", 효과_퍼센트=np.nan, 하한=np.nan, 상한=np.nan, 판정="음식·관광 업종 비중 증가 보고", 비고="정성 근거")]
@@ -132,7 +150,7 @@ def main():
         print(f"\n[{lvl}] 2034 기본: 카페·빵집 비중 증가(%p) 상위\n", x.head(8)[["name", "cafe_bakery_share_now", "cafe_bakery_share", "cafe_bakery_pp", "cafe_bakery_add"]].to_string(index=False))
     t = F[(F.level == "대전") & (F.year == 2034)][["scenario", "cafe_bakery_add", "add_카페", "add_빵·과자", "cafe_bakery_pp"]]
     print("\n대전 전체 2034 트램 때문에 늘어나는 카페·빵집:\n", t.to_string(index=False))
-    print("연차 모양 (개통 후 0~8년):", [round(shp(k), 2) for k in range(9)])
+    print(f"연차 모양({shp.src}, 개통 후 0~8년):", [round(shp(k), 2) for k in range(9)])
 
 
 if __name__ == "__main__":

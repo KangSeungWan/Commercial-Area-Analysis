@@ -60,7 +60,7 @@ _HTML = """
     <div class="cv-card cv-rows">
       <div class="cv-row"><h3>상권 진단</h3><p>땅값·점포 흐름과 정거장 거리로 20개 상권을 네 가지 상태로 나눕니다. 진단이 흔들리는 상권은 따로 표시합니다.</p>
         <div class="cv-num"><b data-stat="rebound"></b>곳이 트램 반등 기회</div></div>
-      <div class="cv-row"><h3>땅값 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 트램 정거장 500m 안의 효과를 추정합니다. 숫자 하나가 아니라 범위로 보여 줍니다.</p>
+      <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 트램 정거장 500m 안의 효과를 추정합니다. 숫자 하나가 아니라 범위로 보여 줍니다.</p>
         <div class="cv-num"><b data-stat="base"></b>기본 시나리오 (<span data-stat="low"></span> ~ <span data-stat="high"></span>)</div></div>
       <div class="cv-row"><h3>업종 점수</h3><p>음식·소매 등 6개 업종을 상권마다 100점으로 매기고, 트램 건설 전과 후의 순위를 나란히 비교합니다.</p>
         <div class="cv-num"><b data-stat="n_scores"></b>개 상권·업종 점수</div></div>
@@ -88,7 +88,7 @@ _HTML = """
       </div>
     </div>
     <div class="cv-foot">자료: 국토교통부 개별공시지가, 소상공인시장진흥공단 상가(상권)정보, 대전시 트램 2호선 정거장 자료,
-      2021 대전 소상공인 실태조사. 땅값 기준 트램 효과는 추정값이며 매출 변화가 아닙니다.</div>
+      2021 대전 소상공인 실태조사. 상권 가치(땅값) 기준 트램 효과는 추정값이며 매출 변화가 아닙니다.</div>
   </div>
 </section>
 </div>

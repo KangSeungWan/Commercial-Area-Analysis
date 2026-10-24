@@ -34,6 +34,7 @@ STEPS = [
     ("analyze_robustness", "트램 효과 강건성 검정", None),
     ("analyze_line1_trend", "1호선 효과 추세 보정·매칭", None),
     ("analyze_line1_permits", "1호선 개통 전후 점포 이중차분 (인허가, data/raw/permits 있으면)", None),
+    ("check_sector_evidence", "업종 근거 추가 점검: 사전 추세·비중·거리·2단계 재현·밀도 맞춤 (약 3분)", None),
     ("build_dong_layer", "행정동 82개 지표", None),
     ("build_dong_panel", "행정동 지가·점포 패널 (약 1분)", OUT / "dong_panel_store.csv"),
     ("analyze_dong_events", "행정동 단위 사건 효과", None),

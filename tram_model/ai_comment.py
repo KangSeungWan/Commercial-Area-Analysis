@@ -16,7 +16,7 @@ OUT_DIR, DATA_DIR = HERE / "outputs", HERE / "data"
 SAVED_PATH = OUT_DIR / "ai_comments.json"
 DEFAULT_MODEL = "gemini-3.8-flash"
 TIMEOUT_MS = 30_000                     # 발표장에서 한없이 기다리지 않도록 (30초 넘으면 실패로 보고 저장본으로)
-TRAM_DEF = "개통 초기 1~4년, 정거장 500m 안 땅값 기준 추정 효과(%) · 매출 변화가 아님"
+TRAM_DEF = "상권 가치(땅값) 기준 효과: 개통 초기 1~4년, 정거장 500m 안 땅값으로 추정한 %. 점포당 매출 변화가 아님(대전 실측상 매출 차이는 작음)"
 IND_ORDER = ["음식", "소매", "수리·개인", "교육", "보건의료", "숙박"]
 SCEN_COL = {"base": "tram_effect", "low": "tram_effect_low", "high": "tram_effect_high"}
 

@@ -113,7 +113,7 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
         <button id="t-before" data-v="before">건설 전</button><button id="t-after" data-v="after">건설 후</button></div></div>
     <div class="row opt"><span class="lab" id="l-metric">기둥 높이</span>
       <div class="seg" id="seg-metric" role="group" aria-labelledby="l-metric">
-        <button id="m-land" data-v="land">땅값 전망</button><button id="m-tram" data-v="tram">땅값 기준 트램 효과</button>
+        <button id="m-land" data-v="land">땅값 전망</button><button id="m-tram" data-v="tram">상권 가치 효과</button>
         <button id="m-stores" data-v="stores">점포 수</button><button id="m-risk" data-v="risk">쇠퇴 위험</button></div></div>
     <div class="row opt" id="row-scen"><span class="lab" id="l-scen">트램 효과 시나리오</span>
       <div class="seg" id="seg-scen" role="group" aria-labelledby="l-scen">
@@ -368,7 +368,7 @@ function select(code, fly) {
   $("c-kv").innerHTML = [
     f && ["땅값 지수 2034 (트램 없음)", f.none[last].toFixed(1)],
     f && [`땅값 지수 2034 (트램 ${D.scen_label[S.scen].split(" ")[0]})`, f[S.scen][last].toFixed(1)],
-    ["땅값 기준 트램 효과", `${a.eff.low.toFixed(1)} ~ ${a.eff.high.toFixed(1)}% (기본 ${a.eff.base.toFixed(1)}%)`],
+    ["상권 가치(땅값) 효과", `${a.eff.low.toFixed(1)} ~ ${a.eff.high.toFixed(1)}% (기본 ${a.eff.base.toFixed(1)}%)`],
     ["점포 수", a.n_stores.toLocaleString() + "개"], ["쇠퇴 위험 · 성장 가능", `${a.risk.toFixed(0)} · ${a.growth.toFixed(0)}점`],
     a.nearest && ["가까운 정거장", a.nearest]].filter(Boolean).map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
   card.hidden = EMBED;
