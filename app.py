@@ -66,6 +66,9 @@ st_areas = read_csv(f"{OUT}/station_areas.csv")
 ind_area = read_csv(f"{OUT}/industry_by_area.csv")
 events = read_csv(f"{DATA}/area_events.csv")
 money = read_csv(f"{OUT}/tram_impact_money.csv")             # 트램 효과 금액 (analyze_tram_impact, 공시지가 기준)
+sales89 = read_csv(f"{OUT}/8989/area_sales_summary.csv")     # 8989 실측 카드매출 (행정동 → 상권 점포 비율 배분, analyze_8989)
+alley89 = read_csv(f"{OUT}/8989/report_alley_area_match.csv")  # 8989 월간 보고서 골목상권 누적 변화 (parse_8989_reports)
+SRC_8989 = "대전 소상공인 상권분석 서비스(8989.daejeon.go.kr, 대전신용보증재단) 카드매출"
 
 # 핵심 파일이 없으면 파이썬 오류 대신 안내를 띄우고 멈춤
 _miss = [k for k, v in {"상권 정보 (outputs/area_profile.csv)": prof, "트램 정거장 좌표 (data/tram_stations.csv)": stations,
@@ -918,6 +921,23 @@ if PAGE == "map":
         if sel == "A12":
             notes.append("도룡동 점포 수 급증은 2021년 대전신세계 입점 매장이 등록된 영향")
         st.caption(" · ".join(notes))
+        # ── 실측 카드매출 (8989) 한 줄: 소속 행정동 매출을 점포 비율로 배분한 값. 전통시장 동·배분 비율 낮은 상권은 주석 ──
+        s89 = sales89[sales89.code == sel].iloc[0] if sales89 is not None and (sales89.code == sel).any() else None
+        if s89 is not None and pd.notna(s89.get("sales_yoy_pct")):
+            w = s89.get("main_dong_weight"); low_w = pd.notna(w) and w < 0.5
+            market_dong = sel in ("A03", "A04")                      # 중앙동: 전통시장 현금 거래가 카드에 안 잡혀 과소
+            line = (f"카드매출 2025→2026 (1~8월 동월, {s89.main_dong} 등 소속 행정동 기준): {s89.sales_yoy_pct:+.1f}%"
+                    + (f", 점포당 월 {s89.sales_per_store_2026 / 1e4:,.0f}만 원" if not market_dong and pd.notna(s89.get("sales_per_store_2026")) else ""))
+            if alley89 is not None and (alley89.area == sel).any():
+                a = alley89[alley89.area == sel]
+                line += f" · 골목상권 {len(a)}곳 2025-12→2026-07 누적 {a.card_cum.mean():+.1f}%"
+            caveat = []
+            if market_dong: caveat.append("전통시장 현금 거래가 빠져 금액 과소")
+            if low_w: caveat.append(f"상권이 동 점포의 {w * 100:.0f}%만 차지해 동 전체 흐름에 가까움")
+            st.caption(line + (" (" + ", ".join(caveat) + ")" if caveat else "")
+                       + "  — 실측이지만 카드사·업종 범위가 한정된 값이라 비율·증감으로만 해석",
+                       help=f"출처: {SRC_8989}. 행정동 82개 매출을 상권 안 점포 수 비율로 나눠 더한 추정치(점포 비율 = 상가정보 2026-06). "
+                            "골목상권 누적은 월간 상권동향 보고서(2026-01~07)의 전월 대비 %를 곱한 값으로 12월→7월 계절성이 섞여 있음.")
         st.caption(src(f"{SRC_AREA} (진단 근거·지표)", f"{SRC_TRAM} (트램 효과 수준)"))
 
     try:                                                   # 공유 링크: 지금 선택이 주소창에 남음
