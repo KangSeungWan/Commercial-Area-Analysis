@@ -67,7 +67,9 @@ ind_area = read_csv(f"{OUT}/industry_by_area.csv")
 events = read_csv(f"{DATA}/area_events.csv")
 money = read_csv(f"{OUT}/tram_impact_money.csv")             # 트램 효과 금액 (analyze_tram_impact, 공시지가 기준)
 sales89 = read_csv(f"{OUT}/8989/area_sales_summary.csv")     # 8989 실측 카드매출 (행정동 → 상권 점포 비율 배분, analyze_8989)
-alley89 = read_csv(f"{OUT}/8989/report_alley_area_match.csv")  # 8989 월간 보고서 골목상권 누적 변화 (parse_8989_reports)
+alley89 = read_csv(f"{OUT}/8989/report_alley_area_match.csv")
+dprof = read_csv(f"{OUT}/dong_map_profile.csv", dtype={"dong_id": str})   # 행정동 82개 (build_dong_map_profile.py)
+dgj = read_json(f"{OUT}/dong_map.geojson")                  # 행정동 경계 + 핵심 지표  # 8989 월간 보고서 골목상권 누적 변화 (parse_8989_reports)
 SRC_8989 = "대전 소상공인 상권분석 서비스(8989.daejeon.go.kr, 대전신용보증재단) 카드매출"
 
 # 핵심 파일이 없으면 파이썬 오류 대신 안내를 띄우고 멈춤
@@ -432,6 +434,10 @@ ss.setdefault("scen_saved", list(SCEN)[0])
 ss.setdefault("show_region", True)
 ss.setdefault("show_label", True)
 ss.setdefault("map_view", "평면")
+UNITS = ["핵심 상권 20", "행정동 82"] if dprof is not None and dgj is not None else ["핵심 상권 20"]
+ss.setdefault("unit_saved", UNITS[0])
+if ss.unit_saved not in UNITS:
+    ss.unit_saved = UNITS[0]
 MAP_VIEWS = ["평면", "3D"] if map3d is not None else ["평면"]
 if ss.map_view not in MAP_VIEWS:
     ss.map_view = "평면"
@@ -453,9 +459,13 @@ if st.sidebar.button("처음 화면으로", use_container_width=True, key="to_co
     st.rerun()
 
 # ================================================================ 조작 줄 (모든 화면 맨 위: 건설 전/후 + 시나리오)
-ss.tram_w, ss.mm_w, ss.scen_w = ss.tram_saved, ss.mm, ss.scen_saved
+ss.tram_w, ss.mm_w, ss.scen_w, ss.unit_w = ss.tram_saved, ss.mm, ss.scen_saved, ss.unit_saved
 _SCEN_ORD = ["tram_effect_low", "tram_effect", "tram_effect_high"]     # 화면 순서: 낮음 · 기본 · 높음
 with st.container(horizontal=True, vertical_alignment="bottom", gap="medium", key="ctlbar"):
+    if PAGE == "map" and len(UNITS) > 1:
+        st.segmented_control("보기 단위", UNITS, key="unit_w", required=True, on_change=_keep("unit_saved", "unit_w"),
+                             help="핵심 상권 20: 점포가 모인 상권(트램 500m 효과를 재는 단위) / "
+                                  "행정동 82: 대전 전체를 행정동으로 나눠 같은 방식으로 진단(82개 동 안 상대 순위)")
     st.segmented_control("트램 2호선", TRAM_MODES, key="tram_w", required=True, on_change=_keep("tram_saved", "tram_w"),
                          help="건설 전: 트램이 없을 때의 진단·전망, 노선은 옅은 계획선 / "
                               "건설 후: 트램 효과(땅값)를 넣은 진단·전망·업종 점수(트램이 닿는 상권만 오름)")
@@ -470,6 +480,7 @@ if PAGE == "map":
 if ss.pop("open_tram_ev", False):                          # 결론 띠의 '트램 효과 근거' 버튼 → 팝업 (컨테이너 밖에서 열기)
     open_tram_evidence(st)
 tram_mode = ss.tram_saved
+DONG = PAGE == "map" and ss.unit_saved == "행정동 82" and len(UNITS) > 1
 tram_after = tram_mode == "건설 후"
 am = ss.mm
 scen, show_region, show_label = ss.scen_saved, ss.show_region and rg is not None, ss.show_label
@@ -488,6 +499,22 @@ if fc is not None:
     _f = fc[fc.year == _y].set_index("code")
     _tcol = {"base": "tram_base", "low": "tram_low", "high": "tram_high"}[SCEN_KEY]
     prof["land_fc"] = prof.code.map((_f[_tcol] if tram_after else _f.base_path) - 100).round(1)
+
+# 행정동 82개: 상권과 같은 규칙으로 건설 전·후·시나리오 값 (build_dong_map_profile.py 결과)
+if dprof is not None:
+    dprof["tram_sel"] = dprof[SCEN[scen]]
+    dprof["quadrant_after"] = dprof.quadrant
+    _rbd = dprof.quadrant == "트램 반등 기회"
+    dprof["quadrant_before"] = dprof.quadrant.where(~_rbd, np.select(
+        [dprof.risk_score >= 50, dprof.growth_score >= 50], ["쇠퇴 우려", "성장 지속"], "정체·안정"))
+    if not tram_after:
+        dprof["quadrant"] = dprof.quadrant_before
+    _dcol = {"base": "land_2034_tram", "low": "land_2034_tram_low", "high": "land_2034_tram_high"}[SCEN_KEY]
+    dprof["land_fc"] = ((dprof[_dcol] if tram_after else dprof.land_2034_base) - 100).round(1)
+    dinfo = dprof.set_index("dong_id")
+    DNAME = dict(zip(dprof.dong_id, dprof.name))
+    DORDER = list(dprof.sort_values(["si", "dong"]).dong_id)
+    SRC_DONG = "outputs/dong_map_profile.csv"
 
 # ================================================================ 지도 색
 LABEL = {"quadrant": f"진단 (트램 {tram_mode})", "land_fc": f"땅값 전망 2026→2034 (%, 트램 {tram_mode})",
@@ -537,6 +564,20 @@ else:
     colors = dict(zip(prof.code, cl))
     legend = legend_bar(LABEL[col_key], stops, lo, hi, kind, cen)
 
+if DONG:                                                   # 행정동 보기: 같은 지표·같은 색 규칙을 82개 동에
+    if kind == "cat":
+        dcolors = {c: QC.get(q, [200, 200, 200]) + [200] for c, q in zip(dprof.dong_id, dprof.quadrant)}
+    elif am == "tram_sel" and not tram_after:
+        dcolors = {c: [215, 218, 222, 170] for c in dprof.dong_id}
+    else:
+        _dspan = None
+        if col_key == "land_fc":
+            _dspan = float(pd.concat([dprof.land_2034_base, dprof[_dcol]]).sub(100).abs().quantile(.95))
+        _dcen = cen if kind == "divavg" else None
+        _dcl, (stops, lo, hi) = colorize(dprof[col_key], kind, _dcen, _dspan)
+        dcolors = dict(zip(dprof.dong_id, _dcl))
+        legend = legend_bar(LABEL[col_key], stops, lo, hi, kind, _dcen)
+
 # ================================================================ 선택 상태
 qp = st.query_params if hasattr(st, "query_params") else {}
 if "inited" not in ss:
@@ -555,6 +596,10 @@ for _mk in ("map", "map_ind"):                            # 지도 페이지·�
     _hit = objs.get("core") or objs.get("areas")               # 핵심 영역·권역 어느 쪽을 눌러도 같은 상권
     click_area = (_hit or [{}])[0].get("properties", {}).get("code") if _hit else None
     click_stn = (objs.get("stations") or [{}])[0].get("station_no") if objs.get("stations") else None
+    _dh = objs.get("dongs")
+    click_dong = (_dh or [{}])[0].get("properties", {}).get("dong_id") if _dh else None
+    if click_dong and click_dong != ss.get(f"_last_dong_{_mk}"):
+        ss[f"_last_dong_{_mk}"] = click_dong; ss.sel_dong = click_dong
     if click_area and click_area != ss.get(f"_last_area_{_mk}"):
         ss[f"_last_area_{_mk}"] = click_area; ss.sel_area = click_area
     if click_stn is not None and click_stn != ss.get("_last_stn"):
@@ -572,6 +617,9 @@ for _mk in ("map3d", "map3d_full"):                       # 3D 지도 클릭: {"
         ss.sel_area, ss.page = _m3["goto"], "map"
         st.rerun()
 sel = ss.sel_area
+if dprof is not None and ss.get("sel_dong") not in set(dprof.dong_id):   # 처음: 반등 기회 동 중 위험 1위
+    _rd = dprof[dprof.quadrant_after == "트램 반등 기회"].sort_values("risk_score", ascending=False).dong_id
+    ss.sel_dong = _rd.iloc[0] if len(_rd) else dprof.dong_id.iloc[0]
 
 # 트램 노선·정거장 (지도 두 곳에서 같이 씀)
 route = [{"path": p} for p in route_paths(stations)]
@@ -656,40 +704,148 @@ if PAGE == "map":
                 ss.sel_area = ss[widget]
         return cb
 
+    def _pickd(widget):                                   # 행정동 칩·선택 상자 → 선택 동
+        def cb():
+            if ss.get(widget):
+                ss.sel_dong = ss[widget]
+        return cb
+
     def _pick_stn():
         ss.sel_station = ss.stn_w or None
         ss._last_stn = ss.sel_station
 
+
+    def dong_verdict():                                    # 행정동 보기의 결론 띠
+        rebd = dprof[dprof.quadrant_after == "트램 반등 기회"].sort_values("risk_score", ascending=False).dong_id.tolist()
+        if rebd:
+            if tram_after:
+                head = f"트램이 지나면 반등을 기대할 수 있는 행정동 {len(rebd)}곳"
+            else:
+                bq = dinfo.loc[rebd, "quadrant_before"].value_counts()
+                head = (f"트램이 없으면 이 {len(rebd)}개 동은 모두 {bq.index[0]}" if len(bq) == 1 else
+                        f"트램이 없으면 이 {len(rebd)}개 동은 " + ", ".join(f"{k} {v}곳" for k, v in bq.items()))
+            st.markdown(f'<div class="verdict">{head}</div>', unsafe_allow_html=True)
+            ss.dchip_w = ss.sel_dong if ss.sel_dong in rebd else None
+            st.pills("트램 반등 기회 행정동", rebd, key="dchip_w", format_func=lambda c: dinfo.loc[c, "dong"],
+                     on_change=_pickd("dchip_w"), label_visibility="collapsed")
+        cnt = dprof.quadrant.value_counts()
+        tot = dprof.money_gain_base_eok.sum() if "money_gain_base_eok" in dprof else None
+        gk = f"money_gain_{SCEN_KEY}_eok"
+        st.markdown('<div class="kpi">' + "".join(
+            f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
+            for q in QC if cnt.get(q, 0))
+            + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(float(dprof[gk].sum()))}</b> (82개 동 합계, 공시지가 기준)</span>'
+               if tram_after and gk in dprof and tot else "")
+            + '</div>', unsafe_allow_html=True)
+        st.caption(src(f"{SRC_DONG} (82개 행정동 진단·지표)", f"{SRC_TRAM} (트램 효과 수준)")
+                   + " · 진단은 82개 동 안 상대 순위라 핵심 상권 20의 진단과 다를 수 있음")
+
+    def dong_panel():                                      # 행정동 보기의 오른쪽 패널
+        k = ss.sel_dong
+        d = dinfo.loc[k]
+        with right, st.container(border=True, key="dongpanel"):
+            ss.dong_w = k
+            st.selectbox("행정동 선택", DORDER, key="dong_w", format_func=DNAME.get, on_change=_pickd("dong_w"))
+            q = d.quadrant
+            st.markdown(f'<div class="area-h"><span class="code">{d.si}</span><span class="t">{d.dong}</span></div>'
+                        '<div class="area-b">'
+                        + (f'<span class="badge" style="background:{QHEX.get(q, "#999")};color:{QTXT.get(q, "#fff")}">{q}</span>' if pd.notna(q) else "")
+                        + (f'<span class="badge" style="background:#fff;color:#c83232;border:1px solid #c83232">불확실 '
+                           f'{d.quadrant_stability * 100:.0f}%</span>' if bool(d.get("quadrant_uncertain", False)) else "")
+                        + (f'<span class="badge gray">{d.type_name}</span>' if pd.notna(d.get("type_name")) else "")
+                        + ('<span class="badge gray">점포 적음</span>' if d.get("small") == 1 else "")
+                        + f'<span class="where">{d.tram_group}</span></div>', unsafe_allow_html=True)
+            if pd.notna(d.get("risk_score")):
+                rs, gs, i5 = d.risk_score, d.growth_score, d.get("tram500_share")
+                i5t = f"{i5 * 100:.0f}%" if pd.notna(i5) else "-"
+                if q == "트램 반등 기회":
+                    rule = f"위험 50점 이상, 동 점포의 {i5t}가 정거장 500m 안(절반 이상)이라 트램 반등 기회"
+                elif q == "쇠퇴 우려":
+                    rule = ("위험 50점 이상, 트램이 없으면 정거장 500m 기준이 사라져 쇠퇴 우려"
+                            if d.get("quadrant_after") == "트램 반등 기회" else
+                            f"위험 50점 이상, 정거장 500m 안 점포 {i5t}(절반 미만)라 쇠퇴 우려")
+                elif q == "성장 지속":
+                    rule = "위험 50점 미만, 성장 50점 이상이라 성장 지속"
+                else:
+                    rule = "위험·성장 모두 50점 미만이라 정체·안정"
+                rows_ = [("상대 쇠퇴 위험", f"{rs:.0f}점", d.risk_drivers), ("상대 성장 가능", f"{gs:.0f}점", d.growth_drivers)]
+                if pd.notna(d.get("nearest_tram")):
+                    rows_.append(("가까운 정거장", f"{int(d.nearest_tram_m)}m", f"{int(d.nearest_tram)}번 정거장 · 동 점포의 {i5t}가 500m 안"))
+                stab = d.get("quadrant_stability")
+                alt_q = d.get("quadrant_alt") if isinstance(d.get("quadrant_alt"), str) else ""
+                foot = (f"진단 안정도 {stab * 100:.0f}% (15가지 계산 변형 중 같은 진단 비율)"
+                        + (f", 바뀔 때는 '{alt_q}'" if alt_q and stab < 1 else "")) if pd.notna(stab) else ""
+                st.markdown('<div class="why"><div class="why-h">진단 근거 · 82개 동 안 순위</div>'
+                            f'<div class="why-rule">{rule}</div>'
+                            + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{t}</span></div>'
+                                      for l, v, t in rows_)
+                            + (f'<div class="why-f">{foot}</div>' if foot else "") + '</div>', unsafe_allow_html=True)
+            m1, m2 = st.columns(2)
+            m3, m4 = st.columns(2)
+            m1.metric("점포 수 (2026-06)", f"{int(d.n_stores):,}" if pd.notna(d.get("n_stores")) else "-",
+                      f"비중 5년 {d.store_share_chg_5y_pct:+.1f}%" if pd.notna(d.get("store_share_chg_5y_pct")) else None,
+                      delta_color="off", delta_arrow="off", help="대전 전체 점포 중 이 동 몫이 5년간 늘었는지(+) 줄었는지(-)")
+            m2.metric("땅값 5년 상승률", f"{d.land_chg_5y_pct:+.1f}%" if pd.notna(d.get("land_chg_5y_pct")) else "-",
+                      f"대전 평균 대비 {d.land_rel_idx:.0f}" if pd.notna(d.get("land_rel_idx")) else None,
+                      delta_color="off", delta_arrow="off", help=HELP["land_chg_5y_pct"])
+            sy, sp_ = d.get("s89_sales_yoy_pct"), d.get("s89_sales_per_store_2026")
+            mk = bool(d.get("s89_market_caveat", False))
+            m3.metric("카드매출 2025→2026", f"{sy:+.1f}%" if pd.notna(sy) else "-",
+                      (f"점포당 월 {sp_ / 1e4:,.0f}만 원" + (" (하위권, 현금·비카드 거래 영향 가능)" if mk else "")) if pd.notna(sp_) else None,
+                      delta_color="off", delta_arrow="off",
+                      help=f"출처: {SRC_8989}. 1~8월 같은 달끼리 비교, 79개 업종 합계(사이트 전체 카드매출의 약 58%). "
+                           "실측이지만 카드사·업종 범위가 한정돼 비율·증감으로만 해석")
+            mv = d.get(f"money_gain_{SCEN_KEY}_eok")
+            m4.metric("트램 효과(땅값)", f"{d.tram_sel:+.1f}%" if tram_after else "없음",
+                      ((f"500m 안 땅값 +{eok(mv)} · " if pd.notna(mv) and mv > 0 else "") + tram_range(d)) if tram_after
+                      else f"건설 후 {d.tram_sel:+.1f}% ({scen})",
+                      delta_color="off", delta_arrow="off",
+                      help=TRAM_DEF + f" · 지금 시나리오: {scen} · 동 효과 = 동 점포 중 500m 안 비율 × 수준"
+                           + " · 금액 = 동 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외)")
+            notes = [f"주요 업종: {d.top3}"] if pd.notna(d.get("top3")) else []
+            if isinstance(d.get("areas"), str) and d.areas:
+                notes.append(f"겹치는 핵심 상권: {d.areas}")
+            if pd.notna(d.get("survey_bad_pct")):
+                notes.append(f"2021 실태조사 어려움 응답 {d.survey_bad_pct:.0f}% (대전 평균 약 81%)")
+            if isinstance(d.get("score_note"), str) and d.score_note:
+                notes.append(d.score_note)
+            if notes:
+                st.caption(" · ".join(notes))
+            st.caption(src(f"{SRC_DONG} (진단 근거·지표)", "outputs/dong_tram_money.csv (금액)", "outputs/8989/dong_8989_summary.csv (카드매출)"))
+
     # ================================================================ ① 결론 띠 (조작 줄보다 위)
     with top:
-        if REB:
-            n_ = len(REB)
-            if tram_after:
-                head = f"트램이 지나면 반등을 기대할 수 있는 상권 {n_}곳"
-            else:                                          # 문구는 데이터에서: 이 상권들의 '건설 전' 진단을 그대로 셈
-                bq = prof.set_index("code").loc[REB, "quadrant_before"].value_counts()
-                head = (f"트램이 없으면 이 {n_}곳은 모두 {bq.index[0]}" if len(bq) == 1 else
-                        f"트램이 없으면 이 {n_}곳은 " + ", ".join(f"{k} {v}곳" for k, v in bq.items()))
-            st.markdown(f'<div class="verdict">{head}</div>', unsafe_allow_html=True)
-            ss.chip_w = sel if sel in REB else None
-            st.pills("트램 반등 기회 상권", REB, key="chip_w", format_func=short, on_change=_pick("chip_w"),
-                     label_visibility="collapsed")
-        if "quadrant" in prof:
-            cnt = prof.quadrant.value_counts()
-            with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-                st.markdown('<div class="kpi">' + "".join(
-                    f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
-                    for q in QC if cnt.get(q, 0))
-                    + (f'<span class="sep">트램 효과(땅값) 상권 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
-                         f'({tram_range(prof[["tram_effect_low", "tram_effect_high"]].mean())})</span>'
-                       if tram_after else "")
-                    + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
-                       f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
-                    + '</div>', unsafe_allow_html=True, width="content")
-                st.button("트램 효과 근거", icon=":material/fact_check:", type="tertiary", key="tram_ev_top",
-                          on_click=lambda: ss.update(open_tram_ev=True),
-                          help="트램 효과 숫자의 근거: 대전 1호선 땅값·점포 분석, 해외 트램 사례, 앱에 쓰는 방식")
-            st.caption(src(f"{SRC_AREA} (진단·상권 값)", f"{SRC_TRAM} (트램 효과 수준)"))
+        if DONG:
+            dong_verdict()
+        else:
+            if REB:
+                n_ = len(REB)
+                if tram_after:
+                    head = f"트램이 지나면 반등을 기대할 수 있는 상권 {n_}곳"
+                else:                                          # 문구는 데이터에서: 이 상권들의 '건설 전' 진단을 그대로 셈
+                    bq = prof.set_index("code").loc[REB, "quadrant_before"].value_counts()
+                    head = (f"트램이 없으면 이 {n_}곳은 모두 {bq.index[0]}" if len(bq) == 1 else
+                            f"트램이 없으면 이 {n_}곳은 " + ", ".join(f"{k} {v}곳" for k, v in bq.items()))
+                st.markdown(f'<div class="verdict">{head}</div>', unsafe_allow_html=True)
+                ss.chip_w = sel if sel in REB else None
+                st.pills("트램 반등 기회 상권", REB, key="chip_w", format_func=short, on_change=_pick("chip_w"),
+                         label_visibility="collapsed")
+            if "quadrant" in prof:
+                cnt = prof.quadrant.value_counts()
+                with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                    st.markdown('<div class="kpi">' + "".join(
+                        f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
+                        for q in QC if cnt.get(q, 0))
+                        + (f'<span class="sep">트램 효과(땅값) 상권 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
+                             f'({tram_range(prof[["tram_effect_low", "tram_effect_high"]].mean())})</span>'
+                           if tram_after else "")
+                        + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
+                           f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
+                        + '</div>', unsafe_allow_html=True, width="content")
+                    st.button("트램 효과 근거", icon=":material/fact_check:", type="tertiary", key="tram_ev_top",
+                              on_click=lambda: ss.update(open_tram_ev=True),
+                              help="트램 효과 숫자의 근거: 대전 1호선 땅값·점포 분석, 해외 트램 사례, 앱에 쓰는 방식")
+                st.caption(src(f"{SRC_AREA} (진단·상권 값)", f"{SRC_TRAM} (트램 효과 수준)"))
 
     # ================================================================ ③ 지도 | 선택 상권
     left, right = st.columns([3, 2], gap="medium")
@@ -769,13 +925,54 @@ if PAGE == "map":
                 layers.append(pdk.Layer("GeoJsonLayer", lab_txt, id="label_txt", filled=True, stroked=False, pickable=False,
                                         get_fill_color="properties.fill"))
 
+        if DONG:                                           # 행정동 82개 칠하기 + 핵심 상권 20개 윤곽선
+            for f in dgj["features"]:
+                k_ = f["properties"]["dong_id"]
+                r_ = dinfo.loc[k_]
+                v_ = r_.get(col_key)
+                v_ = "-" if pd.isna(v_) else (v_ if isinstance(v_, str) else f"{float(v_):,.1f}")
+                q_ = r_.quadrant if pd.notna(r_.quadrant) else ""
+                n_ = (f"가까운 트램 {int(r_.nearest_tram)}번 · {int(r_.nearest_tram_m)}m · 동 점포의 "
+                      f"{r_.tram500_share * 100:.0f}%가 500m 안") if pd.notna(r_.get("nearest_tram")) else ""
+                f["properties"].update({"fill": dcolors[k_][:3] + [205], "name": r_["name"],
+                                        "type": q_ + (" · 점포 적음" if r_.get("small") == 1 else ""),
+                                        "qcolor": QHEX.get(q_, "#999"),
+                                        "val_label": f"{LABEL[col_key]} <b>{v_}</b><br/><span style='color:#777'>{n_}</span>"})
+            dsel = {"type": "FeatureCollection", "features": [f for f in dgj["features"] if f["properties"]["dong_id"] == ss.sel_dong]}
+            layers = [pdk.Layer("GeoJsonLayer", dgj, id="dongs", pickable=True, stroked=True, filled=True,
+                                get_fill_color="properties.fill", get_line_color=[255, 255, 255, 255],
+                                line_width_min_pixels=1, **HL),
+                      pdk.Layer("GeoJsonLayer", gj, id="core_outline", pickable=False, stroked=True, filled=False,
+                                get_line_color=ROUTE_C + [150], line_width_min_pixels=1.3),
+                      pdk.Layer("GeoJsonLayer", dsel, id="sel_halo", pickable=False, stroked=True, filled=False,
+                                get_line_color=[255, 255, 255, 255], line_width_min_pixels=8),
+                      pdk.Layer("GeoJsonLayer", dsel, id="sel_area", pickable=False, stroked=True, filled=False,
+                                get_line_color=ROUTE_C + [255], line_width_min_pixels=3.5)] + lay_route
+            if ss.sel_station is not None:
+                layers.append(pdk.Layer("ScatterplotLayer", srow, id="buffer", get_position=["lon", "lat"], get_radius=500,
+                                        filled=True, get_fill_color=ROUTE_C + [28], stroked=True,
+                                        get_line_color=ROUTE_C + [240], line_width_min_pixels=2.5, pickable=False))
+            layers.append(lay_stop)
+            if show_label and dsel["features"]:            # 이름은 고른 동만 (82개를 모두 쓰면 겹침)
+                g_ = dsel["features"][0]["geometry"]
+                ring_ = g_["coordinates"][0] if g_["type"] == "Polygon" else max((p_[0] for p_ in g_["coordinates"]), key=len)
+                cx_, cy_ = sum(p_[0] for p_ in ring_) / len(ring_), sum(p_[1] for p_ in ring_) / len(ring_)
+                lb_, lt_ = label_shapes((dinfo.loc[ss.sel_dong, "dong"],), (cx_,), (cy_,), ((0, 0),), (True,),
+                                        view=(VIEW_MAP["latitude"], VIEW_MAP["zoom"]))
+                if lb_:
+                    layers.append(pdk.Layer("GeoJsonLayer", lb_, id="label_bg", filled=True, stroked=False, pickable=False,
+                                            get_fill_color="properties.fill"))
+                    layers.append(pdk.Layer("GeoJsonLayer", lt_, id="label_txt", filled=True, stroked=False, pickable=False,
+                                            get_fill_color="properties.fill"))
+        _mv3d = ss.map_view == "3D" and not DONG              # 3D 는 상권 보기에서만
+
         with st.container(key="mapbar"):                   # 지도 머리줄: 범례·기호·안내 | 표시 설정(⚙)
             h_l, h_v, h_r = st.columns([19, 5, 1], vertical_alignment="center", gap="small")
             ss.mv_w = ss.map_view
             h_v.segmented_control("지도 보기", MAP_VIEWS, key="mv_w", required=True, label_visibility="collapsed",
-                                  on_change=_keep("map_view", "mv_w"),
+                                  on_change=_keep("map_view", "mv_w"), disabled=DONG,
                                   help="3D: 상권을 기둥으로 세워 2026→2034 땅값 변화와 트램 운행을 재생 (기둥 높이는 지도 안에서 고름)")
-            if ss.map_view == "3D":
+            if _mv3d:
                 with h_l, st.container(horizontal=True, vertical_alignment="center", gap="small"):
                     st.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 진단 4분류 · 기둥 높이·연도는 지도 안에서 고름'
                                 '</div><span class="hint">기둥·정거장을 누르면 오른쪽·아래에 표시</span></div>',
@@ -787,15 +984,17 @@ if PAGE == "map":
                            + (f'<span class="ln"></span>트램 2호선' if tram_after else
                               '<span class="ln" style="background:#8c929a;height:2px"></span>트램 2호선(계획)')
                            + f'<span class="st"></span>정거장'
-                           f'<span class="sq strong"></span>상권 핵심(점포 밀집)'
-                           + ('<span class="sq weak"></span>영향 권역' if show_region else "")
-                           + '</div><span class="hint">지도를 눌러 상권·정거장 보기</span></div>', unsafe_allow_html=True)
+                           + ('<span class="sq" style="background:transparent;border:1.5px solid #23272e"></span>핵심 상권 20(윤곽선)'
+                              if DONG else '<span class="sq strong"></span>상권 핵심(점포 밀집)'
+                              + ('<span class="sq weak"></span>영향 권역' if show_region else ""))
+                           + f'</div><span class="hint">지도를 눌러 {"행정동" if DONG else "상권"}·정거장 보기</span></div>',
+                           unsafe_allow_html=True)
             with h_r.popover("", icon=":material/settings:", type="tertiary", help="지도 표시 설정"):
                 ss.region_w, ss.label_w = ss.show_region, ss.show_label
                 st.toggle("대전 전체를 상권 권역으로 채우기", key="region_w", disabled=rg is None,
                           on_change=_keep("show_region", "region_w"))
                 st.toggle("상권 이름 표시", key="label_w", on_change=_keep("show_label", "label_w"))
-        if ss.map_view == "3D":
+        if _mv3d:
             try:
                 map3d.show(map3d_data(_mtimes(f"{OUT}/area_profile.csv", f"{OUT}/forecast_land.csv",
                                               f"{OUT}/sangkwon_polygons.geojson", f"{OUT}/station_summary.csv")),
@@ -804,16 +1003,20 @@ if PAGE == "map":
             except Exception as e:                         # 3D가 안 되면 평면 지도로 대신 (시연 중 빈 칸 방지)
                 st.warning(f"3D 지도를 열지 못해 평면 지도로 보여 줍니다: {e}")
                 ss.map_view = "평면"
-        if ss.map_view != "3D":
+        if not _mv3d:
             show_map(deck(layers, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>"
                                            "<div><span style='color:{qcolor}'>●</span> {type}</div>{val_label}"},
                           view=pdk.ViewState(**VIEW_MAP, min_zoom=10, max_zoom=16)), height=MAP_H)
         stn_opts = [0] + list(STN)                         # 0 = 선택 안 함 (None 이면 빈 칸으로 보여서)
         ss.stn_w = ss.sel_station if ss.sel_station in STN else 0
         c_cap, c_stn = st.columns([3, 2], vertical_alignment="center")
-        c_cap.caption("상권을 누르면 오른쪽에 진단이, 정거장 점을 누르면 아래에 500m 영향권이 나옵니다  \n"
-                      + src("outputs/forecast_land.csv" if am == "land_fc" else SRC_AREA,
-                            "outputs/sangkwon_polygons.geojson (상권 경계)"))
+        if DONG:
+            c_cap.caption("행정동을 누르면 오른쪽에 진단이, 정거장 점을 누르면 아래에 500m 영향권이 나옵니다 · "
+                          "검은 윤곽선 = 핵심 상권 20  \n" + src(SRC_DONG, "outputs/dong_map.geojson (행정동 경계, 통계청 2023)"))
+        else:
+            c_cap.caption("상권을 누르면 오른쪽에 진단이, 정거장 점을 누르면 아래에 500m 영향권이 나옵니다  \n"
+                          + src("outputs/forecast_land.csv" if am == "land_fc" else SRC_AREA,
+                                "outputs/sangkwon_polygons.geojson (상권 경계)"))
         c_stn.selectbox("정거장 선택", stn_opts, key="stn_w", on_change=_pick_stn,
                         format_func=lambda v: STN[v] if v else "정거장 고르기", label_visibility="collapsed")
 
@@ -852,93 +1055,96 @@ if PAGE == "map":
                     st.caption(f"이 정거장 500m 안에는 20개 분석 상권이 없습니다 · 주요 업종: {t.top3_mid}")
                 st.caption(src("outputs/station_summary.csv", "outputs/station_areas.csv"))
 
-    r = info.loc[sel]                                      # (지도 레이어 반복문이 r 을 덮어쓰므로 여기서 다시)
-    with right, st.container(border=True, key="areapanel"):
-        ss.area_w = sel
-        st.selectbox("상권 선택", order, key="area_w", format_func=names.get, on_change=_pick("area_w"))
-        q = r.get("quadrant")
-        st.markdown(f'<div class="area-h"><span class="code">{sel}</span><span class="t">{r["name"]}</span></div>'
-                    '<div class="area-b">'
-                    + (f'<span class="badge" style="background:{QHEX.get(q, "#999")};color:{QTXT.get(q, "#fff")}">{q}</span>' if pd.notna(q) else "")
-                    + (f'<span class="badge" style="background:#fff;color:{QHEX['쇠퇴 우려']};border:1px solid {QHEX['쇠퇴 우려']}">불확실 '
-                       f'{r.quadrant_stability * 100:.0f}%</span>' if bool(r.get("quadrant_uncertain", False)) else "")
-                    + (f'<span class="badge gray">{r.type_name}</span>' if pd.notna(r.get("type_name")) else "")
-                    + f'<span class="where">{r.gu} · {r.type}</span></div>', unsafe_allow_html=True)
+    if DONG:
+        dong_panel()
+    else:
+        r = info.loc[sel]                                      # (지도 레이어 반복문이 r 을 덮어쓰므로 여기서 다시)
+        with right, st.container(border=True, key="areapanel"):
+            ss.area_w = sel
+            st.selectbox("상권 선택", order, key="area_w", format_func=names.get, on_change=_pick("area_w"))
+            q = r.get("quadrant")
+            st.markdown(f'<div class="area-h"><span class="code">{sel}</span><span class="t">{r["name"]}</span></div>'
+                        '<div class="area-b">'
+                        + (f'<span class="badge" style="background:{QHEX.get(q, "#999")};color:{QTXT.get(q, "#fff")}">{q}</span>' if pd.notna(q) else "")
+                        + (f'<span class="badge" style="background:#fff;color:{QHEX['쇠퇴 우려']};border:1px solid {QHEX['쇠퇴 우려']}">불확실 '
+                           f'{r.quadrant_stability * 100:.0f}%</span>' if bool(r.get("quadrant_uncertain", False)) else "")
+                        + (f'<span class="badge gray">{r.type_name}</span>' if pd.notna(r.get("type_name")) else "")
+                        + f'<span class="where">{r.gu} · {r.type}</span></div>', unsafe_allow_html=True)
 
-        # 진단 근거 상자: 규칙 한 줄 → 숫자 근거 → 안정도
-        if pd.notna(r.get("risk_score")):
-            rs, gs, i5 = r.risk_score, r.growth_score, r.get("in500")
-            i5t = f"{i5 * 100:.0f}%" if pd.notna(i5) else "-"
-            if q == "트램 반등 기회":
-                rule = f"위험 50점 이상, 점포 {i5t}가 정거장 500m 안(절반 이상)이라 트램 반등 기회"
-            elif q == "쇠퇴 우려":
-                rule = (f"위험 50점 이상, 트램이 없으면 정거장 500m 기준이 사라져 쇠퇴 우려"
-                        if r.get("quadrant_after") == "트램 반등 기회" else
-                        f"위험 50점 이상, 정거장 500m 안 점포 {i5t}(절반 미만)라 쇠퇴 우려")
-            elif q == "성장 지속":
-                rule = "위험 50점 미만, 성장 50점 이상이라 성장 지속"
-            else:
-                rule = "위험·성장 모두 50점 미만이라 정체·안정"
-            rows_ = [("상대 쇠퇴 위험", f"{rs:.0f}점", r.risk_drivers),
-                     ("상대 성장 가능", f"{gs:.0f}점", r.growth_drivers)]
-            if pd.notna(r.get("nearest_tram")):
-                rows_.append(("가까운 정거장", f"{int(r.nearest_tram_m)}m",
-                              f"{int(r.nearest_tram)}번 정거장 · 상권 점포의 {i5t}가 500m 안"))
-            stab = r.get("quadrant_stability")
-            foot = ""
-            if pd.notna(stab):
-                alt_q = r.get("quadrant_alt") if isinstance(r.get("quadrant_alt"), str) and r.get("quadrant_alt") else ""
-                foot = f"진단 안정도 {stab * 100:.0f}% (15가지 계산 변형 중 같은 진단 비율)" + (
-                    f", 바뀔 때는 '{alt_q}'" if alt_q and stab < 1 else "")
-            st.markdown('<div class="why"><div class="why-h">진단 근거</div>'
-                        f'<div class="why-rule">{rule}</div>'
-                        + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{d}</span></div>'
-                                  for l, v, d in rows_)
-                        + (f'<div class="why-f">{foot}</div>' if foot else "") + '</div>', unsafe_allow_html=True)
+            # 진단 근거 상자: 규칙 한 줄 → 숫자 근거 → 안정도
+            if pd.notna(r.get("risk_score")):
+                rs, gs, i5 = r.risk_score, r.growth_score, r.get("in500")
+                i5t = f"{i5 * 100:.0f}%" if pd.notna(i5) else "-"
+                if q == "트램 반등 기회":
+                    rule = f"위험 50점 이상, 점포 {i5t}가 정거장 500m 안(절반 이상)이라 트램 반등 기회"
+                elif q == "쇠퇴 우려":
+                    rule = (f"위험 50점 이상, 트램이 없으면 정거장 500m 기준이 사라져 쇠퇴 우려"
+                            if r.get("quadrant_after") == "트램 반등 기회" else
+                            f"위험 50점 이상, 정거장 500m 안 점포 {i5t}(절반 미만)라 쇠퇴 우려")
+                elif q == "성장 지속":
+                    rule = "위험 50점 미만, 성장 50점 이상이라 성장 지속"
+                else:
+                    rule = "위험·성장 모두 50점 미만이라 정체·안정"
+                rows_ = [("상대 쇠퇴 위험", f"{rs:.0f}점", r.risk_drivers),
+                         ("상대 성장 가능", f"{gs:.0f}점", r.growth_drivers)]
+                if pd.notna(r.get("nearest_tram")):
+                    rows_.append(("가까운 정거장", f"{int(r.nearest_tram_m)}m",
+                                  f"{int(r.nearest_tram)}번 정거장 · 상권 점포의 {i5t}가 500m 안"))
+                stab = r.get("quadrant_stability")
+                foot = ""
+                if pd.notna(stab):
+                    alt_q = r.get("quadrant_alt") if isinstance(r.get("quadrant_alt"), str) and r.get("quadrant_alt") else ""
+                    foot = f"진단 안정도 {stab * 100:.0f}% (15가지 계산 변형 중 같은 진단 비율)" + (
+                        f", 바뀔 때는 '{alt_q}'" if alt_q and stab < 1 else "")
+                st.markdown('<div class="why"><div class="why-h">진단 근거</div>'
+                            f'<div class="why-rule">{rule}</div>'
+                            + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{d}</span></div>'
+                                      for l, v, d in rows_)
+                            + (f'<div class="why-f">{foot}</div>' if foot else "") + '</div>', unsafe_allow_html=True)
 
-        m1, m2 = st.columns(2)
-        m3, m4 = st.columns(2)
-        m1.metric("점포 수 (2026-06)", f"{int(r.n_stores):,}" if pd.notna(r.n_stores) else "-",
-                  f"비중 5년 {r.store_share_chg_5y_pct:+.1f}%" if pd.notna(r.get("store_share_chg_5y_pct")) else None,
-                  delta_color="off", delta_arrow="off", help=HELP["store_share_chg_5y_pct"])
-        m2.metric("땅값 5년 상승률", f"{r.land_chg_5y_pct:+.1f}%" if pd.notna(r.get("land_chg_5y_pct")) else "-",
-                  f"대전 평균 대비 {r.land_rel_idx:.0f}" if pd.notna(r.get("land_rel_idx")) else None,
-                  delta_color="off", delta_arrow="off", help=HELP["land_chg_5y_pct"])
-        m3.metric("분기 폐업률", f"{r.close_rate_q_pct:.1f}%" if pd.notna(r.get("close_rate_q_pct")) else "-",
-                  help=HELP["close_rate_q_pct"])
-        _mv = money_of(sel, SCEN_KEY)
-        m4.metric("트램 효과(땅값)", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
-                  ((f"500m 안 땅값 +{eok(_mv)} · " if _mv else "") + tram_range(r)) if tram_after
-                  else f"건설 후 {r.tram_sel:+.1f}% ({scen})" + (f" · +{eok(_mv)}" if _mv else ""),
-                  delta_color="off", delta_arrow="off",
-                  help=TRAM_DEF + f" · 지금 시나리오: {scen}"
-                       + (" · 금액 = 이 상권 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외, 시세로는 더 큼)"
-                          if _mv else ""))
-        notes = [f"주요 업종: {r.top3_mid}"]
-        if pd.notna(r.get("bad_pct")):
-            notes.append(f"2021 실태조사({r.survey_dong}): 매출·이익 감소 {r.decline_pct:.0f}%, "
-                         f"폐업·전환 고려 {r.closing_pct:.0f}% (대전 평균 74% / 7%, 코로나 시기)")
-        if sel == "A12":
-            notes.append("도룡동 점포 수 급증은 2021년 대전신세계 입점 매장이 등록된 영향")
-        st.caption(" · ".join(notes))
-        # ── 실측 카드매출 (8989) 한 줄: 소속 행정동 매출을 점포 비율로 배분한 값. 전통시장 동·배분 비율 낮은 상권은 주석 ──
-        s89 = sales89[sales89.code == sel].iloc[0] if sales89 is not None and (sales89.code == sel).any() else None
-        if s89 is not None and pd.notna(s89.get("sales_yoy_pct")):
-            w = s89.get("main_dong_weight"); low_w = pd.notna(w) and w < 0.5
-            market_dong = sel in ("A03", "A04")                      # 중앙동: 전통시장 현금 거래가 카드에 안 잡혀 과소
-            line = (f"카드매출 2025→2026 (1~8월 동월, {s89.main_dong} 등 소속 행정동 기준): {s89.sales_yoy_pct:+.1f}%"
-                    + (f", 점포당 월 {s89.sales_per_store_2026 / 1e4:,.0f}만 원" if not market_dong and pd.notna(s89.get("sales_per_store_2026")) else ""))
-            if alley89 is not None and (alley89.area == sel).any():
-                a = alley89[alley89.area == sel]
-                line += f" · 골목상권 {len(a)}곳 2025-12→2026-07 누적 {a.card_cum.mean():+.1f}%"
-            caveat = []
-            if market_dong: caveat.append("전통시장 현금 거래가 빠져 금액 과소")
-            if low_w: caveat.append(f"상권이 동 점포의 {w * 100:.0f}%만 차지해 동 전체 흐름에 가까움")
-            st.caption(line + (" (" + ", ".join(caveat) + ")" if caveat else "")
-                       + "  — 실측이지만 카드사·업종 범위가 한정된 값이라 비율·증감으로만 해석",
-                       help=f"출처: {SRC_8989}. 행정동 82개 매출을 상권 안 점포 수 비율로 나눠 더한 추정치(점포 비율 = 상가정보 2026-06). "
-                            "골목상권 누적은 월간 상권동향 보고서(2026-01~07)의 전월 대비 %를 곱한 값으로 12월→7월 계절성이 섞여 있음.")
-        st.caption(src(f"{SRC_AREA} (진단 근거·지표)", f"{SRC_TRAM} (트램 효과 수준)"))
+            m1, m2 = st.columns(2)
+            m3, m4 = st.columns(2)
+            m1.metric("점포 수 (2026-06)", f"{int(r.n_stores):,}" if pd.notna(r.n_stores) else "-",
+                      f"비중 5년 {r.store_share_chg_5y_pct:+.1f}%" if pd.notna(r.get("store_share_chg_5y_pct")) else None,
+                      delta_color="off", delta_arrow="off", help=HELP["store_share_chg_5y_pct"])
+            m2.metric("땅값 5년 상승률", f"{r.land_chg_5y_pct:+.1f}%" if pd.notna(r.get("land_chg_5y_pct")) else "-",
+                      f"대전 평균 대비 {r.land_rel_idx:.0f}" if pd.notna(r.get("land_rel_idx")) else None,
+                      delta_color="off", delta_arrow="off", help=HELP["land_chg_5y_pct"])
+            m3.metric("분기 폐업률", f"{r.close_rate_q_pct:.1f}%" if pd.notna(r.get("close_rate_q_pct")) else "-",
+                      help=HELP["close_rate_q_pct"])
+            _mv = money_of(sel, SCEN_KEY)
+            m4.metric("트램 효과(땅값)", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
+                      ((f"500m 안 땅값 +{eok(_mv)} · " if _mv else "") + tram_range(r)) if tram_after
+                      else f"건설 후 {r.tram_sel:+.1f}% ({scen})" + (f" · +{eok(_mv)}" if _mv else ""),
+                      delta_color="off", delta_arrow="off",
+                      help=TRAM_DEF + f" · 지금 시나리오: {scen}"
+                           + (" · 금액 = 이 상권 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외, 시세로는 더 큼)"
+                              if _mv else ""))
+            notes = [f"주요 업종: {r.top3_mid}"]
+            if pd.notna(r.get("bad_pct")):
+                notes.append(f"2021 실태조사({r.survey_dong}): 매출·이익 감소 {r.decline_pct:.0f}%, "
+                             f"폐업·전환 고려 {r.closing_pct:.0f}% (대전 평균 74% / 7%, 코로나 시기)")
+            if sel == "A12":
+                notes.append("도룡동 점포 수 급증은 2021년 대전신세계 입점 매장이 등록된 영향")
+            st.caption(" · ".join(notes))
+            # ── 실측 카드매출 (8989) 한 줄: 소속 행정동 매출을 점포 비율로 배분한 값. 전통시장 동·배분 비율 낮은 상권은 주석 ──
+            s89 = sales89[sales89.code == sel].iloc[0] if sales89 is not None and (sales89.code == sel).any() else None
+            if s89 is not None and pd.notna(s89.get("sales_yoy_pct")):
+                w = s89.get("main_dong_weight"); low_w = pd.notna(w) and w < 0.5
+                market_dong = sel in ("A03", "A04")                      # 중앙동: 전통시장 현금 거래가 카드에 안 잡혀 과소
+                line = (f"카드매출 2025→2026 (1~8월 동월, {s89.main_dong} 등 소속 행정동 기준): {s89.sales_yoy_pct:+.1f}%"
+                        + (f", 점포당 월 {s89.sales_per_store_2026 / 1e4:,.0f}만 원" if not market_dong and pd.notna(s89.get("sales_per_store_2026")) else ""))
+                if alley89 is not None and (alley89.area == sel).any():
+                    a = alley89[alley89.area == sel]
+                    line += f" · 골목상권 {len(a)}곳 2025-12→2026-07 누적 {a.card_cum.mean():+.1f}%"
+                caveat = []
+                if market_dong: caveat.append("전통시장 현금 거래가 빠져 금액 과소")
+                if low_w: caveat.append(f"상권이 동 점포의 {w * 100:.0f}%만 차지해 동 전체 흐름에 가까움")
+                st.caption(line + (" (" + ", ".join(caveat) + ")" if caveat else "")
+                           + "  — 실측이지만 카드사·업종 범위가 한정된 값이라 비율·증감으로만 해석",
+                           help=f"출처: {SRC_8989}. 행정동 82개 매출을 상권 안 점포 수 비율로 나눠 더한 추정치(점포 비율 = 상가정보 2026-06). "
+                                "골목상권 누적은 월간 상권동향 보고서(2026-01~07)의 전월 대비 %를 곱한 값으로 12월→7월 계절성이 섞여 있음.")
+            st.caption(src(f"{SRC_AREA} (진단 근거·지표)", f"{SRC_TRAM} (트램 효과 수준)"))
 
     try:                                                   # 공유 링크: 지금 선택이 주소창에 남음
         st.query_params["area"] = sel
@@ -950,96 +1156,99 @@ if PAGE == "map":
         pass
 
     # ================================================================ ④ 상세 탭 (이름 고정 → 다시 그려도 보던 탭 유지)
-    st.subheader(f"{short(sel)} 자세히 보기", anchor=False)
-    t_fc, t_land, t_store, t_ai = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "AI 해설"], key="detail_tab")
-    with t_fc:
-        if fc is not None and lp is not None and sel in set(fc.code):
-            st.caption("회색 띠 = 트램 없는 예측의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선 = 트램 건설 후 · "
-                       + ("땅값 기준 트램 효과는 대전 1호선처럼 개통 1~4년에 가장 크고 이후 줄어듦" if tram_after
-                          else "위에서 '건설 후'를 고르면 땅값 기준 트램 효과 경로가 함께 나옴"))
-            st.altair_chart(forecast_chart(sel, tram_after))
-            st.caption(src("outputs/forecast_land.csv", "outputs/landprice_area_panel.csv (실제 값)"))
-        else:
-            st.info("이 상권의 땅값 예측 결과가 없습니다.")
-    with t_land:
-        if lp is not None:
-            st.caption("대전 전체와 비교 · 회색 점선 = 이 상권의 주요 사건(마우스를 올리면 내용)")
-            st.altair_chart(land_chart(sel))
-            st.caption(src("outputs/landprice_area_panel.csv", "data/area_events.csv (사건)"))
-        else:
-            st.info("땅값 흐름 결과 파일이 없습니다.")
-    with t_store:
-        if sp is not None:
-            st.caption("회색 점선 = 자료 수집 기준이 바뀐 분기 (그때의 급변은 자료 탓일 수 있음)")
-            st.altair_chart(store_chart(sel))
-            st.caption(src("outputs/store_panel.csv"))
-        else:
-            st.info("점포 수 결과 파일이 없습니다.")
+    if DONG:
+        st.caption("행정동별 땅값·점포 그래프와 AI 해설은 준비 중입니다. 핵심 상권 보기에서는 지금도 볼 수 있습니다.")
+    else:
+        st.subheader(f"{short(sel)} 자세히 보기", anchor=False)
+        t_fc, t_land, t_store, t_ai = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "AI 해설"], key="detail_tab")
+        with t_fc:
+            if fc is not None and lp is not None and sel in set(fc.code):
+                st.caption("회색 띠 = 트램 없는 예측의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선 = 트램 건설 후 · "
+                           + ("땅값 기준 트램 효과는 대전 1호선처럼 개통 1~4년에 가장 크고 이후 줄어듦" if tram_after
+                              else "위에서 '건설 후'를 고르면 땅값 기준 트램 효과 경로가 함께 나옴"))
+                st.altair_chart(forecast_chart(sel, tram_after))
+                st.caption(src("outputs/forecast_land.csv", "outputs/landprice_area_panel.csv (실제 값)"))
+            else:
+                st.info("이 상권의 땅값 예측 결과가 없습니다.")
+        with t_land:
+            if lp is not None:
+                st.caption("대전 전체와 비교 · 회색 점선 = 이 상권의 주요 사건(마우스를 올리면 내용)")
+                st.altair_chart(land_chart(sel))
+                st.caption(src("outputs/landprice_area_panel.csv", "data/area_events.csv (사건)"))
+            else:
+                st.info("땅값 흐름 결과 파일이 없습니다.")
+        with t_store:
+            if sp is not None:
+                st.caption("회색 점선 = 자료 수집 기준이 바뀐 분기 (그때의 급변은 자료 탓일 수 있음)")
+                st.altair_chart(store_chart(sel))
+                st.caption(src("outputs/store_panel.csv"))
+            else:
+                st.info("점포 수 결과 파일이 없습니다.")
 
-    def area_context(code):
-        """AI 해설용 상권 정보 묶음 (지금 화면의 시나리오·업종 가중치 기준)."""
-        return ac.area_context(code, info, fc, IS, ss.ind_w, ind_area, events, st_areas, SCEN_KEY)
+        def area_context(code):
+            """AI 해설용 상권 정보 묶음 (지금 화면의 시나리오·업종 가중치 기준)."""
+            return ac.area_context(code, info, fc, IS, ss.ind_w, ind_area, events, st_areas, SCEN_KEY)
 
-    @st.cache_data(show_spinner=False)
-    def ai_area(ctx_text, scen_text, nonce=0):
-        return ac.generate(ac.build_prompt(ctx_text, scen_text, SCEN_HELP),
-                           setting("GEMINI_API_KEY"), setting("GEMINI_MODEL", ac.DEFAULT_MODEL))
+        @st.cache_data(show_spinner=False)
+        def ai_area(ctx_text, scen_text, nonce=0):
+            return ac.generate(ac.build_prompt(ctx_text, scen_text, SCEN_HELP),
+                               setting("GEMINI_API_KEY"), setting("GEMINI_MODEL", ac.DEFAULT_MODEL))
 
-    def ai_error_box(err):
-        with st.expander("오류 내용 보기 (발표자용)"):
-            st.code(err, language=None)
+        def ai_error_box(err):
+            with st.expander("오류 내용 보기 (발표자용)"):
+                st.code(err, language=None)
 
-    @st.fragment
-    def ai_panel():                                        # 해설 버튼은 이 부분만 다시 그림 (지도는 그대로)
-        key = (sel, scen)
-        ss.setdefault("ai", {})
-        res = ss.ai.get(key)
-        saved = ac.saved_entry(load_ai_saved(ac.SAVED_PATH.stat().st_mtime if ac.SAVED_PATH.exists() else 0), sel)
-        if st.button("AI 해설 다시 받기" if res else "AI 해설 받기", key="ai_btn"):
-            n = ss.get("_ai_n", 0) + (1 if res else 0)
-            with st.spinner("AI가 해설을 쓰는 중입니다. 10초쯤 걸립니다."):
-                try:
-                    res = {"src": "live", "text": ai_area(ac.context_text(area_context(sel)), scen, n)}
-                    ss._ai_n = n
-                except Exception as e:
-                    k_ = setting("GEMINI_API_KEY")
-                    err = f"{type(e).__name__}: {e}"
-                    err = err.replace(k_, "****") if k_ else err          # 오류 원문에 키가 섞여도 화면에 나오지 않게
-                    why = "API 키가 설정되어 있지 않습니다." if isinstance(e, ac.NoApiKey) else "인터넷 연결이나 AI 서비스에 문제가 있습니다."
-                    if res and res["src"] == "live":                       # 앞서 받은 실시간 해설은 그대로 둠
-                        res = {**res, "err": err, "why": why}
-                    else:
-                        res = {"src": "saved" if saved else "none", "err": err, "why": why}
-            ss.ai[key] = res
+        @st.fragment
+        def ai_panel():                                        # 해설 버튼은 이 부분만 다시 그림 (지도는 그대로)
+            key = (sel, scen)
+            ss.setdefault("ai", {})
+            res = ss.ai.get(key)
+            saved = ac.saved_entry(load_ai_saved(ac.SAVED_PATH.stat().st_mtime if ac.SAVED_PATH.exists() else 0), sel)
+            if st.button("AI 해설 다시 받기" if res else "AI 해설 받기", key="ai_btn"):
+                n = ss.get("_ai_n", 0) + (1 if res else 0)
+                with st.spinner("AI가 해설을 쓰는 중입니다. 10초쯤 걸립니다."):
+                    try:
+                        res = {"src": "live", "text": ai_area(ac.context_text(area_context(sel)), scen, n)}
+                        ss._ai_n = n
+                    except Exception as e:
+                        k_ = setting("GEMINI_API_KEY")
+                        err = f"{type(e).__name__}: {e}"
+                        err = err.replace(k_, "****") if k_ else err          # 오류 원문에 키가 섞여도 화면에 나오지 않게
+                        why = "API 키가 설정되어 있지 않습니다." if isinstance(e, ac.NoApiKey) else "인터넷 연결이나 AI 서비스에 문제가 있습니다."
+                        if res and res["src"] == "live":                       # 앞서 받은 실시간 해설은 그대로 둠
+                            res = {**res, "err": err, "why": why}
+                        else:
+                            res = {"src": "saved" if saved else "none", "err": err, "why": why}
+                ss.ai[key] = res
 
-        if res and res["src"] == "live":
-            if res.get("err"):
-                st.caption(f"새 해설을 받지 못해 앞서 받은 해설을 그대로 보여 드립니다. {res['why']}")
-            st.markdown(res["text"])
-            if res.get("err"):
+            if res and res["src"] == "live":
+                if res.get("err"):
+                    st.caption(f"새 해설을 받지 못해 앞서 받은 해설을 그대로 보여 드립니다. {res['why']}")
+                st.markdown(res["text"])
+                if res.get("err"):
+                    ai_error_box(res["err"])
+                with st.expander("AI에게 보낸 정보 보기"):
+                    st.json(area_context(sel))
+            elif res and res["src"] == "saved" and saved:
+                st.markdown(f'<span class="ai-saved">미리 만들어 둔 해설({saved["generated_at"][:10]})</span>',
+                            unsafe_allow_html=True)
+                st.caption(f"지금은 AI 해설을 실시간으로 불러올 수 없어 미리 만들어 둔 해설을 보여 드립니다. {res['why']}"
+                           + (f" 이 해설은 '{saved['scenario']}' 시나리오와 기본 업종 가중치를 기준으로 만들었습니다."
+                              if saved["scenario"] else ""))
+                st.markdown(saved["text"])
                 ai_error_box(res["err"])
-            with st.expander("AI에게 보낸 정보 보기"):
-                st.json(area_context(sel))
-        elif res and res["src"] == "saved" and saved:
-            st.markdown(f'<span class="ai-saved">미리 만들어 둔 해설({saved["generated_at"][:10]})</span>',
-                        unsafe_allow_html=True)
-            st.caption(f"지금은 AI 해설을 실시간으로 불러올 수 없어 미리 만들어 둔 해설을 보여 드립니다. {res['why']}"
-                       + (f" 이 해설은 '{saved['scenario']}' 시나리오와 기본 업종 가중치를 기준으로 만들었습니다."
-                          if saved["scenario"] else ""))
-            st.markdown(saved["text"])
-            ai_error_box(res["err"])
-            with st.expander("이 해설을 만들 때 쓴 정보 보기"):
-                st.json(ac.area_context(sel, info, fc, IS, W_DEF, ind_area, events, st_areas, "base"))
-        elif res:
-            st.warning(f"지금은 AI 해설을 불러올 수 없습니다. {res['why']} 잠시 뒤 'AI 해설 다시 받기'를 눌러 주세요.")
-            st.caption("미리 만들어 둔 해설도 없습니다. 발표 전에 python tram_model/make_ai_comments.py 를 실행해 두세요.")
-            ai_error_box(res["err"])
-        else:
-            st.caption("진단·예측·땅값 기준 트램 효과·업종 점수를 근거로 해설을 만듭니다. 받은 해설은 다른 상권을 보고 와도 남아 있습니다."
-                       + (" 실시간 호출이 안 되면 미리 만들어 둔 해설을 보여 드립니다." if saved else ""))
+                with st.expander("이 해설을 만들 때 쓴 정보 보기"):
+                    st.json(ac.area_context(sel, info, fc, IS, W_DEF, ind_area, events, st_areas, "base"))
+            elif res:
+                st.warning(f"지금은 AI 해설을 불러올 수 없습니다. {res['why']} 잠시 뒤 'AI 해설 다시 받기'를 눌러 주세요.")
+                st.caption("미리 만들어 둔 해설도 없습니다. 발표 전에 python tram_model/make_ai_comments.py 를 실행해 두세요.")
+                ai_error_box(res["err"])
+            else:
+                st.caption("진단·예측·땅값 기준 트램 효과·업종 점수를 근거로 해설을 만듭니다. 받은 해설은 다른 상권을 보고 와도 남아 있습니다."
+                           + (" 실시간 호출이 안 되면 미리 만들어 둔 해설을 보여 드립니다." if saved else ""))
 
-    with t_ai:
-        ai_panel()
+        with t_ai:
+            ai_panel()
 
 # ================================================================ 페이지 1-2: 3D 지도 (넓게)
 elif PAGE == "map3d":
