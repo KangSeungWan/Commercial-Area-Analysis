@@ -22,6 +22,9 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 RAW = HERE / "data" / "raw" / "8989"
 OUT = HERE / "outputs" / "8989"; OUT.mkdir(parents=True, exist_ok=True)
+import sys
+if not (RAW/"meta"/"industry_opt.csv").exists() or not list(RAW.glob("raw/*/*.json.gz")):
+    print("8989 원본 없음 (data/raw/8989/raw) → 건너뜀"); sys.exit(0)
 
 ind = pd.read_csv(RAW/"meta"/"industry_opt.csv", dtype=str)
 L_OF = dict(zip(ind.indutySclasCode, ind.indutyLclasCode))

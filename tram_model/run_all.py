@@ -47,6 +47,14 @@ STEPS = [
     ("score_industry", "상권 × 업종 점수 (100점, 트램 전·후)", None),
     ("analyze_survey_sales", "실태조사·업종 매출 (data/raw/매출 있으면)", None),
     ("build_station_summary", "정거장 45개 500m 영향권 요약", None),
+    ("build_8989_tables", "8989 상권분석 서비스 원본 → 표 (data/raw/8989/raw 있으면)", None),
+    ("analyze_8989", "8989 실측 카드매출: 행정동 요약·검증·상권 배분", None),
+    ("parse_8989_reports", "8989 월간 상권동향 PDF (data/raw/8989/reports 있으면)", None),
+    ("build_dong_year_panel", "행정동 82개 × 연도 패널", None),
+    ("cluster_dongs", "행정동 유형 (K-means)", None),
+    ("forecast_dongs", "행정동 지가·점포 예측 + 트램 시나리오 (약 1분)", None),
+    ("score_dongs", "행정동 쇠퇴 위험·성장 점수·진단", None),
+    ("build_dong_map_profile", "지도용 행정동 요약표·GeoJSON·정거장 요약", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 

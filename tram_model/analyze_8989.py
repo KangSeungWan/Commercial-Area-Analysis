@@ -22,6 +22,9 @@ HERE = Path(__file__).resolve().parent
 O8 = HERE / "outputs" / "8989"; OUT = HERE / "outputs"
 LCL = ["도소매", "숙박", "음식점", "부동산", "교육", "보건의료", "여가 스포츠", "서비스"]
 P25 = [f"2025{m:02d}" for m in range(1, 9)]; P26 = [f"2026{m:02d}" for m in range(1, 9)]  # 1~8월 동월 비교
+import sys
+if not (O8 / "dong_panel_8989.csv").exists():
+    print("outputs/8989/dong_panel_8989.csv 없음 → 건너뜀"); sys.exit(0)
 
 panel = pd.read_csv(O8 / "dong_panel_8989.csv", dtype={"plcCd": str, "stdrYm": str, "adstrdCode": str, "adm_cd2": str})
 cmap = pd.read_csv(O8 / "dong_code_map.csv", dtype=str)
