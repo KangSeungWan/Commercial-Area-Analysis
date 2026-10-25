@@ -10,6 +10,7 @@
 - 업종 그룹: 카페(비알코올/카페), 빵·과자(빵/도넛), 식사·주점(그 밖의 음식), 소매, 생활서비스(수리·개인), 교육, 보건의료, 기타
 - 트램 효과는 1호선 인허가 이중차분 근거 점검(check_sector_evidence.py) 결과대로
   · 카페 = 주 효과: 개수 +24.8% [8.0, 44.2] (낮음=하한·기본·높음=상한). 비중 +1.4%p(1단계)·+4.0%p(2단계 독립 재현), 사전 추세 없음
+    높음은 포화 조정: cafe_saturation_checks.csv 가 있으면 '2005년 카페 비중이 이미 높던 격자' 효과의 상한(약 +34%)으로 낮춤
   · 빵·과자 = 참고: 개수 +18.3%지만 음식점 중 비중은 변화 없음 → 낮음·기본 0, 높음에만 개수 효과
   · 나머지 업종 0 (전체 점포 수 효과는 불확실: 기본 +4.7% 유의 X, 번화도 맞춤 +12.4%) → 기준은 다른 업종 수 유지
 - 단위 효과 = 그 업종 점포 중 정거장 500m 안 비율 × 업종 효과 × 연차 모양(카페 고유 사건연구: 개통 후 계속 커짐, 2006~2014 평균=1)
@@ -106,6 +107,15 @@ def main():
     E = {gr: {"low": eff.loc[s, "하한_%"] / 100, "base": eff.loc[s, "효과_%"] / 100, "high": eff.loc[s, "상한_%"] / 100} for gr, s in EFFECT_GROUPS.items()}
     # 빵·과자: 개수는 늘었지만 음식점 중 비중은 1·2단계 모두 변화 없음(sector_evidence_share.csv) → 구성 변화 근거로는 약함
     E["빵·과자"] = {"low": 0.0, "base": 0.0, "high": eff.loc["빵·과자", "효과_%"] / 100}
+    # 포화 조정(analyze_cafe_saturation.py): 대전 카페는 2023년부터 순감소, 지금 정거장 주변은 1호선 당시보다 카페 비중이 높음.
+    # 1호선 때도 카페 비중이 이미 높던 격자는 효과가 작았음 → '높음'은 그 격자들의 상한으로 낮춤 (기본·낮음은 그대로)
+    fsat = OUT / "cafe_saturation_checks.csv"
+    if fsat.exists():
+        sat = pd.read_csv(fsat, encoding="utf-8-sig")
+        hi = sat[sat["item"].astype(str).str.startswith("2005 카페 비중 높음")]
+        if len(hi) and pd.notna(hi.ci_hi.iloc[0]) and hi.ci_hi.iloc[0] / 100 < E["카페"]["high"]:
+            print(f"카페 '높음' 포화 조정: {E['카페']['high'] * 100:.1f}% → {hi.ci_hi.iloc[0]:.1f}% (카페 비중 높던 격자의 상한)")
+            E["카페"]["high"] = hi.ci_hi.iloc[0] / 100
     shp = shape_years(); out = []
     for _, r in N.iterrows():
         for sc in ("low", "base", "high"):

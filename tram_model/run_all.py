@@ -63,12 +63,15 @@ STEPS = [
     ("build_dong_map_profile", "지도용 행정동 요약표·GeoJSON·정거장 요약", None),
     ("validate_closures_8989", "진단 외부 검증: 8989 폐업률(2025) ↔ 82개 동 위험 점수", None),
     ("analyze_construction_8989", "공사 기간 점검: 공사 구간 동 vs 정거장 먼 동 월별 카드매출 (data/construction_sections.csv)", None),
+    ("analyze_cafe_saturation", "카페 포화 점검: 대전 카페 순증·폐업률, 카페 비중 높던 격자의 1호선 효과 → '높음' 조정 (약 1분)", None),
     ("build_composition", "업종 구성 현재·트램 개통 후 예상 (카페·빵집, 1호선 인허가 근거)", None),
     ("build_rent_pressure", "임대료 부담 위험 순위 (상권·행정동)", None),
     ("build_rent_survey", "부동산원 임대동향(임대료·지수·공실률) 상권 대응 (data/raw/rent_survey 있으면)", None),
     ("build_rent_long", "임대료 장기 흐름(R-ONE 2013~2026) vs 같은 기간 땅값 (data/raw/rent_survey_long 있으면)", None),
+    ("check_rent_signal_history", "임대료 부담 신호 ↔ 지난 13년 지역 임대료 흐름 대조 (참고, 지역 6~7곳)", None),
     ("analyze_station_sensitivity", "정거장 추정 좌표 민감도: 28곳을 0~300m 옮겨 500m 판정·진단 다시 계산 (약 1분)", None),
     ("analyze_assumption_sensitivity", "가정 민감도: 1호선 효과 기준별 금액·진단 변화, 임대료 신호 가중치 안정도", None),
+    ("analyze_development_trend", "트램 없어도 오르는 곳: 신도시·택지 개발 동 표시, 개발지 뺀 1호선 효과 (약 1분)", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 

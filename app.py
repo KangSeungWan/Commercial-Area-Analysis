@@ -86,6 +86,14 @@ rentp = read_csv(f"{OUT}/rent_pressure.csv", dtype={"key": str})           # 임
 _sens = read_csv(f"{OUT}/station_coord_sensitivity.csv", dtype={"key": str})   # 정거장 추정 좌표 민감도 (analyze_station_sensitivity.py)
 SENS = ({(r.level, r.key): r.note for r in _sens.itertuples() if bool(r.sensitive) and isinstance(r.note, str)}
         if _sens is not None and "sensitive" in _sens else {})
+_dev = read_csv(f"{OUT}/development_trend_dong.csv", dtype={"dong_id": str})   # 트램 없어도 오르는 곳 (analyze_development_trend.py)
+DEV = ({r.dong_id: (r.dev_kind, r.dev_reason) for r in _dev.itertuples() if bool(r.dev_flag)}
+       if _dev is not None and "dev_flag" in _dev else {})
+_devc = read_csv(f"{OUT}/development_trend_checks.csv")
+DEV_L1 = (_devc[_devc.variant.astype(str).str.startswith("개발지 법정동")].effect_pct.iloc[0]
+          if _devc is not None and _devc.variant.astype(str).str.startswith("개발지 법정동").any() else None)
+DEV_MONEY = (_devc[_devc.variant == "개발지 동의 몫"].effect_pct.iloc[0]
+             if _devc is not None and (_devc.variant == "개발지 동의 몫").any() else None)
 rsurv = read_csv(f"{OUT}/rent_survey_area.csv")                            # 부동산원 임대동향 (build_rent_survey.py)
 dss = read_csv(f"{OUT}/dong_station_summary.csv", dtype={"dong_id": str})  # 정거장 500m 에 걸친 행정동
 cnow = read_csv(f"{OUT}/composition_now.csv", dtype={"key": str})            # 업종 구성 현재
@@ -624,10 +632,12 @@ HELP = {"quadrant": "상대 쇠퇴 위험 50점 이상 + 상권 점포 절반 �
         "growth_score": "상권 가치(땅값) 기준 트램 효과·개업률·최근 점포 비중을 20개 상권 안 순위로 합친 점수",
         "close_rate_q_pct": "최근 3년 분기마다 문 닫은 점포 비율의 평균",
         "comp": "트램 개통 4년 뒤(2034) 음식·소매 등 전체 점포 중 카페 비중이 몇 %p 늘지. 대전 1호선 근거: 역 500m 안 카페 수 +25%, "
-                "음식점 중 카페 비중 +1.4%p(1단계)·+4.0%p(2단계에서 따로 재현). 빵집은 개수만 늘고 비중 변화가 없어 기본값에서 뺌",
+                "음식점 중 카페 비중 +1.4%p(1단계)·+4.0%p(2단계에서 따로 재현). 빵집은 개수만 늘고 비중 변화가 없어 기본값에서 뺌. "
+                "대전 카페는 2023년부터 순감소(포화) → 카페 비중이 이미 높던 곳의 1호선 효과(+17%, 상한 +34%)로 '높음'을 낮춤",
         "rent": "측정한 임대료가 아니라 '밀려날 위험 신호'를 상대 순위로 매긴 것. "
                 "① 매출로 뒷받침되지 않는 땅값 상승 × 개인 점포 비율 ② 폐업률 ③ 카페 증가(업종 교체 압력) — 세 요소를 같은 무게(1:1:1)로 백분위 평균(가중치는 임의). "
-                "지금 대전 상가 임대료는 13년째 하락·공실 많음(부동산원) → '지금 비싸다'가 아니라 '공실이 채워지고 땅값이 오른 뒤 생길 수 있는 부담'"}
+                "지금 대전 상가 임대료는 13년째 하락·공실 많음(부동산원) → '지금 비싸다'가 아니라 '공실이 채워지고 땅값이 오른 뒤 생길 수 있는 부담'. "
+                "과거 대조: 신호가 높은 지역일수록 지난 13년 임대료가 더 내렸음(지역 6곳, 참고) → 지금은 상인 지불 능력이 임대료를 누르고 있는 곳이라, 장기 계약은 지금이 유리"}
 if am.startswith("ind:") and IS is not None:
     ind_now = am[4:]
     _cur, _ = ind_scores(tram_after)
@@ -960,6 +970,11 @@ if PAGE == "map":
             if sens_d:
                 st.caption("⚑ 정거장 추정 좌표에 따라 진단이 바뀔 수 있는 동: " + ", ".join(sens_d)
                            + " (좌표를 0~300m 옮겨 300번 다시 계산, 10% 넘게 바뀜) · 핵심 상권 20곳은 모두 안정")
+            dev_d = [dinfo.loc[c, "dong"] for c in dprof.dong_id if DEV.get(str(c), ("",))[0] == "개발지"]
+            if dev_d:
+                st.caption("⌂ 신도시·택지 개발로 트램 없어도 오르는 동: " + ", ".join(dev_d)
+                           + (f" — 트램 효과 금액(기본)의 {DEV_MONEY:.0f}%가 이 동들에 있음" if DEV_MONEY is not None else "")
+                           + (f". 1호선 효과는 개발지를 빼고 다시 계산해도 +{DEV_L1:.1f}%로 같음" if DEV_L1 is not None else ""))
         cnt = dprof.quadrant.value_counts()
         tot = dprof.money_gain_base_eok.sum() if "money_gain_base_eok" in dprof else None
         gk = f"money_gain_{SCEN_KEY}_eok"
@@ -1009,6 +1024,11 @@ if PAGE == "map":
                         + (f", 바뀔 때는 '{alt_q}'" if alt_q and stab < 1 else "")) if pd.notna(stab) else ""
                 if ("행정동", str(k)) in SENS:
                     foot += ('<br>' if foot else '') + f'<b>⚑ 정거장 위치에 민감</b>: {SENS[("행정동", str(k))]}'
+                if str(k) in DEV:
+                    _dk, _dr = DEV[str(k)]
+                    foot += (('<br>' if foot else '') + f'<b>⌂ 트램 없어도 오르는 곳</b> ({_dk}): {_dr} → '
+                             + ("땅값 전망에 신도시·택지 개발 효과가 섞임. 트램 효과 금액을 트램만의 몫으로 읽지 말 것"
+                                if _dk == "개발지" else "트램 확정(2019) 전부터 대전보다 더 오르던 곳. 오름세 자체는 트램 이전 요인"))
                 st.markdown('<div class="why"><div class="why-h">진단 근거 · 82개 동 안 순위</div>'
                             f'<div class="why-rule">{rule}</div>'
                             + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{t}</span></div>'
@@ -1432,7 +1452,9 @@ if PAGE == "map":
             if sel in ("A03", "A04"):
                 notes.append("⚠ 전통시장 현금 거래가 카드매출에 빠져 이 상권의 매출 수치는 쓰지 말 것 — 보도 축소(4m→2m) 구간이라 공사 피해가 가장 클 곳인데 가장 측정이 안 됨")
             if sel in ("A17",) or (sel == "A18"):
-                notes.append("정거장이 개발 수요(도안 2·3단계, 연축 혁신도시)로 추가된 곳 → 땅값 상승에 개발 효과가 섞여 트램만의 효과로 읽지 말 것(KDI 2024)")
+                notes.append("⌂ 정거장이 개발 수요(도안 2·3단계, 연축 혁신도시)로 추가된 곳 → 땅값 상승에 개발 효과가 섞여 트램만의 효과로 읽지 말 것(KDI 2024)"
+                             + (" · 인근 관저1·2동·도안동·원신흥동·상대동은 2010년 뒤 택지 필지가 2~200배로 늘어난 개발지" if sel == "A17" else
+                                " · 연축 도시개발(1,359호, 2024 실시계획 인가)은 아직 땅값에 반영 전" if sel == "A18" else ""))
             st.caption(" · ".join(notes))
             # ── 실측 카드매출 (8989) 한 줄: 소속 행정동 매출을 점포 비율로 배분한 값. 전통시장 동·배분 비율 낮은 상권은 주석 ──
             s89 = sales89[sales89.code == sel].iloc[0] if sales89 is not None and (sales89.code == sel).any() else None

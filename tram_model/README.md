@@ -310,6 +310,10 @@ python tram_model/run_all.py --from train_analyze
 | 18 | `analyze_construction_8989.py` | 공사 구간 동 vs 정거장 먼 동 월별 카드매출 이중차분(−1.4%, 도소매 −2.3%). 입력 `data/construction_sections.csv` | `construction_8989_did/es.csv` |
 | 19 | `analyze_seoul_newline_sales.py` | 서울 신림선(2022) 역 500m 상권(처리 15) vs 1~3km(비교 165) 점포당 매출·점포 수·카페 비중 이중차분, 가짜 개통·사건연구. 입력 `data/raw/seoul/`(추정매출·점포 CSV 2021~2023, 영역 shapefile .dbf, 역사마스터). 결과: 점포당 매출 −4.0% 유의 아님, 점포 수 +7.7% p 0.04 | `seoul_newline_sales_did/es.csv` |
 
+| 20 | `analyze_cafe_saturation.py` | 대전 카페 포화 점검(인허가 2002~2025 순증·폐업률·카페 비중) + 2005년 카페 비중별 1호선 카페 효과 + 지금 정거장 격자 외삽 범위. 결과: 2023~25 연 −4% 순감소, 비중 높던 격자 +17.4%[3.1, 33.7] vs 낮던 격자 +28.4% → `build_composition` 이 '높음'을 33.7%로 낮춤 | `cafe_saturation_city/checks.csv` |
+| 21 | `check_rent_signal_history.py` | 임대료 부담 신호(상권) ↔ 같은 지역 R-ONE 임대가격지수 13년 변화. 결과: ρ −0.81(p 0.08, 6곳) — 신호 높은 곳일수록 임대료가 더 내림 → 신호 = 땅값과 장사 수익의 간극 | `rent_signal_history.csv` |
+| 22 | `analyze_development_trend.py` | 트램 없어도 오르는 곳: '대' 필지 수 2010→2026 1.5배 이상(새 택지)·확정 개발 사업·트램 확정 전 5년 대전 대비 +10% 이상인 동 표시, 개발지를 뺀 1호선 효과·트램 확정 효과, 트램 금액 중 개발지 몫. 결과: 개발지 7곳(트램 금액의 19%), 1호선 효과 개발지 빼도 +5.9% | `development_trend_dong/checks.csv` |
+
 실행: `python tram_model/run_all.py --from check_sector_evidence` (모두 `run_all.py` STEPS 에 등록)
 
 앱 반영 (B1~B4)

@@ -21,7 +21,35 @@ def _numbers():
          "n_unc": "-", "rho_area": "0.07", "money_base": "-", "money_range": "-", "value500": "-", "money_750": "-",
          "gap5_base": "-", "gap5_high": "-", "gap_year": "2034", "meta": "-", "meta_ci": "-", "meta_k": "-",
          "pt_n": "110", "pt_rho": "0.72", "pt_slope": "3.6", "pt_share": "57", "lc_gongsi": "+43%", "lc_rone": "+40%",
-         "lc_pol_g": "+17.9%", "lc_pol_r": "+17.0%", "cl_rho": "+0.24", "cl_p": "0.02", "cl_src": "0.49"}
+         "lc_pol_g": "+17.9%", "lc_pol_r": "+17.0%", "cl_rho": "+0.24", "cl_p": "0.02", "cl_src": "0.49",
+         "dv_l1": "+5.9%", "dv_old": "+5.9%", "dv_tram": "-0.6%", "dv_money": "19", "dv_pre": "14", "dv_n": "7", "dv_names": "-",
+         "rh_rho": "", "rh_p": "-", "rh_n": "-", "rh_hi": "-", "rh_lo": "-"}
+    dv = _read("development_trend_checks.csv")
+    if dv is not None and len(dv):
+        def _g(pfx):
+            r = dv[dv.variant.astype(str).str.startswith(pfx)]
+            return r.iloc[0] if len(r) else None
+        for key, pfx, fmt in (("dv_l1", "개발지 법정동", "{:+.1f}%"), ("dv_old", "1996년", "{:+.1f}%"),
+                              ("dv_tram", "새 택지 법정동", "{:+.1f}%"), ("dv_money", "개발지 동의", "{:.0f}"),
+                              ("dv_pre", "트램 전 상승 동의", "{:.0f}")):
+            r = _g(pfx)
+            if r is not None:
+                n[key] = fmt.format(r.effect_pct)
+        r = _g("개발지 동의")
+        if r is not None:
+            n["dv_n"] = f"{int(r.n_treat)}"
+    rh = _read("rent_signal_history.csv")
+    if rh is not None and len(rh):
+        rr_ = rh[rh.region.astype(str).str.startswith("순위상관 (2013")]
+        body = rh[~rh.region.astype(str).str.startswith("순위상관") & rh.period.astype(str).str.startswith(("2013", "2014"))]
+        if len(rr_):
+            n.update(rh_rho=f"{rr_.rent_chg_pct.iloc[0]:+.2f}", rh_p=rr_.areas.iloc[0].split()[1],
+                     rh_n=f"{len(body)}",
+                     rh_hi=f"{body[body.signal.str.contains('높음')].rent_chg_pct.mean():+.0f}%",
+                     rh_lo=f"{body[body.signal.str.contains('낮음')].rent_chg_pct.mean():+.0f}%")
+    dd = _read("development_trend_dong.csv")
+    if dd is not None and "dev_kind" in dd:
+        n["dv_names"] = ", ".join(dd[dd.dev_kind == "개발지"].dong.astype(str))
     pt = _read("rent_capital_passthrough.csv")
     if pt is not None and len(pt):
         r = pt.sort_values("n").iloc[-1]
@@ -241,6 +269,19 @@ def _story(n):
         if {"low", "base", "high"} <= set(d.index):
             v["add"] = f"+{d.loc['base', 'add_카페']:.0f}곳 ({d.loc['low', 'add_카페']:.0f}~{d.loc['high', 'add_카페']:.0f})"
             v["pp"] = f"+{d.loc['base', 'cafe_bakery_pp']:.1f}%p"
+    sat = _read("cafe_saturation_checks.csv"); sc = _read("cafe_saturation_city.csv")
+    if sat is not None and sc is not None and len(sc):
+        it = sat["item"].astype(str)
+        hi_ = sat[it.str.startswith("2005 카페 비중 높음")]; lo_ = sat[it.str.startswith("2005 카페 비중 낮음")]
+        ab = sat[it.str.contains("기준선을 넘는")]
+        rec = sc[sc.year >= 2023]
+        if len(hi_) and len(lo_):
+            v["sat"] = (f"포화 점검: 대전 카페는 {int(rec.year.min())}~{int(rec.year.max())}년 해마다 순감소(연 {rec.net_growth_pct.mean():+.1f}%), "
+                        f"음식점 중 카페 비중 {sc[sc.year == 2005].cafe_share_pct.iloc[0]:.1f}%(2005) → {sc.cafe_share_pct.iloc[-1]:.1f}%. "
+                        f"1호선 때도 카페 비중이 이미 높던 격자는 효과 {hi_.effect_pct.iloc[0]:+.1f}% [{hi_.ci_lo.iloc[0]:.1f}, {hi_.ci_hi.iloc[0]:.1f}]로 "
+                        f"낮던 격자({lo_.effect_pct.iloc[0]:+.1f}%)보다 작음"
+                        + (f", 지금 정거장 격자의 {ab.share_pct.iloc[0]:.0f}%가 그 수준" if len(ab) else "")
+                        + f" → '높음'을 상한 {hi_.ci_hi.iloc[0]:.0f}%로 낮춤")
     sp = _read("station_sales_premium.csv")
     if sp is not None:
         sp = sp.set_index("model")
@@ -292,7 +333,8 @@ def _story(n):
          f"역 500m 카페 수 {v['cafe']}, 음식점 중 카페 비중 {v['cafe_pp']}, 2단계 역 재현 카페 수 {v['cafe_pp2']}, 밀도 맞춤 {v['dens']} "
          f"→ 2034 대전 카페 {v['add']}, 대전 카페·빵 비중 {v['pp']}",
          f"전체 점포 수 효과는 불확실({v['stores']}), 빵집은 개수만 늘고 비중 {v['bake_pp']}"
-         + (f". {other_sectors_line()}" if other_sectors_line() else "")),
+         + (f". {other_sectors_line()}" if other_sectors_line() else "")
+         + (f". {v['sat']}" if v.get("sat") else "")),
         ("③ 점포당 매출", "잘 안 바꿈", "8989 행정동 카드매출(2026-01~08) 단면 회귀, 동 특성 통제" + (" + 서울 신림선 개통 전후 상권 매출 이중차분" if v.get("seoul") else ""),
          f"1호선 역세권 땅값 {v['land32']} 차이 vs 점포당 매출 {v['sales7']}{v['sales_ci']} → 땅값 효과의 {v['ratio']}배" + (f". {v['seoul']}" if v.get("seoul") else ""),
          "대전은 단면이라 인과 아님(2025~ 자료만)" + (", 신림선은 지하 경전철·개통 전 5분기" if v.get("seoul") else "")
@@ -330,11 +372,17 @@ LIMITS = [
     "8989 실측 카드매출(2025→2026 1~8월)로는 위험 점수가 높을수록 매출 증감이 낮음(ρ −0.41, p 0.05, n 20) → 진단 방향과 일치. "
     "다만 매출 증감은 주민 인구 변화(ρ +0.55, 재개발 입주)와 가장 강하게 움직임. "
     "82개 동 위험 점수는 8989 폐업률(2025년)과도 같은 방향(ρ {cl_rho}, p {cl_p}; 상가정보 폐업률과 8989 폐업률끼리 ρ {cl_src})",
-    "**업종 변화(카페)**: 대전 1호선(지하철) 인허가 근거 → 지상 트램은 다를 수 있어 낮음~높음 범위로 표시. 카페 외 음식 업종(빵·편의점·주점·식사)과 "
+    "**업종 변화(카페)**: 대전 1호선(지하철) 인허가 근거 → 지상 트램은 다를 수 있어 낮음~높음 범위로 표시. "
+    "대전 카페는 2023년부터 순감소(개업 < 폐업)이고 지금 정거장 주변은 1호선 당시보다 카페 비중이 높아, 1호선 때 비중이 높던 격자의 효과 상한으로 '높음'을 낮춤(포화 조정). "
+    "'카페 +n곳'은 트램이 없을 때보다 많아지는 상대적인 몫이며, 대전 전체 카페가 줄어드는 중이면 절대 수는 지금보다 늘지 않을 수도 있음. 카페 외 음식 업종(빵·편의점·주점·식사)과 "
     "비음식 업종(미용·세탁·숙박·노래연습장·체력단련)은 확실한 근거 없음. 약국·의원·안경은 폐업 기록이 2008년 이후부터라 검사하지 못함",
-    "**임대료 부담 신호**: 임대료 금액 예측이 아니라 세 지표(땅값-매출 격차·폐업률·업종 교체)를 같은 무게로 조합한 '개통 후 잠재 위험' 순위이며 가중치는 임의. 예측 타당도는 미래가 와야 검증됨. 부동산원 임대동향 지역은 분석 상권과 경계가 달라 설명 자료로만 사용. "
+    "**임대료 부담 신호**: 과거 대조(지역 {rh_n}곳)에서 신호가 높은 곳일수록 지난 13년 임대료가 더 내림(ρ {rh_rho}, p {rh_p}) → '임대료 상승 예측'이 아니라 땅값과 장사 수익의 간극. "
+    "임대료 금액 예측이 아니라 세 지표(땅값-매출 격차·폐업률·업종 교체)를 같은 무게로 조합한 '개통 후 잠재 위험' 순위이며 가중치는 임의. 예측 타당도는 미래가 와야 검증됨. 부동산원 임대동향 지역은 분석 상권과 경계가 달라 설명 자료로만 사용. "
     "전국 {pt_n}개 상권(R-ONE 2017~2026): 자산가치가 더 오른 곳이 임대료도 더 오름(순위상관 {pt_rho}, 자산 +10%p → 임대료 +{pt_slope}%p), 하지만 {pt_share}%는 자산이 오르는 동안 임대료가 내림 "
     "→ 땅값 상승은 시차를 두고 일부만 임대료로 옮겨 감. 자본수익률은 임대수익을 반영한 감정평가라 두 값이 함께 움직이는 부분이 섞여 있음",
+    "**신도시·택지 개발(트램 없어도 오르는 곳)**: 2010년 뒤 택지 필지가 1.5배 이상 늘었거나 확정 개발 사업이 있는 {dv_n}개 동({dv_names})은 "
+    "땅값 전망에 개발 효과가 섞임 → 지도에 ⌂ 표시. 트램 효과 금액(기본)의 {dv_money}%가 이 동들, {dv_pre}%는 트램 확정(2019) 전부터 대전보다 10% 넘게 더 오르던 동에 있음. "
+    "1호선 효과는 당시 개발지 법정동을 빼도 {dv_l1}(1996년에 있던 필지만 {dv_old}), 트램 확정 뒤 기대 효과는 새 택지를 빼도 {dv_tram} → 효과 추정 자체는 개발지에 끌려가지 않음",
     "**진단은 상대 비교**: 20개 상권 안 순위라 언제나 약 절반이 '위험 50 이상' → 절대적 쇠퇴 판정이 아님",
 ]
 
@@ -392,6 +440,12 @@ def _body(st):
             st.caption("임대료 = 임대가격지수 변화(중대형 상가 우선, 없으면 집합 상가, 3년 넘게 이어진 지역만), 땅값 = 대응 상권 공시지가 지수의 같은 기간 변화(1월 1일 기준). "
                        "부동산원 상권 경계는 분석 상권과 달라 이름으로 대응. 공시지가는 2019~22 현실화율 정책으로 더 올랐을 수 있음. "
                        "출처: R-ONE 임대동향 지역별 임대가격지수(시계열), outputs/rent_long_vs_land.csv")
+            if n.get("rh_rho"):
+                st.markdown(f"**신호와 과거 임대료 대조 (참고, 지역 {n['rh_n']}곳)**: 임대료 부담 신호가 높은 곳일수록 지난 13년 임대료가 **더 내렸음** "
+                            f"(순위상관 {n['rh_rho']}, p {n['rh_p']}; 신호 '높음' 지역 {n['rh_hi']} vs '낮음' 지역 {n['rh_lo']}).  \n"
+                            "→ 이 신호는 '임대료가 오를 곳' 예측이 아니라 **땅값은 오르는데 장사 수익이 따라가지 못한 곳**(건물주 기대와 상인 지불 능력의 간극). "
+                            "지금까지는 상인이 낼 수 있는 만큼으로 임대료가 눌려 있었고, 트램이 손님·업종 교체(카페)를 끌어오면 그 간극이 임대료로 옮겨 갈 수 있음(성수동 순서). "
+                            "그래서 처방도 '지금 임대료가 내리는 동안 장기 계약·상생협약을 먼저'가 됨")
     with t0:
         c = st.columns(3)
         c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음–높음 {n['money_range'].replace('~', '–')}",
