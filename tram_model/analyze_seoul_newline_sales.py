@@ -4,7 +4,7 @@
 입력 (사용자가 서울 열린데이터광장에서 받아 data/raw/seoul/ 에 넣음; 파일 이름은 상관없음, 열 이름으로 찾음)
   - 추정매출-상권 (OA-15572) 2021·2022·2023년 CSV : 기준_년분기_코드, 상권_코드, 서비스_업종_코드(_명), 당월_매출_금액
   - 점포-상권 (OA-15577) 2021·2022·2023년 CSV     : 기준_년분기_코드, 상권_코드, 서비스_업종_코드, 점포_수
-  - 영역-상권 (OA-15560) CSV                       : 상권_코드, 엑스좌표_값, 와이좌표_값 (EPSG:5181)
+  - 영역-상권 (OA-15560) CSV 또는 shapefile(.dbf) : 상권_코드, 엑스좌표_값, 와이좌표_값 / TRDAR_CD, XCNTS_VALU, YDNTS_VALU (EPSG:5181)
   - 역사마스터 (OA-21232) CSV                      : 역사명, 호선, 위도, 경도
   * 2024년부터 상권 단위가 표준단위구역으로 바뀌어 코드가 이어지지 않음 → 2021~2023만 사용
 설계: 처리군 = 신림선 역 500m 안 상권 중 다른 노선 역 500m 밖(환승역 주변 제외 = 새 역 효과만)
@@ -61,11 +61,38 @@ def tm5181(lat, lon):
     return x + 200000, y + 500000
 
 
+def read_dbf(path):
+    """shapefile 의 .dbf 속성표만 읽음 (외부 라이브러리 없이). 문자열은 .cpg 인코딩, 없으면 cp949."""
+    import struct
+    enc = "cp949"
+    cpg = os.path.splitext(path)[0] + ".cpg"
+    if os.path.exists(cpg):
+        enc = open(cpg).read().strip() or enc
+    with open(path, "rb") as f:
+        h = f.read(32); n = struct.unpack("<I", h[4:8])[0]; hl = struct.unpack("<H", h[8:10])[0]; rl = struct.unpack("<H", h[10:12])[0]
+        fields = []
+        while True:
+            fd = f.read(32)
+            if fd[0] == 0x0D: break
+            fields.append((fd[:11].split(b"\x00")[0].decode("ascii", "ignore"), chr(fd[11]), fd[16]))
+        f.seek(hl); rows = []
+        for _ in range(n):
+            rec = f.read(rl)
+            if not rec or rec[0] == 0x2A: continue
+            pos = 1; row = {}
+            for name, typ, ln in fields:
+                raw = rec[pos:pos + ln]; pos += ln
+                row[name] = raw.decode(enc, "ignore").strip() if typ == "C" else raw.decode("ascii", "ignore").strip()
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def col(df, *keys):
-    for c in df.columns:
-        if all(k in c for k in keys):
-            return c
-    raise KeyError(keys)
+    """열 찾기: 키워드가 모두 들어간 열 중 가장 짧은 이름 (예: '상권_구분_코드'가 아니라 '상권_코드')."""
+    hits = [c for c in df.columns if all(k in c for k in keys)]
+    if not hits:
+        raise KeyError(keys)
+    return min(hits, key=len)
 
 
 def main():
@@ -73,10 +100,15 @@ def main():
         print(f"서울 상권 자료 없음({RAW}) → 건너뜀"); return
     f_sales = _find_files("당월_매출_금액"); f_store = _find_files("점포_수", "서비스_업종")
     f_area = _find_files("엑스좌표"); f_stn = _find_files("호선")
+    f_dbf = [f for f in glob.glob(str(RAW / "**" / "*.dbf"), recursive=True)]
+    if not f_area and f_dbf:
+        A_dbf = read_dbf(f_dbf[0])
+        A_dbf = A_dbf.rename(columns={"TRDAR_CD": "상권_코드", "XCNTS_VALU": "엑스좌표_값", "YDNTS_VALU": "와이좌표_값"})
+        f_area = ["<dbf>"]
     if not (f_sales and f_store and f_area and f_stn):
         print("필요한 파일이 다 있지 않음 → 건너뜀:", dict(매출=len(f_sales), 점포=len(f_store), 영역=len(f_area), 역=len(f_stn))); return
     S = pd.concat([_read(f) for f in f_sales]); P = pd.concat([_read(f) for f in f_store])
-    A = _read(f_area[0]); ST = _read(f_stn[0])
+    A = A_dbf if f_area == ["<dbf>"] else _read(f_area[0]); ST = _read(f_stn[0])
     q = col(S, "기준", "분기"); k = col(S, "상권", "코드"); u = col(S, "서비스_업종_코드"); amt = col(S, "당월_매출_금액")
     S = S[[q, k, u, amt] + [c for c in S.columns if "업종_코드_명" in c][:1]].copy()
     S.columns = ["q", "k", "u", "amt"] + (["uname"] if S.shape[1] == 5 else [])

@@ -261,8 +261,10 @@ def _story(n):
         r = sd[sd["결과"] == "점포당 매출"]
         if len(r):
             r = r.iloc[0]
-            v["seoul"] = (f"서울 신림선(2022) 역 500m 상권의 개통 후 점포당 매출 {r['효과']:+.1f}% [{r['하한']:.1f}, {r['상한']:.1f}]"
-                          f"{'(유의하지 않음)' if r['p값'] >= 0.05 else ''}, 처리 {int(r['처리_상권'])}·비교 {int(r['비교_상권'])}개 상권")
+            st_ = sd[sd["결과"] == "점포 수"]
+            extra = (f", 점포 수는 {st_['효과'].iloc[0]:+.1f}%{'(유의)' if st_['p값'].iloc[0] < 0.05 else ''}" if len(st_) else "")
+            v["seoul"] = (f"서울 신림선(2022) 역 500m 상권: 개통 후 점포당 매출 {r['효과']:+.1f}% [{r['하한']:.1f}, {r['상한']:.1f}]"
+                          f"{'(유의하지 않음)' if r['p값'] >= 0.05 else ''}{extra} — 가게는 늘고 가게당 매출은 그대로, 처리 {int(r['처리_상권'])}·비교 {int(r['비교_상권'])}개 상권, 개통 전 가짜 개통 검정 통과")
     sw = _read("sensitivity_rent_weights.csv")
     if sw is not None and len(sw):
         d_ = sw.set_index("level")

@@ -308,7 +308,7 @@ python tram_model/run_all.py --from train_analyze
 | 16 | `analyze_station_sensitivity.py` | 정거장 추정 좌표 28곳을 0~300m 무작위로 300번 옮겨 500m 안 점포 비율·진단 다시 계산 → 상권 20곳 모두 안정, 행정동 6곳 민감(앱 ⚑) | `station_coord_sensitivity.csv` |
 | 17 | `validate_closures_8989.py` | 8989 폐업률(2025) ↔ 82개 동 위험 점수(ρ +0.24, p 0.02) | `validation_closures_8989*.csv` |
 | 18 | `analyze_construction_8989.py` | 공사 구간 동 vs 정거장 먼 동 월별 카드매출 이중차분(−1.4%, 도소매 −2.3%). 입력 `data/construction_sections.csv` | `construction_8989_did/es.csv` |
-| 19 | `analyze_seoul_newline_sales.py` | 서울 신림선(2022) 역 500m 상권 개통 전후 점포당 매출 이중차분. 입력 `data/raw/seoul/`(사용자 다운로드) | `seoul_newline_sales_did/es.csv` |
+| 19 | `analyze_seoul_newline_sales.py` | 서울 신림선(2022) 역 500m 상권(처리 15) vs 1~3km(비교 165) 점포당 매출·점포 수·카페 비중 이중차분, 가짜 개통·사건연구. 입력 `data/raw/seoul/`(추정매출·점포 CSV 2021~2023, 영역 shapefile .dbf, 역사마스터). 결과: 점포당 매출 −4.0% 유의 아님, 점포 수 +7.7% p 0.04 | `seoul_newline_sales_did/es.csv` |
 
 실행: `python tram_model/run_all.py --from check_sector_evidence` (모두 `run_all.py` STEPS 에 등록)
 
