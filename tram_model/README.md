@@ -292,6 +292,7 @@ python tram_model/run_all.py --from train_analyze
 | 순서 | 스크립트 | 하는 일 | 주요 출력 (`outputs/`) |
 |---|---|---|---|
 | 1 | `check_sector_evidence.py` | 1호선 인허가 업종 근거 점검: 사전 추세, 비중, 거리 띠, 2단계 재현, 밀도 맞춤, Bonferroni | `sector_evidence_checks/es/share.csv` |
+| 1-1 | `check_other_sectors.py` | 비음식 8업종(미용·세탁·숙박·노래연습장·체력단련·약국·의원·안경) 인허가로 같은 점검. 입력 `data/raw/permits_other/*_대전광역시.csv` (file.localdata.go.kr 대전 파일) | `sector_evidence_other(_summary/_es).csv` |
 | 2 | `build_8989_tables.py` | 8989 원본(json) → 행정동·상권 표 | `8989/*.csv`, `dong_panel_8989.csv`, `dong_code_map.csv` |
 | 3 | `analyze_8989.py` | 행정동 매출 요약, 진단 외부 검증, 상권 배분 | `area_sales_summary.csv` |
 | 4 | `analyze_station_sales.py` | 1호선 역세권 땅값 vs 점포당 매출 (+32% vs +7%, 0.24배) | `station_sales_premium.csv`, `station_sales_dong.csv` |

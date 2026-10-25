@@ -172,6 +172,30 @@ def _lgbm_status():
         return "이 컴퓨터: LightGBM 없음 → scikit-learn 모델로 대체 중 (python -m pip install lightgbm 으로 설치 가능)"
 
 
+def other_sectors_line():
+    """비음식 업종 인허가 점검 한 줄 (check_other_sectors.py 결과). 결과가 없으면 빈 문자열."""
+    s = _read("sector_evidence_other_summary.csv")
+    if s is None or "판정" not in s:
+        return ""
+    s = s[s["판정"].notna()]
+    nm = lambda x: x.replace("업", "") if x.endswith("장업") or x in ("미용업", "세탁업", "숙박업", "안경업") else x
+    sure = s[s["판정"].str.startswith("확실")]
+    ref = s[s["판정"].str.startswith("참고")]
+    none = s[s["판정"] == "효과 없음"]
+    lack = s[s["판정"] == "자료 부족"]
+    tested = len(s) - len(lack)
+    head = (f"비음식 {tested}개 업종(대전 인허가)도 같은 방법으로 검사: "
+            + ("확실한 효과는 " + "·".join(f"{nm(r['업종'])} {r['판정'][3:-1]}" for _, r in sure.iterrows()) if len(sure) else "확실한 효과 없음"))
+    parts = []
+    if len(ref):
+        parts.append("·".join(f"{nm(r['업종'])} {r['판정'][3:-1]}" for _, r in ref.iterrows()) + "는 참고 수준")
+    if len(none):
+        parts.append("·".join(nm(x) for x in none["업종"]) + " 효과 없음")
+    if len(lack):
+        parts.append("·".join(nm(x) for x in lack["업종"]) + "은 폐업 기록이 2008년 이후부터라 검사 불가")
+    return head + (" (" + ", ".join(parts) + ")" if parts else "")
+
+
 def _story(n):
     """트램이 바꾸는 것 / 잘 안 바꾸는 것 — 근거 4줄 (땅값·업종·매출·임대). 결과 파일에서 수치를 읽음."""
     v = dict(cafe="+24.8% [8.0, 44.2]", cafe_pp="+1.4%p", cafe_pp2="+27.5%", dens="+18.7%", stores="+4.7% [−3.3, 13.3]",
@@ -224,7 +248,8 @@ def _story(n):
         ("② 업종 구성(카페)", "바꿈", "대전 1호선 음식점 인허가 이중차분(2002~2014) + 사전 추세·2단계 재현·밀도 맞춤",
          f"역 500m 카페 수 {v['cafe']}, 음식점 중 카페 비중 {v['cafe_pp']}, 2단계 역 재현 카페 수 {v['cafe_pp2']}, 밀도 맞춤 {v['dens']} "
          f"→ 2034 대전 카페 {v['add']}, 대전 카페·빵 비중 {v['pp']}",
-         f"전체 점포 수 효과는 불확실({v['stores']}), 빵집은 개수만 늘고 비중 {v['bake_pp']}"),
+         f"전체 점포 수 효과는 불확실({v['stores']}), 빵집은 개수만 늘고 비중 {v['bake_pp']}"
+         + (f". {other_sectors_line()}" if other_sectors_line() else "")),
         ("③ 점포당 매출", "잘 안 바꿈", "8989 행정동 카드매출(2026-01~08) 단면 회귀, 동 특성 통제",
          f"1호선 역세권 땅값 {v['land32']} 차이 vs 점포당 매출 {v['sales7']}{v['sales_ci']} → 땅값 효과의 {v['ratio']}배",
          "단면이라 인과 아님, 2025~ 자료만 있음"),
@@ -248,7 +273,8 @@ LIMITS = [
     "하지만 20개 상권 위험 점수와는 ρ {rho_area}로 검증되지 않음 (코로나 시기 조사). "
     "8989 실측 카드매출(2025→2026 1~8월)로는 위험 점수가 높을수록 매출 증감이 낮음(ρ −0.41, p 0.05, n 20) → 진단 방향과 일치. "
     "다만 매출 증감은 주민 인구 변화(ρ +0.55, 재개발 입주)와 가장 강하게 움직임",
-    "**업종 변화(카페)**: 대전 1호선(지하철) 인허가 근거 → 지상 트램은 다를 수 있어 낮음~높음 범위로 표시. 카페 외 업종(빵·편의점·주점·식사)은 확실한 근거 없음",
+    "**업종 변화(카페)**: 대전 1호선(지하철) 인허가 근거 → 지상 트램은 다를 수 있어 낮음~높음 범위로 표시. 카페 외 음식 업종(빵·편의점·주점·식사)과 "
+    "비음식 업종(미용·세탁·숙박·노래연습장·체력단련)은 확실한 근거 없음. 약국·의원·안경은 폐업 기록이 2008년 이후부터라 검사하지 못함",
     "**임대료 부담**: 임대료 금액 예측이 아니라 '개통 후 잠재 위험' 순위. 부동산원 임대동향 지역은 분석 상권과 경계가 달라 설명 자료로만 사용",
     "**진단은 상대 비교**: 20개 상권 안 순위라 언제나 약 절반이 '위험 50 이상' → 절대적 쇠퇴 판정이 아님",
 ]

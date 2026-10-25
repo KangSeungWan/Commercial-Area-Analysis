@@ -407,7 +407,7 @@ def ind_scores(after, w=None):
 
 # ================================================================ 커버 화면 (처음 들어오면)
 from cover_page import render_cover
-from about_page import open_about
+from about_page import open_about, other_sectors_line
 
 _qp = st.query_params if hasattr(st, "query_params") else {}
 if "page" not in ss:
@@ -1569,7 +1569,9 @@ elif PAGE == "industry":
         st.markdown('<div class="rentnote">트램은 가게 수보다 <b>업종 구성</b>을 바꿉니다 — 대전 1호선 역 500m 안에서 '
                     '<b>카페 비중이 늘고</b>(음식점 중 +1.4%p, 2단계 역 +4.0%p로 다시 확인) 식사 음식점 비중은 줄었고, '
                     '전체 가게 수와 점포당 매출 차이는 뚜렷하지 않았습니다. 그래서 음식 점수의 트램 효과는 카페 근거로, '
-                    '다른 업종은 상권 가치(땅값) × 해외 업종 비율로 계산합니다.</div>', unsafe_allow_html=True)
+                    '다른 업종은 상권 가치(땅값) × 해외 업종 비율로 계산합니다.'
+                    + (f'<br><span style="font-size:.92em;opacity:.85">{other_sectors_line()}.</span>' if other_sectors_line() else '')
+                    + '</div>', unsafe_allow_html=True)
         st.radio("업종", IND_LIST, key="ind_panel", horizontal=True, on_change=_ind_cb, label_visibility="collapsed")
         B, wb = ind_scores(False)
         A, wa = ind_scores(True)
