@@ -1,6 +1,6 @@
 ---
 name: 대전 트램 상권 지도
-description: 트램은 매출이 아니라 거리를 바꾼다 — 공공데이터 분석 프로젝트
+description: 트램은 매출이 아니라 거리를 바꾼다 — 대전 1호선과 해외 사례로 미리 읽은 경고 (공공데이터 분석 프로젝트)
 colors:
   forest-ink: "#0a1d08"
   forest-ink-hover: "#2b390a"

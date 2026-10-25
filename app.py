@@ -551,8 +551,10 @@ def comp_rent_metrics(row, a, b):
         a.metric("업종 변화 (카페)", "-")
     g = row.get("rent") if tram_after else "해당 없음"
     drv = row.get("rent_drivers") if isinstance(row.get("rent_drivers"), str) and row.get("rent_drivers") else None
-    b.metric("임대료 부담 신호", g if isinstance(g, str) else "-",
-             ((f"높은 요소: {drv}" if drv else "") + " · 상대 순위, 금액 아님") if tram_after and g != "해당 없음"
+    stab = row.get("rent_stab")
+    stab_txt = (f" · 가중치 8변형 중 {stab * 100:.0f}% 같은 등급" + (" ⚑ 민감" if stab < 0.6 else "")) if pd.notna(stab) and tram_after and g != "해당 없음" else ""
+    b.metric("임대료 부담 신호", (g + (" ⚑" if pd.notna(stab) and stab < 0.6 else "")) if isinstance(g, str) else "-",
+             ((f"높은 요소: {drv}" if drv else "") + " · 상대 순위, 금액 아님" + stab_txt) if tram_after and g != "해당 없음"
              else ("트램 효과가 거의 없는 곳" if g == "해당 없음" and tram_after else None),
              delta_color="off", delta_arrow="off", help=HELP["rent"])
 
@@ -581,6 +583,7 @@ def attach_new(df, level, keycol):
     if rentp is not None:
         r = rentp[rentp.level == level].set_index("key"); k = df[keycol].astype(str)
         df["rent_grade"], df["rent_score"], df["rent_drivers"] = k.map(r.rent_pressure), k.map(r.rent_pressure_score), k.map(r.rent_drivers)
+        df["rent_stab"] = k.map(r.rent_pressure_stability) if "rent_pressure_stability" in r else np.nan
         df["rent"] = df.rent_grade.fillna("해당 없음") if tram_after else "해당 없음"
     return df
 
