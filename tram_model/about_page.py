@@ -294,8 +294,9 @@ def _body(st):
         st.markdown("**트램은 가게의 매출보다 상권의 가치와 업종 구성을 바꿉니다.** 그 결과 생기는 위험이 임대료 부담입니다.")
         for what, verdict, how, res, lim in _story(n):
             with st.container(border=True):
-                st.markdown(f"**{what}** — 트램이 **{verdict}**  \n{res}")
-                st.caption(f"근거: {how} · 한계: {lim}")
+                esc = lambda x: str(x).replace("~", "\\~")      # 물결표 두 개가 취소선으로 읽히지 않게
+                st.markdown(f"**{what}** — 트램이 **{verdict}**  \n{esc(res)}")
+                st.caption(esc(f"근거: {how} · 한계: {lim}"))
         st.caption("처방은 시점별로: 개통 초(공실 많고 임대료 하락 중) → 빈 점포 채우기·업종 전환 지원, 땅값이 오른 뒤 → 상생 협약·임대료 안정 장치")
         rl = _read("rent_long_vs_land.csv")
         if rl is not None and len(rl):
@@ -311,7 +312,7 @@ def _body(st):
                              차이=rl.gap_pp.map(lambda v: f"{v:+.0f}%p"))
             show = show.rename(columns={"region": "부동산원 지역", "areas": "대응 상권", "ptype": "상가 종류", "quadrant": "진단",
                                         "rent_pressure": "임대료 부담 위험"})
-            st.dataframe(show[["부동산원 지역", "대응 상권", "상가 종류", "기간", "임대료", "땅값", "차이", "진단", "임대료 부담 위험"]].fillna(""),
+            st.dataframe(show[["부동산원 지역", "임대료", "땅값", "차이", "기간", "대응 상권", "상가 종류", "진단", "임대료 부담 위험"]].fillna(""),
                          hide_index=True, use_container_width=True)
             st.caption("임대료 = 임대가격지수 변화(중대형 상가 우선, 없으면 집합 상가, 3년 넘게 이어진 지역만), 땅값 = 대응 상권 공시지가 지수의 같은 기간 변화(1월 1일 기준). "
                        "부동산원 상권 경계는 분석 상권과 달라 이름으로 대응. 공시지가는 2019~22 현실화율 정책으로 더 올랐을 수 있음. "
