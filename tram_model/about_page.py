@@ -337,11 +337,20 @@ LIMITS = [
 ]
 
 
+class _Tilde:
+    """st.caption/markdown 에 들어가는 '~' 를 글자 그대로 보이게 (물결표 두 개가 취소선으로 읽히는 것 방지)."""
+    def __init__(self, st): self._st = st
+    def __getattr__(self, k): return getattr(self._st, k)
+    def caption(self, body, *a, **kw): return self._st.caption(str(body).replace("~", "\\~"), *a, **kw)
+    def markdown(self, body, *a, **kw): return self._st.markdown(str(body).replace("~", "\\~"), *a, **kw)
+
+
 def _body(st):
+    st = _Tilde(st)
     n = _numbers()
     st.caption("대전 트램 2호선(2030 개통 예정) 상권 분석 — 공공데이터로 과거 30년 변화를 학습하고, 대전 1호선 개통 전후 땅값으로 상권 가치(땅값) 기준 트램 효과 범위를 추정")
     c = st.columns(4)
-    c[0].metric("상권 가치(땅값) 기준 트램 효과 (기본)", n["base"], f"1단계 {n['ph1']} · 2단계 {n['ph2']}", delta_color="off", delta_arrow="off")
+    c[0].metric("상권 가치(땅값) 기준 트램 효과 (기본)", n["base"], f"1단계 {n['ph1']} · 2단계 {n['ph2']}".replace('~', '–'), delta_color="off", delta_arrow="off")
     c[1].metric("지가 1년 예측 오차", n["land_rmse"], n.get("land_best", ""), delta_color="off", delta_arrow="off")
     c[2].metric("상권 유형", f"{n['k']}개", f"안정성 ARI {n['ari']}", delta_color="off", delta_arrow="off")
     c[3].metric("분석 단위", "20개 상권", "82개 행정동 · 293개 격자", delta_color="off", delta_arrow="off")
@@ -350,9 +359,8 @@ def _body(st):
         st.markdown("**트램은 가게의 매출보다 상권의 가치와 업종 구성을 바꿉니다.** 그 결과 생기는 위험이 임대료 부담입니다.")
         for what, verdict, how, res, lim in _story(n):
             with st.container(border=True):
-                esc = lambda x: str(x).replace("~", "\\~")      # 물결표 두 개가 취소선으로 읽히지 않게
-                st.markdown(f"**{what}** — 트램이 **{verdict}**  \n{esc(res)}")
-                st.caption(esc(f"근거: {how} · 한계: {lim}"))
+                st.markdown(f"**{what}** — 트램이 **{verdict}**  \n{res}")
+                st.caption(f"근거: {how} · 한계: {lim}")
         st.markdown("**처방 — 시가 할 일 (시점별)**")
         st.caption("공사 중(2025~2028) → 매출 감소 보상·물류 지원(프랑스 CIA 보상위원회, 에든버러·시드니 사례) · 개통 초(공실 많고 임대료 하락 중) → 빈 점포 채우기·업종 전환 지원(청년몰 18.6% 폐업 → 임대료 지원만으론 부족) · "
                    "땅값이 오른 뒤(2032~) → 지역상생구역(인상 상한 5%, 수원 행궁동 2026 첫 지정)·상생협약(성동구: 협약 건물 인상률 2.49% vs 2.85%, 자체 조사)·공공 안심상가. 정책 효과 수치는 대부분 자체 조사·사전 추정이라 '입증'이 아니라 '가능성'")
@@ -384,11 +392,11 @@ def _body(st):
                        "출처: R-ONE 임대동향 지역별 임대가격지수(시계열), outputs/rent_long_vs_land.csv")
     with t0:
         c = st.columns(3)
-        c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음–높음 {n['money_range']}".replace("~", "–"),
+        c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음–높음 {n['money_range'].replace('~', '–')}",
                     delta_color="off", delta_arrow="off")
         c[1].metric(f"반등 기회 5곳 {n['gap_year']}년 차이", n["gap5_base"], f"높음 {n['gap5_high']}",
                     delta_color="off", delta_arrow="off")
-        c[2].metric("해외 트램 평균 (메타분석)", n["meta"], f"95% {n['meta_ci']}", delta_color="off", delta_arrow="off")
+        c[2].metric("해외 트램 평균 (메타분석)", n["meta"], f"95% {n['meta_ci'].replace('~', '–')}", delta_color="off", delta_arrow="off")
         st.caption(f"같은 효과 %(기본 {n['base']})를 정거장 500m 안 2026 공시지가 총액 {n['value500']}에 곱한 값. "
                    "공시지가 기준이라 시세로는 더 큼. 개통 초기 1~4년 최대치이며 6년 뒤에는 약 35%로 줄어듦. "
                    f"⚠ 기본 효과의 95% 구간({n['base_ci']})이 0을 포함하므로 이 금액은 '중심값'일 뿐 — 금액만 떼어 인용하지 말 것(범위 {n['money_range']}).")

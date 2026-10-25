@@ -49,7 +49,7 @@ _HTML = """
   <div class="cv-copy cv-hero">
     <span class="cv-tag">대전 트램 2호선 · 2030년 개통</span>
     <h1><span class="line"><span>트램은 매출이 아니라</span></span><span class="line"><span>거리를 바꾼다</span></span></h1>
-    <p class="cv-sub">대전 1호선 역 주변에서는 매출보다 <b>땅값</b>과 <b>가게 종류</b>가 먼저 달라졌습니다. <br>2030년 트램 2호선이 지날 20개 상권에서 같은 변화를 미리 읽습니다.<br><span class="cv-sub-note">대전 1호선과 해외 사례로 미리 읽은 경고</span></p>
+    <p class="cv-sub">대전 1호선 역 주변에서는 매출보다 <b>땅값</b>과 <b>가게 종류</b>가 먼저 달라졌습니다. <br>2030년 트램 2호선이 지날 20개 상권에서 같은 변화를 미리 읽습니다.<span class="cv-sub-note">대전 1호선과 해외 사례로 미리 읽은 경고</span></p>
     <div class="cv-actions">
       <button type="button" class="cv-cta" data-act="open">지도 열기</button>
       <button type="button" class="cv-ghost" data-act="about">분석 방법 보기</button>
@@ -115,7 +115,7 @@ _CSS = """
 .cv-copy { position: absolute; left: var(--gutter); top: clamp(110px, 20vh, 220px); max-width: 620px; color: var(--fg); }
 .cv-sub { font-size: 17px; line-height: 1.6; color: #2a332a; margin: 18px 0 0 0; max-width: 34em; word-break: keep-all; }
 .cv-sub b { color: #0a1d08; font-weight: 650; }
-.cv-sub-note { display: inline-block; margin-top: 8px; font-size: 13.5px; color: #6b7860; letter-spacing: .01em; }
+.cv-sub-note { display: block; margin-top: 8px; font-size: 13.5px; color: #6b7860; letter-spacing: .01em; }
 .cv-hero .cv-sub + .cv-actions { margin-top: 26px; }
 .cv-tag { display: inline-block; font-size: 13px; color: var(--tag-fg); background: var(--tag-bg); border: 1px solid var(--tag-line);
           border-radius: 999px; padding: 5px 13px; margin-bottom: 26px; }
