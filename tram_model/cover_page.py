@@ -162,6 +162,7 @@ _CSS = """
   .cv-tag { margin-bottom: 18px; }
   .cv-sub { font-size: 15.5px; }
   .cv-sub br { display: none; }
+  .cv-hero .cv-ghost { background: rgba(248, 249, 245, .82); backdrop-filter: blur(2px); }
   .cv-copy h1 { margin-bottom: 24px; font-size: min(32px, 8.4vw); }
   .cv-rows, .cv-steps { grid-template-columns: 1fr; }
   .cv-row, .cv-step { padding: 14px 0 12px 0; border-left: none; border-top: 1px solid rgba(10, 29, 8, .16); }

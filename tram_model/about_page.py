@@ -297,6 +297,25 @@ def _body(st):
                 st.markdown(f"**{what}** — 트램이 **{verdict}**  \n{res}")
                 st.caption(f"근거: {how} · 한계: {lim}")
         st.caption("처방은 시점별로: 개통 초(공실 많고 임대료 하락 중) → 빈 점포 채우기·업종 전환 지원, 땅값이 오른 뒤 → 상생 협약·임대료 안정 장치")
+        rl = _read("rent_long_vs_land.csv")
+        if rl is not None and len(rl):
+            st.markdown("**임대료와 땅값, 같은 기간에 어떻게 움직였나** (한국부동산원 임대가격지수 vs 공시지가)")
+            a = rl[rl.region == "대전 전체"]
+            if len(a):
+                a = a.iloc[0]
+                st.caption(f"대전 전체 {a.start[:4]}→{a.end}: 땅값 {a.land_chg_pct:+.0f}% 오르는 동안 상가 임대가격지수는 {a.rent_chg_pct:+.1f}% "
+                           f"(가장 높았던 때 {a.rent_peak}). 땅값이 올라도 임대료가 곧바로 따라 오르지 않았음 → 트램 뒤 임대료 부담은 "
+                           "'공실이 채워지고 땅값이 오른 다음'의 위험")
+            show = rl.assign(기간=rl.start.str[:4] + "→" + rl.end,
+                             임대료=rl.rent_chg_pct.map(lambda v: f"{v:+.1f}%"), 땅값=rl.land_chg_pct.map(lambda v: f"{v:+.1f}%"),
+                             차이=rl.gap_pp.map(lambda v: f"{v:+.0f}%p"))
+            show = show.rename(columns={"region": "부동산원 지역", "areas": "대응 상권", "ptype": "상가 종류", "quadrant": "진단",
+                                        "rent_pressure": "임대료 부담 위험"})
+            st.dataframe(show[["부동산원 지역", "대응 상권", "상가 종류", "기간", "임대료", "땅값", "차이", "진단", "임대료 부담 위험"]].fillna(""),
+                         hide_index=True, use_container_width=True)
+            st.caption("임대료 = 임대가격지수 변화(중대형 상가 우선, 없으면 집합 상가, 3년 넘게 이어진 지역만), 땅값 = 대응 상권 공시지가 지수의 같은 기간 변화(1월 1일 기준). "
+                       "부동산원 상권 경계는 분석 상권과 달라 이름으로 대응. 공시지가는 2019~22 현실화율 정책으로 더 올랐을 수 있음. "
+                       "출처: R-ONE 임대동향 지역별 임대가격지수(시계열), outputs/rent_long_vs_land.csv")
     with t0:
         c = st.columns(3)
         c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음~높음 {n['money_range']}",

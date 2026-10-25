@@ -63,6 +63,7 @@ STEPS = [
     ("build_composition", "업종 구성 현재·트램 개통 후 예상 (카페·빵집, 1호선 인허가 근거)", None),
     ("build_rent_pressure", "임대료 부담 위험 순위 (상권·행정동)", None),
     ("build_rent_survey", "부동산원 임대동향(임대료·지수·공실률) 상권 대응 (data/raw/rent_survey 있으면)", None),
+    ("build_rent_long", "임대료 장기 흐름(R-ONE 2013~2026) vs 같은 기간 땅값 (data/raw/rent_survey_long 있으면)", None),
     ("analyze_station_sensitivity", "정거장 추정 좌표 민감도: 28곳을 0~300m 옮겨 500m 판정·진단 다시 계산 (약 1분)", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
