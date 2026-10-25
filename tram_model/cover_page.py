@@ -48,8 +48,8 @@ _HTML = """
   <!-- 1. 첫 화면: 스크롤하면 왼쪽으로 빠짐 -->
   <div class="cv-copy cv-hero">
     <span class="cv-tag">대전 트램 2호선 · 2030년 개통</span>
-    <h1><span class="line"><span>트램이 지날 길 위의</span></span><span class="line"><span>스무 상권</span></span></h1>
-    <p class="cv-sub">트램은 가게 매출보다 <b>상권의 가치</b>와 <b>업종 구성</b>을 바꿉니다.<br>그래서 먼저 살필 것은 오르는 임대료입니다.</p>
+    <h1><span class="line"><span>트램은 매출이 아니라</span></span><span class="line"><span>거리를 바꾼다</span></span></h1>
+    <p class="cv-sub">대전 1호선 역 주변에서는 매출보다 <b>땅값</b>과 <b>가게 종류</b>가 먼저 달라졌습니다.<br>2030년 트램 2호선이 지날 20개 상권에서 같은 변화를 미리 읽습니다.</p>
     <div class="cv-actions">
       <button type="button" class="cv-cta" data-act="open">지도 열기</button>
       <button type="button" class="cv-ghost" data-act="about">분석 방법 보기</button>
