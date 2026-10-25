@@ -74,6 +74,9 @@ st_areas = read_csv(f"{OUT}/station_areas.csv")
 ind_area = read_csv(f"{OUT}/industry_by_area.csv")
 events = read_csv(f"{DATA}/area_events.csv")
 money = read_csv(f"{OUT}/tram_impact_money.csv")             # 트램 효과 금액 (analyze_tram_impact, 공시지가 기준)
+_ssp = read_csv(f"{OUT}/station_sales_premium.csv")   # 1호선 역세권 땅값 vs 점포당 매출 (analyze_station_sales)
+SALES_RATIO = (float(_ssp.set_index("model").loc["전체: 기본", "ratio_to_land"])
+               if _ssp is not None and "전체: 기본" in set(_ssp.model) else None)
 sales89 = read_csv(f"{OUT}/8989/area_sales_summary.csv")     # 8989 실측 카드매출 (행정동 → 상권 점포 비율 배분, analyze_8989)
 alley89 = read_csv(f"{OUT}/8989/report_alley_area_match.csv")
 dprof = read_csv(f"{OUT}/dong_map_profile.csv", dtype={"dong_id": str})   # 행정동 82개 (build_dong_map_profile.py)
@@ -145,6 +148,7 @@ h1.page-t{font-family:'Newsreader','Noto Serif KR',serif;font-weight:300;font-si
 .why-r .l{color:#6b7860}.why-r b{color:#0a1d08;text-align:right;font-variant-numeric:tabular-nums}
 .why-f{font-size:12.5px;color:#6b7860;margin-top:8px;padding-top:7px;border-top:1px solid #e1e6df}
 .stn-t{font-size:16px;font-weight:600;color:#0a1d08}
+.story{font-size:13px;color:#4a5648;background:#f3f5ef;border:1px solid #e1e6df;border-radius:8px;padding:6px 11px;margin:0 0 8px 0;line-height:1.55;word-break:keep-all}.story b{color:#0a1d08;font-weight:600}.story .ar{color:#9aa596;margin:0 4px}
 .rentnote{font-size:13.5px;color:#2a332a;margin:2px 0 6px 0}.rentnote .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 .st-key-stnpanel{background:#fff;border-left:4px solid #23272e !important}   /* DESIGN Station Card: 노선 위의 한 점 */
 .ai-saved{display:inline-block;padding:2px 10px;border-radius:6px;font-size:13px;font-weight:600;color:#2a332a;background:#eff2e8;border:1px solid #c9d5c5}
@@ -451,11 +455,11 @@ ss.nav = PAGES[ss.page]
 st.sidebar.radio("화면", list(PAGES.values()), key="nav", on_change=_nav_cb)
 PAGE = ss.page
 TRAM_MODES = ["건설 전", "건설 후"]
-MAPM = {"quadrant": "진단 (4분류)", "land_fc": f"땅값 전망 (2026→{int(fc.year.max()) if fc is not None else 2034})",
-        "tram_sel": "상권 가치(땅값) 기준 트램 효과", "land_chg_5y_pct": "땅값 5년 상승률",
-        "store_share_chg_5y_pct": "점포 비중 5년 변화",
+MAPM = {"quadrant": "진단 (4분류)", "tram_sel": "상권 가치(땅값) 기준 트램 효과",          # 발표 순서: 진단 → 상권 가치 → 업종 → 임대료
         **({"comp": "업종 변화 (카페 비중, 2034)"} if comp89 is not None else {}),
-        **({"rent": "임대료 부담 위험"} if rentp is not None else {})}   # 업종 점수 색칠은 '업종 점수' 화면의 지도에서
+        **({"rent": "임대료 부담 위험"} if rentp is not None else {}),
+        "land_fc": f"땅값 전망 (2026→{int(fc.year.max()) if fc is not None else 2034})",   # ── 참고 지표
+        "land_chg_5y_pct": "땅값 5년 상승률", "store_share_chg_5y_pct": "점포 비중 5년 변화"}   # 업종 점수 색칠은 '업종 점수' 화면의 지도에서
 MAPM_SHORT = {"quadrant": "진단", "land_fc": "땅값 전망", "tram_sel": "상권 가치 효과", "land_chg_5y_pct": "땅값 5년",
               "comp": "업종 변화", "rent": "임대료 부담",
               "store_share_chg_5y_pct": "점포 비중"}
@@ -994,30 +998,32 @@ if PAGE == "map":
                             + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{t}</span></div>'
                                       for l, v, t in rows_)
                             + (f'<div class="why-f">{foot}</div>' if foot else "") + '</div>', unsafe_allow_html=True)
+            st.caption("위: 트램 개통 뒤 (상권 가치 → 업종 → 임대료) · 아래: 지금 상태 (매출·점포·땅값)")
             m1, m2 = st.columns(2)
             m3, m4 = st.columns(2)
-            m1.metric("점포 수 (2026-06)", f"{int(d.n_stores):,}" if pd.notna(d.get("n_stores")) else "-",
+            m5, m6 = st.columns(2)
+            m5.metric("점포 수 (2026-06)", f"{int(d.n_stores):,}" if pd.notna(d.get("n_stores")) else "-",
                       f"비중 5년 {d.store_share_chg_5y_pct:+.1f}%" if pd.notna(d.get("store_share_chg_5y_pct")) else None,
                       delta_color="off", delta_arrow="off", help="대전 전체 점포 중 이 동 몫이 5년간 늘었는지(+) 줄었는지(-)")
-            m2.metric("땅값 5년 상승률", f"{d.land_chg_5y_pct:+.1f}%" if pd.notna(d.get("land_chg_5y_pct")) else "-",
+            m6.metric("땅값 5년 상승률", f"{d.land_chg_5y_pct:+.1f}%" if pd.notna(d.get("land_chg_5y_pct")) else "-",
                       f"대전 평균 대비 {d.land_rel_idx:.0f}" if pd.notna(d.get("land_rel_idx")) else None,
                       delta_color="off", delta_arrow="off", help=HELP["land_chg_5y_pct"])
             sy, sp_ = d.get("s89_sales_yoy_pct"), d.get("s89_sales_per_store_2026")
             mk = bool(d.get("s89_market_caveat", False))
-            m3.metric("카드매출 2025→2026", f"{sy:+.1f}%" if pd.notna(sy) else "-",
+            m4.metric("카드매출 2025→2026", f"{sy:+.1f}%" if pd.notna(sy) else "-",
                       (f"점포당 월 {sp_ / 1e4:,.0f}만 원" + (" (하위권, 현금·비카드 거래 영향 가능)" if mk else "")) if pd.notna(sp_) else None,
                       delta_color="off", delta_arrow="off",
                       help=f"출처: {SRC_8989}. 1~8월 같은 달끼리 비교, 79개 업종 합계(사이트 전체 카드매출의 약 58%). "
-                           "실측이지만 카드사·업종 범위가 한정돼 비율·증감으로만 해석")
+                           "실측이지만 카드사·업종 범위가 한정돼 비율·증감으로만 해석"
+                           + (f". 트램 뒤 점포당 매출 변화는 땅값보다 작을 것(1호선 역세권: 땅값 효과의 {SALES_RATIO:.2f}배)" if SALES_RATIO else ""))
             mv = d.get(f"money_gain_{SCEN_KEY}_eok")
-            m4.metric("상권 가치 효과", f"{d.tram_sel:+.1f}%" if tram_after else "없음",
+            m1.metric("상권 가치 효과", f"{d.tram_sel:+.1f}%" if tram_after else "없음",
                       ((f"500m 안 땅값 +{eok(mv)} · " if pd.notna(mv) and mv > 0 else "") + tram_range(d)) if tram_after
                       else f"건설 후 {d.tram_sel:+.1f}% ({scen})",
                       delta_color="off", delta_arrow="off",
                       help=TRAM_DEF + f" · 지금 시나리오: {scen} · 동 효과 = 동 점포 중 500m 안 비율 × 수준"
                            + " · 금액 = 동 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외)")
-            m5, m6 = st.columns(2)
-            comp_rent_metrics(d, m5, m6)
+            comp_rent_metrics(d, m2, m3)
             notes = [f"주요 업종: {d.top3}"] if pd.notna(d.get("top3")) else []
             if isinstance(d.get("areas"), str) and d.areas:
                 notes.append(f"겹치는 핵심 상권: {d.areas}")
@@ -1029,8 +1035,35 @@ if PAGE == "map":
                 st.caption(" · ".join(notes))
             st.caption(src(f"{SRC_DONG} (진단 근거·지표)", "outputs/dong_tram_money.csv (금액)", "outputs/8989/dong_8989_summary.csv (카드매출)"))
 
+    def story_bar():
+        """발표 순서 길잡이: ① 상권 가치 → ② 업종(카페) → ③ 매출은 작음 → ④ 임대료 부담 → ⑤ 처방. 수치는 결과 파일에서."""
+        if not tram_after:
+            st.markdown('<div class="story">트램 없이 흘러갈 때의 진단입니다. 위에서 <b>건설 후</b>를 고르면 트램이 바꾸는 것'
+                        '(상권 가치 → 업종 → 임대료)을 볼 수 있습니다.</div>', unsafe_allow_html=True)
+            return
+        eff = f"{_TS[SCEN_KEY].effect_pct:+.1f}%" if SCEN_KEY in _TS else ""
+        cafe = ""
+        if comp89 is not None:
+            c = comp89[(comp89.level == "대전") & (comp89.scenario == SCEN_KEY) & (comp89.year == comp89.year.max())]
+            if len(c):
+                cafe = f" (2034 대전 카페 +{c['add_카페'].iloc[0]:.0f}곳)"
+        if DONG:
+            reb = dprof[dprof.quadrant_after == "트램 반등 기회"]; unit = "곳"
+        else:
+            reb = prof[prof.quadrant_after == "트램 반등 기회"]; unit = "곳"
+        nhi = int((reb.get("rent", pd.Series(dtype=str)) == "높음").sum()) if "rent" in reb else 0
+        ar = '<span class="ar">→</span>'
+        st.markdown('<div class="story">'
+                    f'① 트램은 <b>상권 가치</b>를 올리고(정거장 500m 땅값 {eff}){ar}'
+                    f'② <b>업종</b>을 카페 쪽으로 바꾸지만{cafe}{ar}'
+                    f'③ <b>점포당 매출</b>은 덜 오릅니다' + (f'(땅값 효과의 {SALES_RATIO:.2f}배)' if SALES_RATIO else '') + ar
+                    + f'④ 반등 기회 {len(reb)}{unit} 중 <b>{nhi}{unit}은 임대료 부담</b> 위험{ar}'
+                    '⑤ 개통 초에는 빈 점포 채우기·업종 전환 지원, 땅값이 오른 뒤에는 기존 상인 보호</div>',
+                    unsafe_allow_html=True)
+
     # ================================================================ ① 결론 띠 (조작 줄보다 위)
     with top:
+        story_bar()
         if DONG:
             dong_verdict()
         else:
@@ -1057,9 +1090,9 @@ if PAGE == "map":
                     st.markdown('<div class="kpi">' + "".join(
                         f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
                         for q in QC if cnt.get(q, 0))
-                        + (f'<span class="sep">상권 가치(땅값) 효과 상권 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
-                             f'({tram_range(prof[["tram_effect_low", "tram_effect_high"]].mean())})</span>'
-                           if tram_after else "")
+                        + (f'<span class="sep">상권 가치(땅값) 효과: 상권 전체로 펴면 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
+                             f'(정거장 500m 안 {_TS[SCEN_KEY].effect_pct:+.1f}% × 500m 안 점포 비율)</span>'
+                           if tram_after and SCEN_KEY in _TS else "")
                         + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
                            f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
                         + '</div>', unsafe_allow_html=True, width="content")
@@ -1347,26 +1380,27 @@ if PAGE == "map":
                                       for l, v, d in rows_)
                             + (f'<div class="why-f">{foot}</div>' if foot else "") + '</div>', unsafe_allow_html=True)
 
+            st.caption("위: 트램 개통 뒤 (상권 가치 → 업종 → 임대료) · 아래: 지금 상태")
             m1, m2 = st.columns(2)
             m3, m4 = st.columns(2)
-            m1.metric("점포 수 (2026-06)", f"{int(r.n_stores):,}" if pd.notna(r.n_stores) else "-",
+            m5, m6 = st.columns(2)
+            m4.metric("점포 수 (2026-06)", f"{int(r.n_stores):,}" if pd.notna(r.n_stores) else "-",
                       f"비중 5년 {r.store_share_chg_5y_pct:+.1f}%" if pd.notna(r.get("store_share_chg_5y_pct")) else None,
                       delta_color="off", delta_arrow="off", help=HELP["store_share_chg_5y_pct"])
-            m2.metric("땅값 5년 상승률", f"{r.land_chg_5y_pct:+.1f}%" if pd.notna(r.get("land_chg_5y_pct")) else "-",
+            m5.metric("땅값 5년 상승률", f"{r.land_chg_5y_pct:+.1f}%" if pd.notna(r.get("land_chg_5y_pct")) else "-",
                       f"대전 평균 대비 {r.land_rel_idx:.0f}" if pd.notna(r.get("land_rel_idx")) else None,
                       delta_color="off", delta_arrow="off", help=HELP["land_chg_5y_pct"])
-            m3.metric("분기 폐업률", f"{r.close_rate_q_pct:.1f}%" if pd.notna(r.get("close_rate_q_pct")) else "-",
+            m6.metric("분기 폐업률", f"{r.close_rate_q_pct:.1f}%" if pd.notna(r.get("close_rate_q_pct")) else "-",
                       help=HELP["close_rate_q_pct"])
             _mv = money_of(sel, SCEN_KEY)
-            m4.metric("상권 가치 효과", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
+            m1.metric("상권 가치 효과", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
                       ((f"500m 안 땅값 +{eok(_mv)} · " if _mv else "") + tram_range(r)) if tram_after
                       else f"건설 후 {r.tram_sel:+.1f}% ({scen})" + (f" · +{eok(_mv)}" if _mv else ""),
                       delta_color="off", delta_arrow="off",
                       help=TRAM_DEF + f" · 지금 시나리오: {scen}"
                            + (" · 금액 = 이 상권 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외, 시세로는 더 큼)"
                               if _mv else ""))
-            m5, m6 = st.columns(2)
-            comp_rent_metrics(r, m5, m6)
+            comp_rent_metrics(r, m2, m3)
             _rm = rent_market_line(sel)
             if _rm:
                 st.caption(_rm, help="한국부동산원 상업용부동산 임대동향(2022~2026). 부동산원 상권 경계는 이 앱의 상권과 달라 이름으로 대응했고, "
@@ -1392,7 +1426,8 @@ if PAGE == "map":
                 if market_dong: caveat.append("전통시장 현금 거래가 빠져 금액 과소")
                 if low_w: caveat.append(f"상권이 동 점포의 {w * 100:.0f}%만 차지해 동 전체 흐름에 가까움")
                 st.caption(line + (" (" + ", ".join(caveat) + ")" if caveat else "")
-                           + "  — 실측이지만 카드사·업종 범위가 한정된 값이라 비율·증감으로만 해석",
+                           + "  — 실측이지만 카드사·업종 범위가 한정된 값이라 비율·증감으로만 해석"
+                           + (f". 트램 뒤 점포당 매출 변화는 땅값보다 작을 것(1호선 역세권: 땅값 효과의 {SALES_RATIO:.2f}배)" if SALES_RATIO else ""),
                            help=f"출처: {SRC_8989}. 행정동 82개 매출을 상권 안 점포 수 비율로 나눠 더한 추정치(점포 비율 = 상가정보 2026-06). "
                                 "골목상권 누적은 월간 상권동향 보고서(2026-01~07)의 전월 대비 %를 곱한 값으로 12월→7월 계절성이 섞여 있음.")
             st.caption(src(f"{SRC_AREA} (진단 근거·지표)", f"{SRC_TRAM} (트램 효과 수준)"))
@@ -1410,7 +1445,7 @@ if PAGE == "map":
     if DONG:
         k_, dn_ = ss.sel_dong, dinfo.loc[ss.sel_dong, "name"]
         st.subheader(f"{dinfo.loc[k_, 'dong']} 자세히 보기", anchor=False)
-        d_fc, d_land, d_store, d_sales, d_comp = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "카드매출", "업종 구성"], key="dong_tab")
+        d_fc, d_comp, d_sales, d_land, d_store = st.tabs(["땅값 예측", "업종 구성", "카드매출", "땅값 흐름", "점포 수"], key="dong_tab")
         with d_fc:
             ch_ = dong_forecast_chart(k_, tram_after) if dfl is not None and dyp is not None else None
             if ch_ is not None:
@@ -1442,7 +1477,7 @@ if PAGE == "map":
             comp_tab("행정동", k_, dinfo.loc[k_, "dong"])
     else:
         st.subheader(f"{short(sel)} 자세히 보기", anchor=False)
-        t_fc, t_land, t_store, t_comp, t_ai = st.tabs(["땅값 예측", "땅값 흐름", "점포 수", "업종 구성", "AI 해설"], key="detail_tab")
+        t_fc, t_comp, t_land, t_store, t_ai = st.tabs(["땅값 예측", "업종 구성", "땅값 흐름", "점포 수", "AI 해설"], key="detail_tab")
         with t_comp:
             comp_tab("상권", sel, short(sel))
         with t_fc:
