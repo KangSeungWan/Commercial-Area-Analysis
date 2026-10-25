@@ -42,7 +42,7 @@ def levels():
     pooled, pooled_ci = row("1·2단계 합산", 1.8)
     ph1, ph1_ci = row("1호선 1단계", 5.8)
     low = float(lit["P2_mod_bus_low"])
-    out = {"low": dict(pct=round(np.expm1(low) * 100, 2), ci="", source="해외 트램 하한 수준 (영국 LRT 버스 저밀 계수, 청두 트램 1.4%·파리 T3 0%와 비슷)"),
+    out = {"low": dict(pct=round(np.expm1(low) * 100, 2), ci="", source="해외 트램 하한 수준: Lan·Ford·Palacin 2025(Sustainability 17:10505, 영국 경전철, 버스 정류장이 적은 곳 계수 0.89%, 유의하지 않음, Table 9). 비슷한 값: 청두 트램 2호선 800m +1.4%(Yang 외 2025, RTBM 59:101286), 파리 T3 트램 효과 없음(Papon 외 2015)"),
            "base": dict(pct=pooled, ci=pooled_ci, source="대전 1호선 1·2단계 합산 (역 500m vs 1~3km, 개통 후 2008~2011)"),
            "high": dict(pct=ph1, ci=ph1_ci, source="대전 1호선 1단계만 (역 500m vs 1~3km, 개통 후 2007~2010)")}
     for v in out.values():

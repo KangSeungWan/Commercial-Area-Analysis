@@ -304,8 +304,11 @@ python tram_model/run_all.py --from train_analyze
 | 13 | `build_composition.py` | 업종 구성 현재·2034 예상 (카페만 기본 효과, 빵·과자는 높음에만) | `composition_now/forecast/evidence.csv` |
 | 14 | `build_rent_pressure.py` | 임대료 부담 위험 = 땅값-매출 격차·폐업률·업종 교체 백분위 평균 | `rent_pressure.csv` |
 | 15 | `build_rent_survey.py` | 부동산원 임대동향(임대료·지수·공실률) → 상권 대응·검증 | `rent_survey_long/area/validation.csv` |
-| 15-1 | `build_rent_long.py` | R-ONE 임대가격지수(시계열, 2013~2026, `data/raw/rent_survey_long/`) vs 같은 기간 상권 땅값 → 대전 땅값 +47% vs 임대료 −4.8% | `rent_long_vs_land.csv` |
+| 15-1 | `build_rent_long.py` | R-ONE 임대가격지수(시계열) vs 같은 기간 상권 땅값(대전 +47% vs −4.8%), 전국 상권 자본수익률 → 임대료 전가(ρ 0.72), 공시지가 vs R-ONE 지가지수 | `rent_long_vs_land.csv`, `rent_capital_passthrough.csv`, `landprice_vs_rone.csv` |
 | 16 | `analyze_station_sensitivity.py` | 정거장 추정 좌표 28곳을 0~300m 무작위로 300번 옮겨 500m 안 점포 비율·진단 다시 계산 → 상권 20곳 모두 안정, 행정동 6곳 민감(앱 ⚑) | `station_coord_sensitivity.csv` |
+| 17 | `validate_closures_8989.py` | 8989 폐업률(2025) ↔ 82개 동 위험 점수(ρ +0.24, p 0.02) | `validation_closures_8989*.csv` |
+| 18 | `analyze_construction_8989.py` | 공사 구간 동 vs 정거장 먼 동 월별 카드매출 이중차분(−1.4%, 도소매 −2.3%). 입력 `data/construction_sections.csv` | `construction_8989_did/es.csv` |
+| 19 | `analyze_seoul_newline_sales.py` | 서울 신림선(2022) 역 500m 상권 개통 전후 점포당 매출 이중차분. 입력 `data/raw/seoul/`(사용자 다운로드) | `seoul_newline_sales_did/es.csv` |
 
 실행: `python tram_model/run_all.py --from check_sector_evidence` (모두 `run_all.py` STEPS 에 등록)
 
@@ -316,3 +319,5 @@ python tram_model/run_all.py --from train_analyze
 - 3D 지도 기둥 높이: + 업종 변화(카페)·임대료 부담 (`map3d.py` 가 `composition_forecast.csv`·`rent_pressure.csv` 읽음)
 - 커버 부제·통계 카드, 분석 방법 팝업 첫 탭 '트램이 바꾸는 것'(`about_page._story`, 수치 자동)
 - 주의: `tram_model/` 부품(cover_page·about_page·map3d)을 고치면 앱을 껐다 켜야 반영됨
+
+노선 순서(`tram_route.py`, 2026-10-25): 순환선 201~240 + 연축지선(241~244) + 진잠지선(233 관저네거리 → 245 진잠네거리, KDI 2024 공식 순서)

@@ -3,7 +3,7 @@
 입력: data/raw/rent_survey_long/rone_rent_index_long.csv  (지역별 임대가격지수(시계열), 2024Q2=100, 중대형 2013~·집합 2014~·소규모 2015~)
       outputs/landprice_area_panel.csv (상권별 공시지가 지수, 1월 1일 기준)
       build_rent_survey.MATCH (부동산원 지역 → 핵심 상권), outputs/area_profile.csv (진단), outputs/rent_pressure.csv (임대료 부담 등급)
-출력: outputs/rent_long_vs_land.csv
+출력: outputs/rent_long_vs_land.csv, outputs/rent_capital_passthrough.csv(전국 상권 자산가치 → 임대료 전가), outputs/landprice_vs_rone.csv(공시지가 vs 시장 지가지수)
       region, codes, areas, ptype(중대형 우선), start, end, rent_chg_pct(임대가격지수 시작 1분기 → 2026 최신 분기),
       rent_peak(최고 시점), land_chg_pct(같은 연도 1월 1일 → 2026 1월 1일, 대응 상권 평균), gap_pp(땅값 − 임대료),
       rent_chg_중대형/소규모/집합, quadrant, rent_pressure
@@ -65,5 +65,47 @@ def main():
     print(D.to_string(index=False))
 
 
+def passthrough():
+    """전국 상권: 자산가치(자본수익률 누적) 변화가 클수록 임대료도 더 올랐나 (R-ONE 중대형 상가)."""
+    f = C.RAW_DIR / "rent_survey_long" / "rone_capital_vs_rent_regions.csv"
+    if not f.exists():
+        return
+    d = pd.read_csv(f, encoding="utf-8-sig")
+    d = d[(d.sido != d.region) & (d.region != "기타")]                   # 시도 합계 행 제외
+    rows = []
+    for w, g in d.groupby("window"):
+        x, y = g.capital_cum_pct, g.rent_idx_chg_pct
+        b = np.polyfit(x, y, 1)[0]
+        rows.append(dict(window=w, n=len(g), capital_median=round(x.median(), 1), rent_median=round(y.median(), 1),
+                         spearman=round(x.rank().corr(y.rank()), 3), slope=round(b, 3),
+                         share_capital_up_rent_down=round(((x > 0) & (y < 0)).mean(), 3),
+                         share_rent_up=round((y > 0).mean(), 3)))
+    S = pd.DataFrame(rows)
+    S.to_csv(OUT / "rent_capital_passthrough.csv", index=False, encoding="utf-8-sig")
+    print(S.to_string(index=False))
+
+
+def landcheck():
+    """공시지가(1월 1일) vs R-ONE 지가지수(시장 기반, 연말) — 공시지가가 시장보다 과하게 올랐나 (B9)."""
+    f = C.RAW_DIR / "rent_survey_long" / "rone_land_index_daejeon.csv"
+    if not f.exists():
+        return
+    r = pd.read_csv(f, encoding="utf-8-sig").pivot_table(index="year", columns=["use", "region"], values="idx")
+    L = pd.read_csv(OUT / "landprice_area_panel.csv", encoding="utf-8-sig").pivot_table(index="year", columns="code", values="idx")
+    rows = []
+    for a, b, lab in [(2013, 2025, "13년 전체"), (2018, 2022, "현실화율 정책기(2019~22)"), (2013, 2018, "정책 전")]:
+        if a not in r.index or b not in r.index or b + 1 not in L.index:
+            continue
+        rows.append(dict(period=lab, rone_years=f"{a}말→{b}말", gongsi_years=f"{a + 1}.1.1→{b + 1}.1.1",
+                         rone_all_pct=round((r.loc[b, ("전체", "대전")] / r.loc[a, ("전체", "대전")] - 1) * 100, 1),
+                         rone_commercial_pct=round((r.loc[b, ("상업지역", "대전")] / r.loc[a, ("상업지역", "대전")] - 1) * 100, 1),
+                         gongsi_pct=round((L.loc[b + 1, "ALL"] / L.loc[a + 1, "ALL"] - 1) * 100, 1)))
+    S = pd.DataFrame(rows)
+    S.to_csv(OUT / "landprice_vs_rone.csv", index=False, encoding="utf-8-sig")
+    print(S.to_string(index=False))
+
+
 if __name__ == "__main__":
+    passthrough()
+    landcheck()
     main()

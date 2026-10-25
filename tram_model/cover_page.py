@@ -14,7 +14,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from tram_route import LOOP, BRANCH
+from tram_route import LOOP, BRANCH, SPURS
 
 _ASSETS = Path(__file__).with_name("cover_assets")
 # 라이브러리는 이미 있으면 다시 실행하지 않음 (커버로 여러 번 돌아와도 한 번만).
@@ -232,7 +232,7 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
   let W, H, PAD = 80, layers = [], ridge = null, tram, stopsEls = [];
 
   function project(box) {
-    const all = ROUTE.loop.concat(ROUTE.branch);
+    const all = ROUTE.loop.concat(ROUTE.branch, ...(ROUTE.spurs || []));
     const lons = all.map(p => p[0]), lats = all.map(p => p[1]);
     const lo0 = Math.min(...lons), lo1 = Math.max(...lons), la0 = Math.min(...lats), la1 = Math.max(...lats);
     const kx = Math.cos((la0 + la1) / 2 * Math.PI / 180);
@@ -247,11 +247,11 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
     const mobile = W < 768;
     // 하늘에 옅게 걸린 노선 (밤이 되면 정거장이 불빛처럼 켜짐)
     const P = project(mobile ? { x: W * .3, y: H * .4, w: W * .6, h: H * .14 } : { x: W * .55, y: H * .1, w: W * .36, h: H * .4 });
-    const loop = ROUTE.loop.map(P), branch = ROUTE.branch.map(P);
+    const loop = ROUTE.loop.map(P), branch = ROUTE.branch.map(P), spurs = (ROUTE.spurs || []).map(s => s.map(P));
     const pd = pts => "M" + pts.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" L");
-    q(".routeLine").setAttribute("d", pd(loop.concat([loop[0]])) + " " + pd(branch));
+    q(".routeLine").setAttribute("d", pd(loop.concat([loop[0]])) + " " + pd(branch) + spurs.map(s => " " + pd(s)).join(""));
     const rs = q(".routeStops"); rs.textContent = "";
-    stopsEls = loop.concat(branch.slice(1)).map(p => {
+    stopsEls = loop.concat(branch.slice(1), ...spurs.map(s => s.slice(1))).map(p => {
       const c = document.createElementNS(NS, "circle");
       c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.setAttribute("r", 2.6); c.setAttribute("stroke-width", 1.2);
       rs.appendChild(c); return c;
@@ -474,7 +474,8 @@ def _route(stations, route_paths):
         b0 = tuple(round(v, 6) for v in paths[1][0])
         start = next((n for n in loop if pos[n] == b0), loop[0])
         branch = [start] + [n for n in BRANCH if n in pos]
-    return {"loop": [[*pos[n], n] for n in loop], "branch": [[*pos[n], n] for n in branch]}
+    spurs = [[[*pos[a], a]] + [[*pos[n], n] for n in ns if n in pos] for a, ns in SPURS if a in pos]
+    return {"loop": [[*pos[n], n] for n in loop], "branch": [[*pos[n], n] for n in branch], "spurs": spurs}
 
 
 def render_cover(st, stations, route_paths, stats, open_about):
