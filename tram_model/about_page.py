@@ -362,7 +362,7 @@ def _body(st):
                        "출처: R-ONE 임대동향 지역별 임대가격지수(시계열), outputs/rent_long_vs_land.csv")
     with t0:
         c = st.columns(3)
-        c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음~높음 {n['money_range']}",
+        c[0].metric("정거장 500m 안 땅값 증가 (기본)", n["money_base"], f"낮음–높음 {n['money_range']}".replace("~", "–"),
                     delta_color="off", delta_arrow="off")
         c[1].metric(f"반등 기회 5곳 {n['gap_year']}년 차이", n["gap5_base"], f"높음 {n['gap5_high']}",
                     delta_color="off", delta_arrow="off")
