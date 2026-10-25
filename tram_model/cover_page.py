@@ -59,8 +59,8 @@ _HTML = """
   <!-- 2. 무엇을 보나: 세 가지 분석 (오른쪽에서 들어와 왼쪽으로 빠짐) -->
   <div class="cv-panel cv-p1">
     <div class="cv-card cv-rows">
-      <div class="cv-row"><h3>상권 진단</h3><p>땅값·점포 흐름과 정거장 거리로 20개 상권(82개 행정동)을 네 가지 상태로 나누고, 개통 뒤 임대료 부담 위험을 함께 봅니다.</p>
-        <div class="cv-num"><b data-stat="rebound"></b>곳이 트램 반등 기회 · 그중 <span data-stat="rb_rent"></span>곳 임대료 부담 높음</div></div>
+      <div class="cv-row"><h3>상권 진단</h3><p>땅값·점포 흐름과 정거장 거리로 20개 상권(82개 행정동)을 네 가지 상태로 나누고, 개통 뒤 임대료 부담 신호를 함께 봅니다.</p>
+        <div class="cv-num"><b data-stat="rebound"></b>곳이 트램 반등 기회 · 그중 <span data-stat="rb_rent"></span>곳은 임대료 신호가 높은 '조건부 기회'</div></div>
       <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 정거장 500m 안의 효과를 추정합니다. 같은 역세권에서 점포당 매출 차이는 땅값의 4분의 1 수준이었습니다.</p>
         <div class="cv-num"><b data-stat="base"></b>기본 시나리오 (<span data-stat="low"></span> ~ <span data-stat="high"></span>)</div></div>
       <div class="cv-row"><h3>업종 구성 변화</h3><p>1호선 역 주변에서는 카페가 늘고 음식점 중 카페 비중이 커졌습니다. 같은 근거로 2034년까지 늘어날 카페를 상권마다 계산합니다.</p>
@@ -73,7 +73,7 @@ _HTML = """
     <div class="cv-card cv-steps">
       <div class="cv-step"><b><span>1</span>자료 모으기</b>공시지가 1990~2026, 상가정보 42분기, 음식점 인허가, 카드매출, 임대동향</div>
       <div class="cv-step"><b><span>2</span>효과 추정</b>1호선 역 500m 안과 1~3km 밖의 개통 전후 비교 (땅값·업종)</div>
-      <div class="cv-step"><b><span>3</span>진단과 예측</b>상권 4분류, 땅값·카페 수 예측, 임대료 부담 위험</div>
+      <div class="cv-step"><b><span>3</span>진단과 전망</b>상권 4분류, 땅값·카페 수 시나리오, 임대료 부담 신호</div>
       <div class="cv-step"><b><span>4</span>지도에서 보기</b>상권·정거장을 눌러 근거와 AI 해설 확인</div>
     </div>
   </div>

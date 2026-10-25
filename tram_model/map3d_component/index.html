@@ -114,7 +114,7 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
     <div class="row opt"><span class="lab" id="l-metric">기둥 높이</span>
       <div class="seg" id="seg-metric" role="group" aria-labelledby="l-metric">
         <button id="m-land" data-v="land">땅값 전망</button><button id="m-tram" data-v="tram">상권 가치 효과</button>
-        <button id="m-comp" data-v="comp">업종 변화(카페)</button><button id="m-rent" data-v="rent">임대료 부담</button>
+        <button id="m-comp" data-v="comp">업종 변화(카페)</button><button id="m-rent" data-v="rent">임대료 신호</button>
         <button id="m-stores" data-v="stores">점포 수</button><button id="m-risk" data-v="risk">쇠퇴 위험</button></div></div>
     <div class="row opt" id="row-scen"><span class="lab" id="l-scen">트램 효과 시나리오</span>
       <div class="seg" id="seg-scen" role="group" aria-labelledby="l-scen">
@@ -211,7 +211,7 @@ const SC = (() => {
 function height(a) { const [lo, hi] = SC[S.metric]; return FLOOR + Math.max(0, (value(a) - lo) / (hi - lo)) * MAXH; }
 const fmt = {land: v => v.toFixed(1), tram: v => (v >= 0 ? "+" : "") + v.toFixed(2) + "%", comp: v => "+" + v.toFixed(1) + "%p", rent: v => v.toFixed(0) + "점", stores: v => Math.round(v).toLocaleString() + "개", risk: v => v.toFixed(0) + "점"};
 const DESC = {land: "땅값 지수 (2026년 = 100, 바닥 = 80)", tram: "트램이 있을 때와 없을 때의 땅값 차이",
-              comp: "음식점 중 카페·빵집 비중 증가 (%p, 트램 개통 후)", rent: "임대료 부담 위험 점수 (0~100, 트램 건설 후)",
+              comp: "음식점 중 카페·빵집 비중 증가 (%p, 트램 개통 후)", rent: "임대료 부담 신호 점수 (0~100, 상대 순위, 트램 건설 후)",
               stores: "상권 안 점포 수 (현재)", risk: "쇠퇴 위험 점수 (0~100)"};
 
 // ── 트램 운행 (연출: 순환선 양방향 각 10대, 지선 2대) ──
@@ -375,7 +375,7 @@ function select(code, fly) {
     f && [`땅값 지수 2034 (트램 ${D.scen_label[S.scen].split(" ")[0]})`, f[S.scen][last].toFixed(1)],
     ["상권 가치(땅값) 효과", `${a.eff.low.toFixed(1)} ~ ${a.eff.high.toFixed(1)}% (기본 ${a.eff.base.toFixed(1)}%)`],
     a.comp && ["업종 변화 2034 (카페·빵 비중)", S.tram === "after" ? fmt.comp(a.comp[S.scen][a.comp[S.scen].length - 1]) : "건설 전 0"],
-    a.rent && ["임대료 부담 위험", S.tram === "after" ? a.rent.grade + (a.rent.drivers ? ` · ${a.rent.drivers}` : "") : "건설 전 해당 없음"],
+    a.rent && ["임대료 부담 신호", S.tram === "after" ? a.rent.grade + (a.rent.drivers ? ` · ${a.rent.drivers}` : "") : "건설 전 해당 없음"],
     ["점포 수", a.n_stores.toLocaleString() + "개"], ["쇠퇴 위험 · 성장 가능", `${a.risk.toFixed(0)} · ${a.growth.toFixed(0)}점`],
     a.nearest && ["가까운 정거장", a.nearest]].filter(Boolean).map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
   card.hidden = EMBED;
