@@ -83,6 +83,9 @@ dprof = read_csv(f"{OUT}/dong_map_profile.csv", dtype={"dong_id": str})   # 행�
 dgj = read_json(f"{OUT}/dong_map.geojson")                  # 행정동 경계 + 핵심 지표
 comp89 = read_csv(f"{OUT}/composition_forecast.csv", dtype={"key": str})   # 업종 구성 예상 (build_composition.py)
 rentp = read_csv(f"{OUT}/rent_pressure.csv", dtype={"key": str})           # 임대료 부담 위험 (build_rent_pressure.py)
+_sens = read_csv(f"{OUT}/station_coord_sensitivity.csv", dtype={"key": str})   # 정거장 추정 좌표 민감도 (analyze_station_sensitivity.py)
+SENS = ({(r.level, r.key): r.note for r in _sens.itertuples() if bool(r.sensitive) and isinstance(r.note, str)}
+        if _sens is not None and "sensitive" in _sens else {})
 rsurv = read_csv(f"{OUT}/rent_survey_area.csv")                            # 부동산원 임대동향 (build_rent_survey.py)
 dss = read_csv(f"{OUT}/dong_station_summary.csv", dtype={"dong_id": str})  # 정거장 500m 에 걸친 행정동
 cnow = read_csv(f"{OUT}/composition_now.csv", dtype={"key": str})            # 업종 구성 현재
@@ -946,6 +949,10 @@ if PAGE == "map":
                 st.markdown(f'<div class="rentnote"><span class="dot" style="background:{RENT_HEX["높음"]}"></span>'
                             f'그중 <b>{len(hi)}곳</b>은 임대료 부담 위험이 높음(⚠) — 땅값은 오르고 점포당 매출은 거의 그대로일 곳. '
                             '개통 뒤 기존 상인 보호가 함께 필요</div>', unsafe_allow_html=True)
+            sens_d = [dinfo.loc[c, "dong"] for c in dprof.dong_id if ("행정동", str(c)) in SENS]
+            if sens_d:
+                st.caption("⚑ 정거장 추정 좌표에 따라 진단이 바뀔 수 있는 동: " + ", ".join(sens_d)
+                           + " (좌표를 0~300m 옮겨 300번 다시 계산, 10% 넘게 바뀜) · 핵심 상권 20곳은 모두 안정")
         cnt = dprof.quadrant.value_counts()
         tot = dprof.money_gain_base_eok.sum() if "money_gain_base_eok" in dprof else None
         gk = f"money_gain_{SCEN_KEY}_eok"
@@ -993,6 +1000,8 @@ if PAGE == "map":
                 alt_q = d.get("quadrant_alt") if isinstance(d.get("quadrant_alt"), str) else ""
                 foot = (f"진단 안정도 {stab * 100:.0f}% (15가지 계산 변형 중 같은 진단 비율)"
                         + (f", 바뀔 때는 '{alt_q}'" if alt_q and stab < 1 else "")) if pd.notna(stab) else ""
+                if ("행정동", str(k)) in SENS:
+                    foot += ('<br>' if foot else '') + f'<b>⚑ 정거장 위치에 민감</b>: {SENS[("행정동", str(k))]}'
                 st.markdown('<div class="why"><div class="why-h">진단 근거 · 82개 동 안 순위</div>'
                             f'<div class="why-rule">{rule}</div>'
                             + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{t}</span></div>'
@@ -1374,6 +1383,8 @@ if PAGE == "map":
                     alt_q = r.get("quadrant_alt") if isinstance(r.get("quadrant_alt"), str) and r.get("quadrant_alt") else ""
                     foot = f"진단 안정도 {stab * 100:.0f}% (15가지 계산 변형 중 같은 진단 비율)" + (
                         f", 바뀔 때는 '{alt_q}'" if alt_q and stab < 1 else "")
+                if ("상권", sel) in SENS:
+                    foot += ('<br>' if foot else '') + f'<b>⚑ 정거장 위치에 민감</b>: {SENS[("상권", sel)]}'
                 st.markdown('<div class="why"><div class="why-h">진단 근거</div>'
                             f'<div class="why-rule">{rule}</div>'
                             + "".join(f'<div class="why-r"><span class="l">{l}</span><b>{v}</b><span class="d">{d}</span></div>'

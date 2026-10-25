@@ -304,6 +304,7 @@ python tram_model/run_all.py --from train_analyze
 | 13 | `build_composition.py` | 업종 구성 현재·2034 예상 (카페만 기본 효과, 빵·과자는 높음에만) | `composition_now/forecast/evidence.csv` |
 | 14 | `build_rent_pressure.py` | 임대료 부담 위험 = 땅값-매출 격차·폐업률·업종 교체 백분위 평균 | `rent_pressure.csv` |
 | 15 | `build_rent_survey.py` | 부동산원 임대동향(임대료·지수·공실률) → 상권 대응·검증 | `rent_survey_long/area/validation.csv` |
+| 16 | `analyze_station_sensitivity.py` | 정거장 추정 좌표 28곳을 0~300m 무작위로 300번 옮겨 500m 안 점포 비율·진단 다시 계산 → 상권 20곳 모두 안정, 행정동 6곳 민감(앱 ⚑) | `station_coord_sensitivity.csv` |
 
 실행: `python tram_model/run_all.py --from check_sector_evidence` (모두 `run_all.py` STEPS 에 등록)
 
