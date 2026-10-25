@@ -12,6 +12,7 @@
 | `claude/근거점검_업종구성.md` | 업종 구성 근거 상세(음식 6업종 + 비음식 8업종 검사표) |
 | `claude/근거_외부자료_문헌.md` | 대전 밖 근거: KDI 보고서, 해외 트램 메타분석·사례, 지상 트램·공사 피해, 젠트리피케이션, 상인 보호 정책, 인용 금지 주장 |
 | `claude/점검_3가지입장_피드백_수정계획.md` | 2026-10-25 세 입장(소상공인·시 담당자·AI 전문가) 비판 피드백 + 수정 가능(A 표기·B 재분석)/외부 필요(C)/불가→한계(D) 분류. **다음 작업은 여기서 범위를 정해 시작** |
+| `claude/근거_트램관광효과.md`, `claude/계획_관광효과_앱반영.md` | 트램 관광 효과 근거 90건(인과 측정 사례 없음 → '관광 접근성·방문 소비 시나리오', 보조 관점) · 앱 반영 4단계 계획 |
 | 맥 `tram_model/README.md`, `tram_model/README_8989.md` | 스크립트별 입력·출력·실행법 |
 
 ## 1. 한눈에
@@ -63,7 +64,7 @@
 - **`tram_model/` 부품(about_page·cover_page·map3d·tram_route) 수정은 앱 재시작 필요**, app.py 만 고치면 새로고침
 
 ## 6. 작업 환경·방법
-- 맥: Python 3.12 `.venv`(streamlit 1.65, sklearn, scipy, openpyxl), Gemini 키 `.streamlit/secrets.toml`(읽거나 출력 금지)
+- 맥: Python 3.12 `.venv`(streamlit 1.65, sklearn, scipy, openpyxl), API 키 `.streamlit/secrets.toml`(Gemini `GEMINI_API_KEY`, 카카오 로컬 `KAKAO_REST_KEY` — 읽거나 출력 금지, Git 제외)
 - 터미널 규칙: zsh 줄 안 `#` 주석 금지, `python -m pip`, 덮어쓰기는 `unzip -o`, 커밋은 사용자가 `git add . && git commit -m "…"`
 - Claude 작업: 데스크톱 앱 연결 시 맥 폴더에 직접 쓰기(기존 파일은 임시 파일 → `os.replace`), 한글 파일명 NFC 정규화. 화면 확인은 앱 브라우저 창 `localhost:8501`
 - 막힌 곳: data.go.kr·file.localdata.go.kr·data.seoul.go.kr 파일 → 사용자 다운로드. R-ONE 은 브라우저 창에서 통계표 화면을 연 뒤 `/r-one/portal/stat/sttsDataPreviewList.do` 에 폼을 `wrttimeType=B`(기간), statblId 바꿔 POST → 숫자 직접 수집 가능
@@ -94,6 +95,12 @@
 - ☐ 커밋·push (오늘 작업분)
 - ☐ 이야기 한 줄 문구 다듬기(`app.py` `story_bar()`)
 - ☐ 마지막 주: 발표 자료·리허설
+- ☑ 카카오 앱 '제품 설정 > 카카오맵' 켜고 `geocode_tourism_poi_kakao.py` 실행 (관광지 좌표, 10-25)
+- ☐ **맨 마지막(발표·심사 시연 끝난 뒤): API 키 정리**
+  - 카카오: 관광지 좌표 작업이 끝나면 언제든 가능. `.streamlit/secrets.toml` 의 `KAKAO_REST_KEY` 줄 삭제 + 카카오 개발자 콘솔에서 앱 삭제(또는 키 재발급)
+  - Gemini: **시연이 끝난 뒤에만**(지우면 AI 해설 실시간 호출이 안 되고 저장본만 나옴). `GEMINI_API_KEY` 줄 삭제 + Google AI Studio 에서 키 삭제
+  - Streamlit Cloud 등에 배포했다면 그곳 Secrets 에서도 두 키 삭제
+  - 확인: `grep -c KEY .streamlit/secrets.toml` 가 0, `git log -p | grep -c -E 'AIza|AQ\.|KakaoAK'` 가 0(키가 커밋된 적 없는지)
 **Claude**
 - ☑ A(표기 16개)·A3 부제·B1·B2 반영(10-25 17시 20분)
 - ☑ B6 개발지 표시·B7 카페 포화·B3 임대료 신호 과거 대조(10-25 18시) — 새 스크립트 3개(`analyze_development_trend`, `analyze_cafe_saturation`, `check_rent_signal_history`), `build_composition` 높음 조정
@@ -102,6 +109,7 @@
 - ☐ 공식 좌표 오면 교체 → 민감도·진단 재실행
 - ☐ 3주차: 분석 동결 전 전체 재실행·화면 점검
 - ☐ 마지막 주: AI 해설(상권 20·동 82) 새 방향으로 재생성·저장본
+- ◐ 관광(보조 관점, `claude/계획_관광효과_앱반영.md`): 근거 90건·파라미터 ☑, 관광지 자료 수집 ☑(명소 60·입장객 2005~2026 월별 59지점·관광사업체), 좌표 ☑(카카오, 79곳 · 관광호텔 21·선형 3 제외 · 수동 대조 5곳 · 견학형 13·생활체육 1 표시, `data/tourism_poi.csv`) / 1단계 분석 방법 '관광' 탭 ☐ · 2단계 `build_tourism_layer.py` ☐ · 3단계 화면 ☐
 **일정**: 2주차(~11/8) 보완 마무리 · 11/18경 8989 재수집 · 3주차 동결 · 4주차 AI 해설·발표
 
 ## 10. 발표 질의응답 대비

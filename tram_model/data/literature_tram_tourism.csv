@@ -1,0 +1,91 @@
+﻿id,group,source,city_system,year,outcome,finding,reliability,access,use_in_project,url
+T01,해외 학술,"Kamruzzaman, J. Transport Geography","골드코스트 G:Link(현대 LRT, 2014)",2024,"대중교통 이용, 매출, 고객, 관광활동",PT 이용 +3.6%; 매출 부진 트램 귀속 불가(무효); 고객·체류 증가,중,초록,부정·무효 결과(한계 서술) / 파라미터·설계 근거(트램 DiD 유일),https://www.worldtransitresearch.info/research/10421
+T02,해외 학술,"Ramos-Santiago & Brown, Urban Studies",미국 7개 노면전차/14개 LRT,2016,정거장 평일 승차,관광·특별활동센터는 노면전차에만 유의(475/432 관측),중,2차(저자 요약),배경·사례,https://researchonline.lse.ac.uk/id/eprint/67243/
+T03,해외 학술,Mineta Transportation Institute,리틀록·멤피스·포틀랜드·시애틀·탬파,2015,"이용 계절성, 비용/통행",3개 도시 계절 방문객 의존; 비용/통행 $2.61~9.61,중,2차,배경·사례,https://infrastructureusa.org/streetcar-transit-in-the-modern-u-s-city-a-multiple-case-study-investigation/
+T04,해외 학술,Portland Streetcar 승객 설문,포틀랜드(2001),2015,승객 구성,"관광객 <5%(n=4,300)",하,기사,파라미터·설계 근거 / 각주만(효과 크기로 쓰지 않음),https://nextcity.org/urbanist-news/new-survey-portland-streetcar-ridership-locals-tourists
+T05,해외 학술,"Xu, Yan & Mak, IJTR",홍콩 트램,2018,방문자 경험(넷노그래피),"6개 경험 주제, 정량 없음",중,초록,배경·사례,https://research.mpu.edu.mo/en/publications/visitor-experience-of-the-hong-kong-trams-as-an-unconventional-at/
+T06,해외 학술,"Yu, HKU MSc",홍콩 피크트램(푸니쿨라),2017,유산가치,수치 없음,하,초록,각주만(효과 크기로 쓰지 않음),https://hub.hku.hk/handle/10722/258856
+T07,해외 학술,"Weng, IOSR JBM",가오슝 LRT,2016,불명,서지만,하,서지,각주만(효과 크기로 쓰지 않음),https://hrd.kuas.edu.tw/en/Academic/teacher1/Analyzing-Benefits-of-Urban-Development-and-City-Tourism-with-Light-Rail-Transit-in-Kaohsiung-52511691
+T08,해외 학술,"Man 외, J. Simulation",가오슝 LRT,2020,시스템다이내믹스 시뮬레이션,2단계가 장기 방문자 증가(방향만),중,초록,배경·사례,https://eprints.whiterose.ac.uk/id/eprint/165233/
+T09,해외 학술,"Opačak Eror, 프리프린트",자다르(계획 노선),2026,"크루즈 승객 WTP(CV, n=223)",€11.88/편도(95% CI 7.69~16.07); 연 ≈€200만,중(동료심사 전),원문,배경·사례,https://www.preprints.org/frontend/manuscript/298db0e001f19e05b694c95230ddaedf/download_pub
+T10,해외 학술,"Thompson & Schofield, JTG",맨체스터(Metrolink 포함),2007,목적지 만족도 회귀,PT 성능 인식은 '미미한 영향'(무효 성격),중,초록,부정·무효 결과(한계 서술),https://strathprints.strath.ac.uk/7981/
+T11,해외 학술,"Thompson, Salford PhD",맨체스터,2003,외래방문자 PT 이용,수치 미확보,하,초록,각주만(효과 크기로 쓰지 않음),https://salford-repository.worktribe.com/output/1467404/
+T12,해외 학술,"Cui 외, RTBM",지하철(리뷰),2024,개요,관광객은 PT 이용자의 '상당 부분'(정성),중,초록,배경·사례,https://www.worldtransitresearch.info/research/10598
+T13,해외 학술,"Liu & Bardaka, Transport Policy","샬럿 LYNX(LRT, 2007)",2025,사업체 생존(Cox),숙박·음식 0.25~0.5마일 폐업위험 −66%; 전문소매 −58%,중,초록,파라미터·설계 근거,https://www.worldtransitresearch.info/research/11567
+T14,해외 학술,"Zheng 외, Transport Policy",베이징 지하철,2016,음식점 수(Dianping),역 주변 음식점 증가(크기 미기재),중,초록,배경·사례,https://ideas.repec.org/a/eee/trapol/v51y2016icp81-92.html
+T15,해외 학술,"Dale 외, TRA",노팅엄 NET 2단계,2017,고용·산출·투자,"성장 확인, 관광 지표 없음",중,초록,배경·사례,https://dspace.lboro.ac.uk/dspace-jspui/bitstream/2134/26231/1/TRA%20Economic%20Evaluation%20Paper.pdf
+T16,해외 학술,SGS Economics,멜버른 세인트킬다 피츠로이가,2013,"방문 빈도, 지가",방문 빈도 최대 +14%,하,2차,파라미터·설계 근거 / 각주만(효과 크기로 쓰지 않음),https://haveyoursay.portphillip.vic.gov.au/tram-route-96/fitzroy-street-economic-impact-study
+T17,해외 학술,히로시마시 방문관광객 설문,히로덴,2017,시내 이동수단,노면전차 이용 일본인 40.13%/외국인 39.80%,상,원문,파라미터·설계 근거,https://www.city.hiroshima.lg.jp/_res/projects/default_project/_page_/001/017/595/16761.pdf
+T18,해외 학술,구마모토시 관광만족도조사,구마모토 시전,2024,시내 주유 수단,시전 이용 24~61.2%(그룹별),중,일부,파라미터·설계 근거,https://www.city.kumamoto.jp/kiji00363425/3_63425_489108_up_8y4ntdsv.pdf
+T19,해외 학술,나가사키현 교통결절점 검토회,나가사키 전기궤도,FY2018,역 하차 후 수단,관광 목적 37%(≈800명/일); 크루즈→역 27%,상,원문,파라미터·설계 근거,https://www.pref.nagasaki.jp/shared/uploads/2020/02/1582101947.pdf
+T20,해외 학술,하코다테시 시민의식조사,하코다테 시전,2024,주민 혼잡 인식,46% 동의(n=675) — 부정,상,원문,부정·무효 결과(한계 서술),https://www.city.hakodate.hokkaido.jp/docs/2024101700025/file_contents/shiryoR602_1-1.pdf
+T21,해외 학술,"마쓰바라, 간사이대 DP036",도야마 라이트레일(2006),c.2008,이용객,"휴일 1,045→5,576명/일; 방문객 수치 없음",중,원문,배경·사례,https://www.kansai-u.ac.jp/riss/output/paper/pdf-pg/DP036.pdf
+T22,해외 학술,"고노, 고치공대 졸업논문",고치 토사덴,c.2016,가상 시나리오,자동차 관광객 절반 승차 시 +¥2.4억(가정),하,원문,각주만(효과 크기로 쓰지 않음),https://www.kochi-tech.ac.jp/library/ron/pdf/2015/03/11/a1160058.pdf
+T23,해외 학술,"아사이, 운수정책연구",일본 노면전차 전국,2008,승객 구성·재무,비정기 72.1%; 영업비용/수입 112%,상,원문,파라미터·설계 근거,https://www.jttri.or.jp/members/journal/assets/no41-06.pdf
+T24,해외 학술,빅토리아주 교통부(FTZ 조사 증언),멜버른 무료트램구역(2015),2020,"통행량, 요금손실","+13,700건/일; 열차 −7,000; 손실 $1,000만~1,300만/년; 관광객 구분 없음",상,원문,배경·사례,https://new.parliament.vic.gov.au/494b69/contentassets/d955043f1bcd482187798b8029b13219/presentation_ftz_dot-9-july-hearing.pdf
+T25,해외 학술,멜버른 시티서클(위키),35번 무료관광트램(1994),—,이용객,≈300만 명/년,하,2차,각주만(효과 크기로 쓰지 않음),https://en.wikipedia.org/wiki/City_Circle_tram
+T26,해외 학술,이스탄불 노스탤지어 트램(위키),T2(1990)/T3(2003),—,이용객,"6,000/2,000명/일; 관광용 건설",하,2차,각주만(효과 크기로 쓰지 않음),https://en.wikipedia.org/wiki/Istanbul_nostalgic_tramways
+T27,해외 학술,탬파 TECO(위키),탬파(2002),—,이용객,42만(2002)→132만(2024); 2018 무료화 후 ≈3배,하,2차,각주만(효과 크기로 쓰지 않음),https://en.wikipedia.org/wiki/TECO_Line_Streetcar
+T28,해외 학술,"Fortune/AFP, Xataka",리스본 28번,2024,혼잡·주민 밀려남,대기 >1시간; 주민용 미니버스 — 부정,하,기사,부정·무효 결과(한계 서술) / 각주만(효과 크기로 쓰지 않음),https://fortune.com/europe/2024/10/26/lisbon-trams-tourists-locals-stranded
+T29,해외 학술,"Morgenthaler, Nova SBE",리스본,2024,과잉관광 인식(n=148),21.96% PT 과밀 우려 — 부정,중,일부,부정·무효 결과(한계 서술),https://run.unl.pt/bitstreams/c8b17a3d-807f-45c2-830b-2d6328aed9b9/download
+T30,해외 학술,RACQ 회원 설문,골드코스트 G:Link,2023,통행 목적,"통근 15%+, 대부분 여가(주민 대상)",하,기사(보도자료),각주만(효과 크기로 쓰지 않음),https://www.racq.com.au/news/advocacy/ns120923-gold-coast-light-rail-sets-gold-standard-for-tourist-transport
+T31,해외 사례·공식통계,Edinburgh Trams 보도자료,에든버러(2014),2015,이용객,1년차 492만(목표 +37만); 축제 주 13.7만,중,원문(운영사),배경·사례,https://edinburghtrams.com/news/edinburgh-trams-report-healthy-summer-passenger-numbers
+T32,해외 사례·공식통계,Steer 사업성 보고서,에든버러,2018,이용객·통행 목적,2017년 667만; 여가 57%/통근 31%/업무 12%; 관광 지표 없음,상,원문,배경·사례,https://www.edinburgh.gov.uk/tramstonewhaven/downloads/file/68/steer-report
+T33,해외 사례·공식통계,Scotsman/Railscot,에든버러 공항,2016,공항 접근 분담,"트램 ≈8%, 버스 ≈25%",하,기사,각주만(효과 크기로 쓰지 않음),https://railscot.co.uk/news/13/88
+T34,해외 사례·공식통계,NET 2단계 지역경제평가(NTU),노팅엄(2015),2016,불명(미열람),"문서 존재, 내용 미확인",중,서지,배경·사례,https://irep.ntu.ac.uk/id/eprint/28095/
+T35,해외 사례·공식통계,Alstom 보도자료,보르도(2003),2006,이용객,최대 19만 명/일; 관광 언급 없음,하,2차(홍보),각주만(효과 크기로 쓰지 않음),https://www.alstom.com/press-releases-news/2006/1/99-availability-and-exceptionally-high-passenger-levels-the-Bordeaux-urban-tramway-is-a-resounding-success-20060109
+T36,해외 사례·공식통계,지롱드 관광결산,보르도,2016,호텔 숙박일수,"보르도시 1,709,224(+4.5%); 2010년 이후 +25%; 트램 언급 없음",상,원문,배경·사례,https://www.gironde.fr/sites/default/files/2018-03/Bilan%20touristique%20Gironde%202016.pdf
+T37,해외 사례·공식통계,TII/NTA,더블린 Luas(2004),2013,이용객,"연 3,000만 명 돌파",상,원문,배경·사례,https://www.tii.ie/en/news/luas/varadkar-and-kelly-confirm-record-luas-numbers-as-30-million-passengers-carried
+T38,해외 사례·공식통계,Tampereen Ratikka 소비자조사,탐페레(2021),2024,주민 이용,92% 이용 경험; 관광 문항 없음,중,원문(운영사),배경·사례,https://www.tampereenratikka.fi/en/survey-tampere-tramway-gains-in-popularity/
+T39,해외 사례·공식통계,덴마크 통계청 Nyt,오덴세(2022)·오르후스,2023,경전철 승객,"2022년 +120.1%, ≈900만",상,원문,배경·사례,https://www.dst.dk/nyt/46993
+T40,해외 사례·공식통계,Rail Technology Magazine / Marketing Lancashire,블랙풀 리조트 트램,2015~16,이용객,4.9~5백만(+20%); 관광객 비율 없음,하,기사,각주만(효과 크기로 쓰지 않음),https://www.railtechnologymagazine.com/Rail-News/blackpool-tram-passenger-numbers-back-on-the-rise-after-2014-dip-
+T41,해외 사례·공식통계,홍콩 운수서 연간교통다이제스트,홍콩 트램,2013~22,일 평균 승객(천),198(2013)→149(2019)→117(2022),상,원문,파라미터·설계 근거,https://www.td.gov.hk/mini_site/atd/2023/en/section5-2.html
+T42,해외 사례·공식통계,SCMP / HKTDC,홍콩 트램,2019·2023,관광객 비율,"15~20%(경영진 추정, 방법 미공개)",하,기사,파라미터·설계 근거 / 각주만(효과 크기로 쓰지 않음),https://www.scmp.com/news/hong-kong/transport/article/3225471/hong-kong-trams-keep-fares-current-level-any-increase-next-year-depends-tourism-revival-operator
+T43,해외 사례·공식통계,APTA / NTD / SFist,샌프란시스코 케이블카,2019~26,이용객·수입,"5,719,900(2019); 요금수입 ≈$3,000만; 관광객 '대다수'(비공식)",중(이용객) / 하(비율),원문·기사,배경·사례,https://www.apta.com/wp-content/uploads/2026/06/2026-Q1-Ridership-APTA.pdf
+T44,해외 사례·공식통계,빅토리아주 의회 FTZ 조사보고서,멜버른 FTZ,2020,구역 내 통행,"1,850만→3,550만/년; 관광객 비율 없음",상,원문,파라미터·설계 근거,https://parliament.vic.gov.au/4af7f4/contentassets/56015a73cd3f4842926026a7ac22e7e4/inquiry-into-expanding-melbournes-free-tram-zone.pdf
+T45,해외 사례·공식통계,Otago Daily Times,크라이스트처치 관광트램,2026,방문객,증가(수치 없음),하,기사,각주만(효과 크기로 쓰지 않음),https://www.odt.co.nz/canterbury/visitor-numbers-growing-b6syqsqn
+T46,해외 사례·공식통계,구마모토시 관광동향,구마모토 시전,2023~24,1일권 월 판매,"2023.4 5,486 → 2024.4 8,720(≈+50~60%); 호텔 외국인 ≈25%",상,원문,배경·사례,https://www.city.kumamoto.jp/kiji00349663/5_49663_413075_up_VGAE4I6T.pdf
+T47,해외 사례·공식통계,히로덴 요금변경 신청서,히로시마,2024,연 승객(천),"54,687(FY2019)→47,391(FY2023)",상,원문,배경·사례,https://hiroden.co.jp/topics/2024/pdf/1023-release/train.pdf
+T48,해외 사례·공식통계,히로시마시 입장관광객수,히로시마,2021~25,방문객,"775.3만(2021)→1,476만(2025); 수단 구분 없음",상,원문,배경·사례,https://www.city.hiroshima.lg.jp/_res/projects/default_project/_page_/001/051/491/r7irikomikankoukyakusuu.pdf
+T49,해외 사례·공식통계,국토교통성 '콤팩트시티 도야마',도야마 센트램(2009),2013,보행자·공실,"휴일 보행자 8,421→11,144(+32.3%); 공실 20.9→19.4%; 관광객 없음",상,원문,배경·사례,https://www.mlit.go.jp/common/001000821.pdf
+T50,해외 사례·공식통계,CNA / MOTC,가오슝 순환 LRT(완전개통 2024.1.1),2024,이용객,"1~10월 누적 1,031만",중,기사(공식 인용),배경·사례,https://www.cna.com.tw/news/aloc/202412070038.aspx
+T51,해외 사례·공식통계,NOWnews / 관광서 통계,가오슝 보얼예술특구(LRT 인접),2026 Q1,관광지 방문,"5,327,841(3개월)",중,기사(공식 인용),배경·사례,https://www.nownews.com/news/6837183
+T52,해외 사례·공식통계,Macau Business,마카오 LRT 타이파선(2019),2024,이용객,"월 16,700(≈560/일) — 부정",하,기사,부정·무효 결과(한계 서술) / 각주만(효과 크기로 쓰지 않음),https://www.macaubusiness.com/special-report-lrt-promised-mobility/
+T53,방법론·탄력성,FS Italiane Centro Studi,"이탈리아 HSR, 63개 관광권역",2024,2기 패널 고정효과,"log접근성→내국인 도착 0.726*, 숙박 0.532*, 외국인 도착 2.279*, 숙박 1.696*; 통행시간 −57분","상(단, 사업자 연구소)",원문,파라미터·설계 근거,https://fsitaliane.it/content/dam/fsitaliane/Documents/centro-studi/studi-e-ricerche/novembre/The_Effect_High-Speed_Rail_on_Tourism_2024.pdf
+T54,방법론·탄력성,"Albalate, Campos & Jiménez, ATR","스페인 AVE, 124개 기초자치단체",2017,DiD,효과 '극히 약함/대도시 한정' — 무효,중,초록,부정·무효 결과(한계 서술),https://diposit.ub.edu/items/d6d60933-7911-4ce6-9a54-2cf2fa6f62b7/full
+T55,방법론·탄력성,"Albalate, Campos & Jiménez, CIT",스페인 소도시 3곳,2023,합성통제,"비유의, 있다면 음(−) — 부정",중,초록,부정·무효 결과(한계 서술),https://ideas.repec.org/a/taf/rcitxx/v26y2023i14p2301-2316.html
+T56,방법론·탄력성,"Gao, Su & Wang, Tourism Management",중국 도시 2004~15,2019,DiD+IV,"도착↑, 수입 불변, 1인당 수입↓",중,초록,배경·사례,https://papers.ssrn.com/abstract=3289421
+T57,방법론·탄력성,"Yao 외, Tourism Economics",중국 163개 도시,2022,시변 DiD,수입·방문객 모두 +,중,초록,배경·사례,https://ideas.repec.org/a/sae/toueco/v28y2022i6p1520-1544.html
+T58,방법론·탄력성,"Deng & Zhao, TR Part A",선전 신규 지하철,2022,"거리밴드 DiD, 7,799명 패널",총 통행 증가는 0~1km만,중,초록,파라미터·설계 근거,https://ideas.repec.org/a/eee/transa/v162y2022icp46-57.html
+T59,방법론·탄력성,J. Regional Science(EarlyView),"스페인 북부 HSR, 168개 지자체×36개월",—,삼중차분+IPW(모바일),"유출↑, 유입 관광 불변(siphoning) — 무효",중,초록,부정·무효 결과(한계 서술),https://metatoc.com/papers/121662-when-infrastructure-pushes-residents-out-high-speed-rail-and-tourism-outflows
+T60,방법론·탄력성,"Kovács 외, IJTC",헝가리 3도시,2023,모바일 포지셔닝,목적·활동 설명 불가 명시,중,초록,배경·사례,https://www.emeraldinsight.com/insight/content/doi/10.1108/IJTC-03-2023-0049/full/html
+T61,방법론·탄력성,"Li & Schläpfer, Columbia USE-Lab WP",뉴욕 복합개발 3건,2026,장소·날짜 FE PPML DiD,전환 중간점 ≈ 개장 후 24개월(R²=0.833),중(예비),원문,파라미터·설계 근거,https://urbansystems.civil.columbia.edu/sites/urbansystems.civil.columbia.edu/files/content/wp_2026_07_001.pdf
+T62,방법론·탄력성,"박성희·송재민, 지역연구","서울 1,479개 상권",2022,생활인구×카드매출 전후비교,매출 −17.2%; 발달상권 −33.7% vs 전통시장 +1.6%; 카드사 교체 보정,상,원문,파라미터·설계 근거,https://koreascience.or.kr/article/JAKO202231363882885.pdf
+T63,방법론·탄력성,"최일선, KMI","강릉선 KTX, n=1,526",2019,설문,KTX 이용 경험 32.8%; 해안 접근 승용차 91.7%,중,원문,배경·사례,https://koreascience.kr/article/CFKO201922850136122.pdf
+T64,방법론·탄력성,한국은행 강릉본부(MTN 보도),강원 영동,2026.7,지역 실물경제 모니터링,"방문자 1,562.9만; 카드 기반 서비스업 매출지수 115.0",중,기사,배경·사례,https://news.mtn.co.kr/news-detail/2026091414561171355
+T65,국내 문헌·공식문서,한국철도기술연구원(전주시) 기본구상,전주 한옥마을 관광트램 3.3km,2021,수요·경제효과,"연 644,075~927,468명; 사업비 639억; 생산유발 259억",하,기사(미검증),각주만(효과 크기로 쓰지 않음),https://www.jjan.kr/articleAmp/20210610734057
+T66,국내 문헌·공식문서,"김민재·이영성, 국토연구 87",부산김해경전철,2015,선택실험(n=161),"선택가치 9,023~10,294원/인/년; B/C 0.27→0.33(관광 무관)",상,원문,배경·사례,https://journal.kci.go.kr/krihs/archive/articlePdf?artiId=ART002063729
+T67,국내 문헌·공식문서,"김대일, 스마트미디어저널 12(8)",강릉 KTX,2023,개통 전후 빅데이터·DTG,"음식점·카페·숙박 증가, 역 인근 집중(수치 없음)",중,초록,배경·사례,https://scholar.kyobobook.co.kr/article/detail/4010067702454
+T68,국내 문헌·공식문서,"한대희 외, 철도학회 춘계",대전트램 운영계획,2022,사례,없음,중,초록 일부,배경·사례,https://www.dbpia.co.kr/journal/articleDetail?nodeId=NODE11114021
+T69,국내 문헌·공식문서,"김경민 외, 철도학회논문집 19(5)",서울 9호선 2단계,2016,교통카드 전후비교,통행 +14.9%(관광 무관),상,원문,배경·사례,https://www.koreascience.or.kr/article/JAKO201633055671273.pdf
+T70,국내 문헌·공식문서,"빈미영·정의석, ITS학회지 10(4)",경기 버스(n=745),2011,순서형 로짓,관광지 버스 이용 '자주' 31.5%,상,원문,배경·사례,https://koreascience.kr/article/JAKO201109649111452.pdf
+T71,국내 문헌·공식문서,"정희정 외, 지식경영연구 23(1)",스마트관광 콘텐츠 CVM,2022,CVM(n=150),"WTP 11,823원(트램 무관)",상,원문,배경·사례,https://koreascience.or.kr/article/JAKO202210459451100.pdf
+T72,국내 문헌·공식문서,KDI 예비타당성조사,대전도시철도 2호선,2012,수요·편익·AHP,목차에 관광 항목 없음,상(목차),목차,배경·사례,https://www.kdi.re.kr/research/reportView?pub_no=12997
+T73,국내 문헌·공식문서,대전시 보도자료(뉴스서울),대전 2호선 총사업비,2024,"1조 4,782억; 38.8km; 45개소",관광 언급 없음,중,기사,배경·사례,https://newsseoul.co.kr/news/view/1065581428539850
+T74,국내 문헌·공식문서,매일신문,대구 3호선 모노레일(2015),2015,기대치,대백프라자 매출 10~20% 상승 '기대'(사후 수치 없음),하,기사,각주만(효과 크기로 쓰지 않음),https://www.imaeil.com/page/view/2015042305425080181
+T75,국내 문헌·공식문서,뉴스토마토(국감),의정부·용인·김해 경전철,2013,수요 실적,예측치의 20% 미만 — 부정,하,기사,부정·무효 결과(한계 서술) / 각주만(효과 크기로 쓰지 않음),https://www.newstomato.com/ReadNews.aspx?no=408952
+T76,국내 문헌·공식문서,아이뉴스24(시의회),인천 월미바다열차,2024,이용객,평일 500여 명,하,기사,부정·무효 결과(한계 서술) / 각주만(효과 크기로 쓰지 않음),https://www.inews24.com/view/1784461
+T77,데이터셋,주요관광지점 입장객통계(승인 113005),문체부,"월, 내외국인","공간: 관광지점(대전 28개, 2022) · 형식: 웹 조회; 좌표 없음(지오코딩)",제약: 지점 명단 미확인; 성심당·중앙시장 등 무료지점 제외,상,데이터,데이터 후보,https://know.tour.go.kr/ptourknow/tourgoInfoView19Re.do?seq=103202
+T78,데이터셋,"지역별 방문자 수(통신, 데이터랩 API)",한국관광공사,"일(순방문자, 체류일수만큼 중복)",공간: 광역·기초지자체 · 형식: API JSON,제약: 방문자≠관광객; 두 단위 합산 불가; 운영계정 심의,상(정의 명확),데이터,데이터 후보,https://www.data.go.kr/data/15101972/openapi.do
+T79,데이터셋,관광소비(카드)·내비 목적지,한국관광공사 데이터랩,월(추정),공간: 지자체·업종·관광지 · 형식: 웹(미열람),제약: 로그인·읍면동 제공 여부 미확인,중,데이터,데이터 후보,https://datalab.visitkorea.or.kr
+T80,데이터셋,국립중앙과학관 관람객,과기정통부,연 2013~2022,공간: 단일 시설 · 형식: CSV,제약: 월별 없음,상,데이터,데이터 후보,https://www.data.go.kr/dcat/metadata/15122844
+T81,데이터셋,방한 외래관광객 월별 집계,한국관광공사,월 2023.8~2024.7,공간: 전국 · 형식: CSV,제약: 지역 분해 없음,상,데이터,데이터 후보,https://www.data.go.kr/dcat/metadata/15136774
+T82,데이터셋,0시 축제 방문객·경제효과,대전시 브리핑,2023·24·25,공간: 중앙로 1km · 형식: 기사,제약: 집계방식 매년 상이,하,데이터,데이터 후보 / 각주만(효과 크기로 쓰지 않음),https://news.tf.co.kr/read/ogmeta/2127085.htm
+T83,데이터셋,대전 외지인 방문자 연도별,데이터랩(기사 인용),2020~2025,공간: 시 · 형식: 기사,"제약: 단위 불일치(8,463만 vs 846만)",하,데이터,데이터 후보 / 각주만(효과 크기로 쓰지 않음),https://v.daum.net/v/20251020060009086
+T84,데이터셋,숙박업 인허가(지자체 CSV 사례),행안부 LOCALDATA/지자체,허가일자,"공간: 업소(주소) · 형식: CSV, 좌표 없음",제약: 대전 파일 미확인,중,데이터,데이터 후보,https://www.data.go.kr/dcat/metadata/15160062
+T85,데이터셋,광명시 관광지 입장객 월간 CSV(선례),광명시,월 2023.1~,공간: 6개 지점 · 형식: CSV,제약: 대전 동형 데이터 미확인,상,데이터,데이터 후보,https://www.data.go.kr/dcat/metadata/15122002
+T86,데이터셋,Eurostat tour_occ_*,EU,연·월,공간: NUTS2/NUTS3/도시 · 형식: API,제약: 트램 전후 비교 미수행(신규 작업),상,데이터,데이터 후보,https://ec.europa.eu/eurostat/cache/metadata/EN/tour_occ_esms.htm
+T87,데이터셋,일본 숙박여행통계조사(e-Stat 00601020),관광청,월,공간: 도도부현(시 단위 일부) · 형식: API,제약: 시 단위 가용성 미확인,상,데이터,데이터 후보,https://www.e-stat.go.jp/statistics/00601020
+T88,데이터셋,대만 관광서 관광지 방문객(data.gov.tw 159684),대만 교통부,월,공간: 관광지점 · 형식: CSV/JSON,제약: 포털 자동접근 차단,상,데이터,데이터 후보,https://data.gov.tw/dataset/159684
+T89,데이터셋,Transport Focus Tram Passenger Survey,영국,연(2013~),공간: 6개 트램 시스템 · 형식: PDF,제약: 통행 목적(여가) 포함,상,데이터,데이터 후보,https://www.transportfocus.org.uk/?p=3845
+T90,데이터셋,FTA NTD 기관 프로필(SFMTA 90015),미국,연,공간: 기관·수단(케이블카) · 형식: PDF,제약: —,상,데이터,데이터 후보,https://www.transit.dot.gov/sites/fta.dot.gov/files/transit_agency_profile_doc/2017/90015.pdf

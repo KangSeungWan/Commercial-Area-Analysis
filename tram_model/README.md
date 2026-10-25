@@ -325,3 +325,18 @@ python tram_model/run_all.py --from train_analyze
 - 주의: `tram_model/` 부품(cover_page·about_page·map3d)을 고치면 앱을 껐다 켜야 반영됨
 
 노선 순서(`tram_route.py`, 2026-10-25): 순환선 201~240 + 연축지선(241~244) + 진잠지선(233 관저네거리 → 245 진잠네거리, KDI 2024 공식 순서)
+
+## 관광 효과 근거·파라미터 (2026-10-25)
+- 조사 90건(해외 학술 30 · 해외 사례·공식통계 22 · 방법론·탄력성 12 · 국내 12 · 데이터셋 14). 열: id, group, source, city_system, year, outcome, finding, reliability(상/중/하), access(원문/일부/초록/2차/기사/목차/데이터), use_in_project, url
+- `use_in_project`: 파라미터·설계 근거 / 부정·무효 결과(한계 서술) / 데이터 후보 / 각주만(효과 크기로 쓰지 않음) / 배경·사례
+- `tourism_params.csv`: `literature_params.csv` 와 같은 열. 접근성 탄력성 ε(0 / 0.726·0.532 / 상한 1.0), 관광객 트램 이용률(0.05 / 0.15~0.20 / 0.37~0.40), 비정기 승객 72.1%, 시차 24개월, 수단 대체(FTZ), 참고 상한(샬럿 −66%, 멜버른 +14%)
+- 결론: 트램 개통의 관광 인과효과를 측정한 연구는 세계에 없음 → '관광 접근성 변화와 외지인 소비 시나리오'로 명명. 상세: `docs/근거_트램관광효과.md`(요약), `docs/근거_트램관광효과_보고서.md`(전체)
+- 다음 단계(코드 없음, 계획만): 상권 관광자원형/생활형 층화 → 관광지점 입장객·숙박업소·외지인 카드 결합 → 접근성 지수 전후 → ε 밴드 시나리오 → 개통 후 PPML DiD 설계
+
+## 관광지 위치·입장객 (2026-10-25) — `geocode_tourism_poi.py`, `geocode_tourism_poi_kakao.py`
+- 원자료 `data/raw/tourism/`(Git 제외): 대전 명소 60(2021)·40선(2022), 문체부 주요관광지점 입장객 2005-01~2026-06 월별(.xls 원본 + 변환 .xlsx), 2020 입장객, 구별 관광사업체(2024)
+- `data/tourism_visitors_monthly.csv`: 입장객 긴 표(구·지점·내/외국인·연·월, 7,387행, 59지점). 지점마다 집계 기간이 다름(엑스포·호텔 등 ~2012, 뿌리공원·한밭수목원 ~2023)
+- `data/tourism_poi_input.csv`(103곳: 명소 60 + 입장객 지점 43) → `data/tourism_poi.csv`(lat·lon·dong·status·tour_type·note)
+  - 1차 OSM(`geocode_tourism_poi.py`, 키 없음): 정밀 33/79뿐(절반이 도로 중심) → `data/tourism_poi_osm.csv` 로 보관
+  - 최종 카카오 로컬(`geocode_tourism_poi_kakao.py`, `.streamlit/secrets.toml` 의 `KAKAO_REST_KEY`): 79곳 ok, 관광호텔 21·선형 3 제외, 수동 대조 5곳(`OVERRIDE`), 캐시 `data/raw/tourism/kakao_cache.json`
+  - `tour_type`: 관광지 65 · 견학형(연구원 등) 13 · 생활체육 1 → 2단계에서 쓸지 결정
