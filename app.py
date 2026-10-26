@@ -77,7 +77,7 @@ money = read_csv(f"{OUT}/tram_impact_money.csv")             # 트램 효과 금
 _ssp = read_csv(f"{OUT}/station_sales_premium.csv")   # 1호선 역세권 땅값 vs 점포당 매출 (analyze_station_sales)
 SALES_RATIO = (float(_ssp.set_index("model").loc["전체: 기본", "ratio_to_land"])
                if _ssp is not None and "전체: 기본" in set(_ssp.model) else None)
-sales89 = read_csv(f"{OUT}/8989/area_sales_summary.csv")     # 8989 실측 카드매출 (행정동 → 상권 점포 비율 배분, analyze_8989)
+sales89 = read_csv(f"{OUT}/8989/area_sales_summary.csv")     # 8989 추정매출(신한카드 보정) (행정동 → 상권 점포 비율 배분, analyze_8989)
 alley89 = read_csv(f"{OUT}/8989/report_alley_area_match.csv")
 dprof = read_csv(f"{OUT}/dong_map_profile.csv", dtype={"dong_id": str})   # 행정동 82개 (build_dong_map_profile.py)
 dgj = read_json(f"{OUT}/dong_map.geojson")                  # 행정동 경계 + 핵심 지표
@@ -103,7 +103,7 @@ dps = read_csv(f"{OUT}/dong_panel_store.csv", dtype={"period": str, "dong_id": s
 d89 = read_csv(f"{OUT}/8989/dong_panel_8989.csv", dtype={"plcCd": str, "stdrYm": str, "adm_cd2": str})  # 행정동 월 카드매출
 RENT_C = {"높음": [106, 42, 140], "보통": [166, 120, 198], "낮음": [221, 208, 234], "해당 없음": [228, 230, 233]}
 RENT_HEX = {k: "#%02x%02x%02x" % tuple(v) for k, v in RENT_C.items()}  # 8989 월간 보고서 골목상권 누적 변화 (parse_8989_reports)
-SRC_8989 = "대전 소상공인 상권분석 서비스(8989.daejeon.go.kr, 대전신용보증재단) 카드매출"
+SRC_8989 = ("대전신용보증재단 '대전 소상공인 상권분석 서비스'(8989.daejeon.go.kr) 추정매출 — 신한카드 결제 자료를 카드사 점유 비율로 보정해 추정한 값")
 
 # 핵심 파일이 없으면 파이썬 오류 대신 안내를 띄우고 멈춤
 _miss = [k for k, v in {"상권 정보 (outputs/area_profile.csv)": prof, "트램 정거장 좌표 (data/tram_stations.csv)": stations,
@@ -1053,7 +1053,7 @@ if PAGE == "map":
                       (f"점포당 월 {sp_ / 1e4:,.0f}만 원" + (" (하위권, 현금·비카드 거래 영향 가능)" if mk else "")) if pd.notna(sp_) else None,
                       delta_color="off", delta_arrow="off",
                       help=f"출처: {SRC_8989}. 1~8월 같은 달끼리 비교, 79개 업종 합계(사이트 전체 카드매출의 약 58%). "
-                           "실측이지만 카드사·업종 범위가 한정돼 비율·증감으로만 해석"
+                           "신한카드 한 곳의 결제를 보정한 추정매출이고 업종 범위도 한정돼 금액보다 비율·증감으로 해석"
                            + (f". 트램 뒤 점포당 매출 변화는 땅값보다 작을 것(1호선 역세권: 땅값 효과의 {SALES_RATIO:.2f}배)" if SALES_RATIO else ""))
             mv = d.get(f"money_gain_{SCEN_KEY}_eok")
             m1.metric("상권 가치 효과", f"{d.tram_sel:+.1f}%" if tram_after else "없음",
@@ -1459,7 +1459,7 @@ if PAGE == "map":
                              + (" · 인근 관저1·2동·도안동·원신흥동·상대동은 2010년 뒤 택지 필지가 2~200배로 늘어난 개발지" if sel == "A17" else
                                 " · 연축 도시개발(1,359호, 2024 실시계획 인가)은 아직 땅값에 반영 전" if sel == "A18" else ""))
             st.caption(" · ".join(notes))
-            # ── 실측 카드매출 (8989) 한 줄: 소속 행정동 매출을 점포 비율로 배분한 값. 전통시장 동·배분 비율 낮은 상권은 주석 ──
+            # ── 8989 추정매출(신한카드 보정) 한 줄: 소속 행정동 매출을 점포 비율로 배분한 값. 전통시장 동·배분 비율 낮은 상권은 주석 ──
             s89 = sales89[sales89.code == sel].iloc[0] if sales89 is not None and (sales89.code == sel).any() else None
             if s89 is not None and pd.notna(s89.get("sales_yoy_pct")):
                 w = s89.get("main_dong_weight"); low_w = pd.notna(w) and w < 0.5
@@ -1473,7 +1473,7 @@ if PAGE == "map":
                 if market_dong: caveat.append("전통시장 현금 거래가 빠져 금액 과소")
                 if low_w: caveat.append(f"상권이 동 점포의 {w * 100:.0f}%만 차지해 동 전체 흐름에 가까움")
                 st.caption(line + (" (" + ", ".join(caveat) + ")" if caveat else "")
-                           + "  — 실측이지만 카드사·업종 범위가 한정된 값이라 비율·증감으로만 해석"
+                           + "  — 신한카드 결제를 보정한 추정매출(업종 범위 한정)이라 비율·증감으로만 해석"
                            + (f". 트램 뒤 점포당 매출 변화는 땅값보다 작을 것(1호선 역세권: 땅값 효과의 {SALES_RATIO:.2f}배)" if SALES_RATIO else ""),
                            help=f"출처: {SRC_8989}. 행정동 82개 매출을 상권 안 점포 수 비율로 나눠 더한 추정치(점포 비율 = 상가정보 2026-06). "
                                 "골목상권 누적은 월간 상권동향 보고서(2026-01~07)의 전월 대비 %를 곱한 값으로 12월→7월 계절성이 섞여 있음.")
@@ -1514,7 +1514,7 @@ if PAGE == "map":
         with d_sales:
             ch_ = dong_sales_chart(k_) if d89 is not None else None
             if ch_ is not None:
-                st.caption("매출이 큰 업종 대분류 4개의 월 카드매출 (2025-01~). 실측이지만 카드사·79개 업종 범위라 금액보다 흐름으로 보세요"
+                st.caption("매출이 큰 업종 대분류 4개의 월 추정매출 (2025-01~). 신한카드 결제를 카드사 비율로 보정한 추정값·79개 업종 범위라 금액보다 흐름으로 보세요"
                            + (" · 전통시장이 많은 동이라 현금 거래가 빠져 금액이 작게 나옴" if bool(dinfo.loc[k_].get("s89_market_caveat", False)) else ""))
                 st.altair_chart(ch_)
                 st.caption(src("outputs/8989/dong_panel_8989.csv", SRC_8989))
