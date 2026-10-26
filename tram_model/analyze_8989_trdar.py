@@ -5,6 +5,7 @@
 출력: outputs/8989/trdar_summary.csv   골목상권별: 월평균 매출 지수, 2025→2026 증감(전체·음식·소매), 주점·음료 비중, 같은 값 묶음, 소속 동·상권
       outputs/8989/area_trdar_match.csv 핵심 상권 20 × 골목상권 겹침 비율
       outputs/8989/area_sales_compare.csv 핵심 상권별 증감: 행정동 배분 vs 골목상권 실측(겹침 가중, 같은 값 묶음 1번만)
+경계: data/raw/8989/boundary/골목상권/ 에 재단 제공 공식 shapefile(geojson 변환본)이 있으면 그 경계 사용, 없으면 사이트 경계
 주의: 골목상권 금액은 경계 정밀 집계가 아니라 주변 격자 합으로 보임(10개 묶음이 완전히 같은 값, 144곳 합이 대전 전체보다 큼)
       → 금액·점포당 금액은 쓰지 않고 증감률·업종 비중만 사용
 """
@@ -67,6 +68,17 @@ def main():
 
     # 공간: 골목상권 → 소속 행정동(가장 많이 겹치는), 핵심 상권 겹침 비율
     tg = json.load(open(META / "trdar_polygons.geojson", encoding="utf-8"))
+    # 재단이 제공한 공식 경계(2026-08-26 기하수정, 2026-10-26 수령)가 있으면 그 경계로 바꿔 씀 (이름으로 대응, 144곳 모두 일치)
+    off = C.RAW_DIR / "8989" / "boundary" / "골목상권" / "alley_polygons_official_20260826.geojson"
+    if off.exists():
+        import re
+        norm = lambda v: re.sub(r"\s", "", str(v))
+        og = {norm(f["properties"]["이름"]): f["geometry"] for f in json.load(open(off, encoding="utf-8"))["features"]}
+        n_sw = 0
+        for f in tg["features"]:
+            g = og.get(norm(f["properties"]["trdarNm"]))
+            if g is not None: f["geometry"] = g; n_sw += 1
+        print(f"골목상권 경계: 재단 제공 공식 shapefile 로 교체 {n_sw}/{len(tg['features'])}곳 (축제 20곳은 사이트 경계 유지)")
     ag = json.load(open(OUT / "sangkwon_polygons.geojson", encoding="utf-8"))
     dg = json.load(open(OUT / "dong_polygons.geojson", encoding="utf-8"))
     A = [(f["properties"]["code"], f["properties"].get("name"), polys_of(f["geometry"])) for f in ag["features"]]

@@ -464,6 +464,8 @@ def _nav_cb():
 
 ss.nav = PAGES[ss.page]
 st.sidebar.radio("화면", list(PAGES.values()), key="nav", on_change=_nav_cb)
+SRC_8989_FULL = ("카드매출·폐업·유동인구·골목상권 경계: 대전신용보증재단 '대전 소상공인 상권분석 서비스'(8989.daejeon.go.kr) 제공 상권 정보 "
+                 "(2026-10 재단 활용 허가 · 재배포 금지)")
 PAGE = ss.page
 TRAM_MODES = ["건설 전", "건설 후"]
 MAPM = {"quadrant": "진단 (4분류)", "tram_sel": "상권 가치(땅값) 기준 트램 효과",          # 발표 순서: 진단 → 상권 가치 → 업종 → 임대료
@@ -505,6 +507,7 @@ if st.sidebar.button("처음 화면으로", use_container_width=True, key="to_co
     except Exception:
         pass
     st.rerun()
+st.sidebar.caption("자료 출처 · " + SRC_8989_FULL)
 
 # ================================================================ 조작 줄 (모든 화면 맨 위: 건설 전/후 + 시나리오)
 ss.tram_w, ss.mm_w, ss.scen_w, ss.unit_w = ss.tram_saved, ss.mm, ss.scen_saved, ss.unit_saved
