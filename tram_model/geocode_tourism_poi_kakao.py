@@ -50,7 +50,7 @@ OVERRIDE = {
 }
 # 관광 성격 표시 (제외하지 않고 표시만, 2단계에서 쓸지 결정)
 def tour_type(name, category):
-    if re.search(r"연구원|연구소|KAIST|카이스트", name) and category == "과학명소":
+    if re.search(r"연구원|연구소", name) and category == "과학명소":   # 카이스트는 캠퍼스 방문객이 있어 관광지 (10-25 결정)
         return "견학형(일반 개방 제한)"
     if name in {"남선공원종합체육관"}:
         return "생활체육"
@@ -172,8 +172,14 @@ def main():
             R.at[i, "status"] = "ok" if R.at[i, "gu"] == s["dong_gu"] else "구 불일치"
         else:
             R.at[i, "status"] = "못 찾음"
+    # 관광 지표 계산에 쓰는 곳: 좌표 ok + 관광지 (견학형 연구원·생활체육 제외, 10-25 결정)
+    R["use_in_tourism"] = ((R.status == "ok") & (R.tour_type == "관광지")).astype(int).astype(str)
+    R["poi_group"], R["verify_note"] = "", ""
+    from geocode_tourism_add import apply_review         # 인터넷 대조 검증 결정(10-25·26) 다시 적용
+    R = apply_review(R.astype(str).replace("nan", ""))
     R.to_csv(OUT, index=False, encoding="utf-8-sig")
-    print(f"\n저장: {OUT}")
+    print("※ 추가 후보(A01…)는 이 스크립트가 지움 → 이어서 python tram_model/geocode_tourism_add.py 실행")
+    print(f"\n저장: {OUT}  (관광 지표에 쓰는 곳 {int((R.use_in_tourism == '1').sum())})")
     print(R.status.value_counts().to_string())
     print("찾은 방법:", R[R.lat != ""].geo_level.value_counts().to_dict())
     bad = R[R.status.isin(["못 찾음", "구 불일치", "대전 밖"])]

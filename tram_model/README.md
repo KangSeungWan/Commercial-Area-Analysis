@@ -339,4 +339,4 @@ python tram_model/run_all.py --from train_analyze
 - `data/tourism_poi_input.csv`(103곳: 명소 60 + 입장객 지점 43) → `data/tourism_poi.csv`(lat·lon·dong·status·tour_type·note)
   - 1차 OSM(`geocode_tourism_poi.py`, 키 없음): 정밀 33/79뿐(절반이 도로 중심) → `data/tourism_poi_osm.csv` 로 보관
   - 최종 카카오 로컬(`geocode_tourism_poi_kakao.py`, `.streamlit/secrets.toml` 의 `KAKAO_REST_KEY`): 79곳 ok, 관광호텔 21·선형 3 제외, 수동 대조 5곳(`OVERRIDE`), 캐시 `data/raw/tourism/kakao_cache.json`
-  - `tour_type`: 관광지 65 · 견학형(연구원 등) 13 · 생활체육 1 → 2단계에서 쓸지 결정
+  - `tour_type`: 관광지 66(카이스트 포함) · 견학형 연구원 12건(표준과학연구원 중복 포함) · 생활체육 1 → `use_in_tourism` = 1 인 66곳만 관광 지표 계산에 씀(10-25 결정)
