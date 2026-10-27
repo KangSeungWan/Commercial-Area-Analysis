@@ -314,6 +314,8 @@ python tram_model/run_all.py --from train_analyze
 | 21 | `check_rent_signal_history.py` | 임대료 부담 신호(상권) ↔ 같은 지역 R-ONE 임대가격지수 13년 변화. 결과: ρ −0.81(p 0.08, 6곳) — 신호 높은 곳일수록 임대료가 더 내림 → 신호 = 땅값과 장사 수익의 간극 | `rent_signal_history.csv` |
 | 22 | `analyze_development_trend.py` | 트램 없어도 오르는 곳: '대' 필지 수 2010→2026 1.5배 이상(새 택지)·확정 개발 사업·트램 확정 전 5년 대전 대비 +10% 이상인 동 표시, 개발지를 뺀 1호선 효과·트램 확정 효과, 트램 금액 중 개발지 몫. 결과: 개발지 7곳(트램 금액의 19%), 1호선 효과 개발지 빼도 +5.9% | `development_trend_dong/checks.csv` |
 
+| 23 | `analyze_construction_trdar.py` | 공사 기간 점검을 골목상권 144곳 × 월(2024-01~2026-08)로: 처리 = 공사 구간 정거장 300m 안 30곳, 비교 = 트램 1km 밖 46곳, 같은 값 묶음 1곳만. 결과: −2.9%[−8.9, 3.5] p 0.36, 소매 −3.1%, 가짜 공사 시작 +1.1%(통과), 사건연구 공사 뒤 점점 커짐(17개월 −12%) | `construction_trdar_did/es.csv` |
+
 실행: `python tram_model/run_all.py --from check_sector_evidence` (모두 `run_all.py` STEPS 에 등록)
 
 앱 반영 (B1~B4)
