@@ -7,11 +7,6 @@ import os
 
 import pandas as pd
 
-try:
-    from tourism_about import tourism_tab        # 관광 탭(보조 관점)
-except Exception:                                 # 파일이 없어도 팝업은 열림
-    tourism_tab = None
-
 OUT = "tram_model/outputs"
 
 
@@ -421,7 +416,7 @@ def _body(st):
     c[1].metric("지가 1년 예측 오차", n["land_rmse"], n.get("land_best", ""), delta_color="off", delta_arrow="off")
     c[2].metric("상권 유형", f"{n['k']}개", f"안정성 ARI {n['ari']}", delta_color="off", delta_arrow="off")
     c[3].metric("분석 단위", "20개 상권", "82개 행정동 · 293개 격자", delta_color="off", delta_arrow="off")
-    t6, t0, t1, t2, t5, t3, t4, t7 = st.tabs(["트램이 바꾸는 것", "트램 효과 크기", "데이터", "분석·모델", "프레임워크", "참고 논문", "검증·한계", "관광"])
+    t6, t0, t1, t2, t5, t3, t4 = st.tabs(["트램이 바꾸는 것", "트램 효과 크기", "데이터", "분석·모델", "프레임워크", "참고 논문", "검증·한계"])
     with t6:
         st.markdown("**트램은 가게의 매출보다 상권의 가치와 업종 구성을 바꿉니다.** 그 결과 생기는 위험이 임대료 부담입니다.")
         for what, verdict, how, res, lim in _story(n):
@@ -512,11 +507,7 @@ def _body(st):
     with t4:
         for x in LIMITS:
             st.markdown(f"- {x.format(**n)}")
-    with t7:
-        if tourism_tab:
-            tourism_tab(st)
-        else:
-            st.caption("관광 탭 파일(tourism_about.py)이 없습니다.")
+    st.caption("관광(부수 효과)은 사이드바 '트램과 관광' 화면에 따로 정리")
     st.caption("코드: tram_model/ (run_all.py 로 전체 재현) · 자세한 수치: PROGRESS.md")
     st.caption("상권 정보 출처: 대전신용보증재단 '대전 소상공인 상권분석 서비스'(8989.daejeon.go.kr) — 카드매출·폐업·유동인구·골목상권 경계. 재단 활용 허가(2026-10), 재배포 금지")
 

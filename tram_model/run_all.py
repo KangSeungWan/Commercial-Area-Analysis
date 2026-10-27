@@ -73,6 +73,7 @@ STEPS = [
     ("analyze_station_sensitivity", "정거장 추정 좌표 민감도: 28곳을 0~300m 옮겨 500m 판정·진단 다시 계산 (약 1분)", None),
     ("analyze_assumption_sensitivity", "가정 민감도: 1호선 효과 기준별 금액·진단 변화, 임대료 신호 가중치 안정도", None),
     ("analyze_development_trend", "트램 없어도 오르는 곳: 신도시·택지 개발 동 표시, 개발지 뺀 1호선 효과 (약 1분)", None),
+    ("build_tourism_layer", "관광(보조): 관광지·대리지표·관문 접근성 변화 시나리오 (상권·행정동·정거장)", None),
     ("make_map_data", "지도용 데이터 (점수 반영)", None),
 ]
 

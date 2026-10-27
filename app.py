@@ -8,6 +8,7 @@ from tram_route import route_paths
 from about_page import show_about                                      # 분석 방법 팝업
 from tram_evidence_page import open_tram_evidence                      # 트램 효과 근거 팝업
 import ai_comment as ac                                                # AI 상권 해설 (실시간 + 저장본)
+import tourism_page                                                    # 트램과 관광 (부수 효과, 별도 화면)
 try:
     import map3d                                                       # 3D 지도 (deck.gl 부품)
 except Exception:                                                      # 파일이 없으면 3D 선택지만 숨김
@@ -451,7 +452,7 @@ if ss.page == "cover":
     st.stop()
 
 # ================================================================ 사이드바
-PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "상권·행정동 비교"}
+PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "상권·행정동 비교", "tourism": "트램과 관광"}
 if ss.page not in PAGES:
     ss.page = "map"
 st.sidebar.title("대전 트램 상권 지도")
@@ -1794,6 +1795,10 @@ elif PAGE == "industry":
             if ss.ind_w != W_DEF:
                 b2.caption("조정한 가중치로 지도·순위를 계산 중 (기본: " +
                            ", ".join(f"{ITEM.get(k, k)} {v:.0f}" for k, v in W_DEF.items()) + ")")
+
+# ================================================================ 페이지 4: 트램과 관광 (부수 효과)
+elif PAGE == "tourism":
+    tourism_page.render(st)
 
 # ================================================================ 페이지 3: 상권·행정동 비교
 else:
