@@ -63,6 +63,7 @@ STEPS = [
     ("build_dong_map_profile", "지도용 행정동 요약표·GeoJSON·정거장 요약", None),
     ("validate_closures_8989", "진단 외부 검증: 8989 폐업률(2025) ↔ 82개 동 위험 점수", None),
     ("analyze_construction_8989", "공사 기간 점검: 공사 구간 동 vs 정거장 먼 동 월별 카드매출 (data/construction_sections.csv)", None),
+    ("analyze_construction_density", "공사 기간 점검 강건성(B4): 상업 밀도 맞춘 비교군 4가지", None),
     ("analyze_construction_trdar", "공사 기간 점검(골목상권 144 × 월, 2024-01~): 공사 전 14개월 확보, 가짜 공사 시작", None),
     ("analyze_cafe_saturation", "카페 포화 점검: 대전 카페 순증·폐업률, 카페 비중 높던 격자의 1호선 효과 → '높음' 조정 (약 1분)", None),
     ("build_composition", "업종 구성 현재·트램 개통 후 예상 (카페·빵집, 1호선 인허가 근거)", None),

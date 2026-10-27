@@ -99,6 +99,10 @@ def main():
     X["growth_drivers"] = G.apply(lambda r: ", ".join(LABEL[k] for k in r.dropna().sort_values(ascending=False).index[:2]),
                                   axis=1)
     X["note"] = ["점포 지표 제외(신세계 입점 왜곡)" if c in ARTIFACT else "" for c in X.index]
+    # B9 절대 쇠퇴 신호 (대전 전체 82개 동 점포 가중 폐업률과 비교) — 상대 점수의 보조
+    import absolute_decline as AD
+    _dt = pd.read_csv(C.OUT_DIR / "dong_types.csv", encoding="utf-8-sig")
+    X = AD.add(X, AD.city_close_rate(_dt))
 
     # 가중치 민감도: 지표 하나씩 뺐을 때 순위 상관
     sens = []
@@ -117,6 +121,9 @@ def main():
     print("\n[가중치 민감도] 지표 하나 뺐을 때 순위 상관 최소:",
           S.groupby("score").spearman.min().to_dict())
     print("\n네 칸 분류:", X.groupby("quadrant").name.apply(lambda v: ", ".join(v)).to_dict())
+    print(f"\n[절대 쇠퇴 신호] 대전 폐업률 {X.city_close_rate.iloc[0]:.3f} 기준:",
+          X.groupby("abs_decline").name.apply(lambda v: ", ".join(v)).to_dict())
+    print("  위험 50점 이상인데 신호 없음:", ", ".join(X[(X.risk_score >= 50) & (X.abs_decline == "없음")].name) or "-")
     print("\n진단 안정도 (70% 미만 = 불확실):\n", X[["name", "quadrant", "quadrant_stability", "quadrant_alt"]]
           .sort_values("quadrant_stability").to_string())
 

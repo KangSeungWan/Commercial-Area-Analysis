@@ -61,6 +61,8 @@ def main():
     X["risk_drivers"] = R.apply(lambda r: ", ".join(LABEL[k] for k in r.dropna().sort_values(ascending=False).index[:2]), axis=1)
     X["growth_drivers"] = G.apply(lambda r: ", ".join(LABEL[k] for k in r.dropna().sort_values(ascending=False).index[:2]), axis=1)
     X["note"] = ["점포 지표 제외(신세계 입점 왜곡)" if c in ARTIFACT else ("점포 적음(200개 미만), 참고" if s else "") for c, s in zip(X.index, X.small)]
+    import absolute_decline as AD                                   # B9 절대 쇠퇴 신호
+    X = AD.add(X, AD.city_close_rate(T))
     sens = [{"score": nm, "drop": LABEL[k], "spearman": round(P.drop(columns=k).mean(axis=1).rank().corr(X[col].rank()), 3)}
             for nm, P, col in (("쇠퇴 위험", R, "risk_score"), ("성장 가능", G, "growth_score")) for k in P.columns]
     S = pd.DataFrame(sens)
@@ -80,6 +82,11 @@ def main():
     print("\n네 칸 분류 수:", X.quadrant.value_counts().to_dict())
     print("트램 반등 기회:", ", ".join(X[X.quadrant == "트램 반등 기회"].dong))
     print("불확실(안정도<0.8):", int(X.quadrant_uncertain.sum()), "개")
+    print("[절대 쇠퇴 신호]", X.abs_decline.value_counts().to_dict(), "· 위험 50 이상 중 신호 있음",
+          int(((X.risk_score >= 50) & X.abs_decline.isin(["있음", "강함"])).sum()), "/", int((X.risk_score >= 50).sum()))
+    for c, lab in (("abs_decline", "신호"), ("abs_decline_n", "조건 수")):
+        r, p, n = spearman(X.risk_score, X[c].map({"없음": 0, "있음": 1, "강함": 2}) if c == "abs_decline" else X[c])
+        print(f"  위험 점수 ↔ {lab} 스피어만 {r} (n={n})")
     print("[가중치 민감도] 최소 순위 상관:", S.groupby("score").spearman.min().to_dict())
     print("[외부 검증]\n", V.to_string(index=False))
     try:

@@ -1022,6 +1022,12 @@ if PAGE == "map":
                 rows_ = [("상대 쇠퇴 위험", f"{rs:.0f}점", d.risk_drivers), ("상대 성장 가능", f"{gs:.0f}점", d.growth_drivers)]
                 if pd.notna(d.get("nearest_tram")):
                     rows_.append(("가까운 정거장", f"{int(d.nearest_tram_m)}m", f"{int(d.nearest_tram)}번 정거장 · 동 점포의 {i5t}가 500m 안"))
+                _ab = d.get("abs_decline")                          # B9 절대 쇠퇴 신호 (대전 전체와 비교, 보조)
+                if isinstance(_ab, str) and _ab != "판단 안 함":
+                    _abn = d.get("abs_decline_n")
+                    _abw = d.get("abs_decline_why") if isinstance(d.get("abs_decline_why"), str) else "해당 없음"
+                    rows_.append(("절대 쇠퇴 신호", _ab + (f" ({int(_abn)}/4)" if pd.notna(_abn) else ""),
+                                  _abw + " (대전 전체 기준 · 위 점수는 상대 순위)"))
                 stab = d.get("quadrant_stability")
                 alt_q = d.get("quadrant_alt") if isinstance(d.get("quadrant_alt"), str) else ""
                 foot = (f"진단 안정도 {stab * 100:.0f}% (15가지 계산 변형 중 같은 진단 비율)"
@@ -1408,6 +1414,12 @@ if PAGE == "map":
                 if pd.notna(r.get("nearest_tram")):
                     rows_.append(("가까운 정거장", f"{int(r.nearest_tram_m)}m",
                                   f"{int(r.nearest_tram)}번 정거장 · 상권 점포의 {i5t}가 500m 안"))
+                _ab = r.get("abs_decline")                          # B9 절대 쇠퇴 신호 (대전 전체와 비교, 보조)
+                if isinstance(_ab, str) and _ab != "판단 안 함":
+                    _abn = r.get("abs_decline_n")
+                    _abw = r.get("abs_decline_why") if isinstance(r.get("abs_decline_why"), str) else "해당 없음"
+                    rows_.append(("절대 쇠퇴 신호", _ab + (f" ({int(_abn)}/4)" if pd.notna(_abn) else ""),
+                                  _abw + " (대전 전체 기준 · 위 점수는 상대 순위)"))
                 stab = r.get("quadrant_stability")
                 foot = ""
                 if pd.notna(stab):
@@ -1809,6 +1821,8 @@ else:
                 "quadrant_stability": CC.NumberColumn("진단 안정도", format="percent", help="15가지 변형 중 같은 진단 비율. 80% 미만 = 불확실"),
                 "risk_score": CC.ProgressColumn("상대 위험", min_value=0, max_value=100, format="%.0f", width=100, help=HELP["risk_score"]),
                 "growth_score": CC.ProgressColumn("상대 성장", min_value=0, max_value=100, format="%.0f", width=100, help=HELP["growth_score"]),
+                "abs_decline": CC.TextColumn("절대 쇠퇴 신호", help="대전 전체 기준(상대 점수 보조): 최근 3년 점포 비중 감소 + 폐업률 대전 평균 초과면 '있음', "
+                                             "점포 비중 10년 감소·폐업 > 개업까지 4가지 모두면 '강함'"),
                 "tram_sel": CC.NumberColumn("상권 가치 효과", format="%+.1f%%", help=TRAM_DEF + f" · 지금 시나리오: {scen}"),
                 "tram_range": CC.TextColumn("낮음 ~ 높음", help="같은 곳의 낮음·높음 시나리오 값 (%)"),
                 "comp": CC.NumberColumn("업종 변화", format="+%.1f%%p", help=HELP.get("comp", "")),
@@ -1820,7 +1834,7 @@ else:
                 "n_stores": CC.NumberColumn("점포 수", format="%d"), "rent_score": None}
     R_ORD = {"높음": 3, "보통": 2, "낮음": 1, "해당 없음": 0}
     if CDONG:
-        keep = ["dong_id", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "tram_sel", "comp", "rent", "rent_score",
+        keep = ["dong_id", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "abs_decline", "tram_sel", "comp", "rent", "rent_score",
                 "land_chg_5y_pct", "store_share_chg_5y_pct", "s89_sales_yoy_pct", "n_stores"]
         tb = dprof[[c for c in keep if c in dprof.columns]].copy()
         tb["name"] = [("▶ " if k == ss.get("sel_dong") else "") + n for k, n in zip(tb.dong_id, tb.name)]
@@ -1829,7 +1843,7 @@ else:
         key_col, cfg = "dong_id", {**base_cfg, "dong_id": None, "name": CC.TextColumn("행정동", width=130, help="▶ = 지도 화면에서 고른 동")}
         unit_txt, src_txt = "82개 행정동", f"{SRC_DONG} (진단·점수·지표)"
     else:
-        keep = ["code", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "tram_sel", "comp", "rent", "rent_score",
+        keep = ["code", "name", "quadrant", "quadrant_stability", "risk_score", "growth_score", "abs_decline", "tram_sel", "comp", "rent", "rent_score",
                 "land_chg_5y_pct", "store_share_chg_5y_pct", "close_rate_q_pct", "n_stores"]
         tb = prof[[c for c in keep if c in prof.columns]].copy()
         tb["name"] = [("▶ " if c == sel else "") + n.split("(")[0] for c, n in zip(tb.code, tb.name)]

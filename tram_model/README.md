@@ -352,3 +352,8 @@ python tram_model/run_all.py --from train_analyze
   - 1차 OSM(`geocode_tourism_poi.py`, 키 없음): 정밀 33/79뿐(절반이 도로 중심) → `data/tourism_poi_osm.csv` 로 보관
   - 최종 카카오 로컬(`geocode_tourism_poi_kakao.py`, `.streamlit/secrets.toml` 의 `KAKAO_REST_KEY`): 79곳 ok, 관광호텔 21·선형 3 제외, 수동 대조 5곳(`OVERRIDE`), 캐시 `data/raw/tourism/kakao_cache.json`
   - `tour_type`: 관광지 66(카이스트 포함) · 견학형 연구원 12건(표준과학연구원 중복 포함) · 생활체육 1 → `use_in_tourism` = 1 인 66곳만 관광 지표 계산에 씀(10-25 결정)
+
+## B4 공사 비교군 밀도 맞춤 · B9 절대 쇠퇴 신호 (2026-10-28)
+- `analyze_construction_density.py` → `outputs/construction_8989_density.csv`(변형 4 × 결과 3), `construction_8989_balance.csv`(밀도 균형). 상업 밀도 = 동 점포 수 ÷ 면적(㎢). V0 기본 · V1 밀도 겹치는 범위 · V2 밀도 3등분 × 월 고정효과 · V3 밀도 최근접 짝(중복 허용, 쓰인 횟수 가중). 결과: 전체 카드매출 −1.4 / −1.5 / −1.2 / +0.1%, 모두 5% 유의 아님
+- `absolute_decline.py` (score_areas·score_dongs 가 호출) → `area_scores.csv`·`dong_scores.csv` 에 `abs_decline`(없음/있음/강함/판단 안 함), `abs_decline_n`(0~4), `abs_decline_why`, `city_close_rate` 추가 → `area_profile.csv`·`dong_map_profile.csv` 로 전달. 신호 = 최근 3년 점포 비중 감소 & 폐업률 > 대전 82동 점포 가중 평균
+

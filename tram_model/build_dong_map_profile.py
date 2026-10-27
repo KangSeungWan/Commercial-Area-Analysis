@@ -23,7 +23,8 @@ def main():
 
     D = prof[["dong_id", "name", "si", "dong", "nearest_tram", "nearest_tram_m", "n_stores", "tram500_share", "top3", "land_price", "land_chg_5y_pct", "land_chg_10y_pct", "areas"]].copy()
     D = D.merge(T[["dong_id", "cluster", "type_name", "stability", "land_rel_g10", "land_recent", "store_g", "store_recent", "close_rate", "open_rate", "food_ratio", "retail_ratio", "branch_share", "small"]].rename(columns={"stability": "type_stability"}), on="dong_id", how="left")
-    D = D.merge(S[["dong_id", "risk_score", "growth_score", "quadrant", "quadrant_stability", "quadrant_alt", "quadrant_uncertain", "risk_drivers", "growth_drivers", "tram_gain", "fc_base", "fc_tram", "note", "survey_bad_pct"]].rename(columns={"tram_gain": "tram_gain_score", "note": "score_note"}), on="dong_id", how="left")
+    D = D.merge(S[["dong_id", "risk_score", "growth_score", "quadrant", "quadrant_stability", "quadrant_alt", "quadrant_uncertain", "risk_drivers", "growth_drivers", "tram_gain", "fc_base", "fc_tram", "note", "survey_bad_pct"]
+                  + [c for c in ("abs_decline", "abs_decline_n", "abs_decline_why", "city_close_rate") if c in S.columns]].rename(columns={"tram_gain": "tram_gain_score", "note": "score_note"}), on="dong_id", how="left")
     end = FL.year.max()
     fl = FL[FL.year == end].set_index("code"); fs = FS[FS.year == end].set_index("code")
     D["land_2034_base"], D["land_2034_lo80"], D["land_2034_hi80"], D["land_2034_tram"] = [D.dong_id.map(fl[c]) for c in ("base_path", "lo80", "hi80", "tram_base")]
