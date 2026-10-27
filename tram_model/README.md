@@ -357,3 +357,9 @@ python tram_model/run_all.py --from train_analyze
 - `analyze_construction_density.py` → `outputs/construction_8989_density.csv`(변형 4 × 결과 3), `construction_8989_balance.csv`(밀도 균형). 상업 밀도 = 동 점포 수 ÷ 면적(㎢). V0 기본 · V1 밀도 겹치는 범위 · V2 밀도 3등분 × 월 고정효과 · V3 밀도 최근접 짝(중복 허용, 쓰인 횟수 가중). 결과: 전체 카드매출 −1.4 / −1.5 / −1.2 / +0.1%, 모두 5% 유의 아님
 - `absolute_decline.py` (score_areas·score_dongs 가 호출) → `area_scores.csv`·`dong_scores.csv` 에 `abs_decline`(없음/있음/강함/판단 안 함), `abs_decline_n`(0~4), `abs_decline_why`, `city_close_rate` 추가 → `area_profile.csv`·`dong_map_profile.csv` 로 전달. 신호 = 최근 3년 점포 비중 감소 & 폐업률 > 대전 82동 점포 가중 평균
 
+## AI 해설 별도 화면·프리미엄 (2026-10-28) — `ai_page.py`, `ai_comment.py`, `outputs/ai_comments.json`
+- 사이드바 'AI 해설': 상권 20곳 중 선택 → 추가 질문(선택, 1,500자) → `ai_comment.build_prompt(ctx, scen, help, extra)` → Gemini. 지도 화면의 시나리오·업종 가중치를 그대로 씀
+- 요금 안내는 시연용(결제 없음): 무료 = 기본 해설, 프리미엄 = 실시간 + 맞춤 질문 (월 9,900원은 예시)
+- 기본 해설(`ai_comments.json`, kind "기본 해설"): 2026-10-28 결과 파일·기본 시나리오·기본 가중치 기준 프롬프트를 Claude 가 받아 작성, 팀 검토. 실시간 실패 시 표시. `make_ai_comments.py` 실행 시 Gemini 생성본(kind "Gemini 생성")으로 바뀜
+- 프롬프트 정보 추가(10-28): 절대 쇠퇴 신호, 임대료 부담 신호(점수·원인), 카페·빵집 비중 2026→2034, 관광 시나리오(관광자원형만), A12 점포 지표 왜곡 표시. 형식 6번 = 시가 할 일 · 상인이 할 일
+

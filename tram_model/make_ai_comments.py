@@ -1,6 +1,8 @@
 """20개 상권 AI 해설을 미리 만들어 outputs/ai_comments.json 에 저장.
 
 발표장 네트워크가 끊기거나 API 호출이 실패해도, 앱이 이 저장본을 대신 보여 줌.
+2026-10-28 현재 저장본은 Claude 가 같은 프롬프트로 사전 작성하고 팀이 검토한 '기본 해설'(kind=기본 해설).
+이 스크립트를 돌리면 해당 상권 항목이 Gemini 생성본으로 바뀜 → 마지막 주 재생성 때 결과를 꼭 읽고 수치 대조(B8).
 분석 결과(run_all.py)를 다시 돌렸다면 이 스크립트도 다시 실행해 해설을 최신 수치에 맞추세요.
 
 사용 (프로젝트 폴더에서):
@@ -76,7 +78,8 @@ def main():
     print(f"{len(codes)}개 상권 · 모델 {a.model} · 시나리오 {scen_text}" + (" · 점검만(dry-run)" if a.dry_run else ""))
     ok, fail = 0, []
     for i, code in enumerate(codes, 1):
-        ctx = ac.area_context(code, info, d["fc"], d["IS"], weights, d["ind_area"], d["events"], d["st_areas"], "base")
+        ctx = ac.area_context(code, info, d["fc"], d["IS"], weights, d["ind_area"], d["events"], d["st_areas"], "base",
+                              d.get("rentp"), d.get("comp"), d.get("tour"))
         prompt = ac.build_prompt(ac.context_text(ctx), scen_text, scen_help)
         label = f"[{i:>2}/{len(codes)}] {code} {info.loc[code, 'name']}"
         if a.dry_run:
@@ -91,7 +94,7 @@ def main():
             ok += 1
             saved["areas"][code] = {"name": info.loc[code, "name"], "text": text.strip(),
                                     "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                    "scenario": scen_text, "model": a.model}
+                                    "scenario": scen_text, "model": a.model, "kind": "Gemini 생성"}
             print(f"{label}: 완료 ({len(text):,}자)")
         if i < len(codes):
             time.sleep(a.delay)

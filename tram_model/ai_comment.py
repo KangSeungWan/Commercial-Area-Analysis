@@ -1,7 +1,9 @@
 """AI 상권 해설: 앱(app.py)과 미리 만들기 스크립트(make_ai_comments.py)가 함께 쓰는 부분.
 
 - 상권 정보 묶음(area_context)과 질문 글(build_prompt)을 한곳에서 만들어, 실시간 해설과 저장본이 같은 내용을 근거로 함
-- 저장본: outputs/ai_comments.json (생성 날짜·모델·시나리오 포함)
+- 저장본: outputs/ai_comments.json (생성 날짜·모델·시나리오 포함). 2026-10-28 기본 해설은 Claude 가 같은 프롬프트를 받아 써서 사람이 검토한 것
+  → 실시간 호출이 실패하면 이 기본 해설을 보여 줌 (이용자 추가 질문이 있으면 기본 해설 + '질문 답은 실시간만' 안내)
+- 추가 질문(extra): 이용자가 적은 글을 기존 프롬프트 뒤에 붙여 보냄 → 맞춤 해설 (유료 기능으로 안내, 10-28 결정)
 - API 키는 화면·로그에 절대 출력하지 않음
 """
 import json
@@ -30,7 +32,10 @@ def load_inputs(out=OUT_DIR, data=DATA_DIR):
     return {"prof": _csv(out / "area_profile.csv"), "fc": _csv(out / "forecast_land.csv"),
             "IS": _csv(out / "industry_scores.csv"), "ISW": _csv(out / "industry_score_weights.csv"),
             "ind_area": _csv(out / "industry_by_area.csv"), "events": _csv(data / "area_events.csv"),
-            "st_areas": _csv(out / "station_areas.csv"), "ts": _csv(out / "tram_scenarios.csv")}
+            "st_areas": _csv(out / "station_areas.csv"), "ts": _csv(out / "tram_scenarios.csv"),
+            "rentp": _csv(out / "rent_pressure.csv", dtype={"key": str}),
+            "comp": _csv(out / "composition_forecast.csv", dtype={"key": str}),
+            "tour": _csv(out / "tourism_layer.csv", dtype={"id": str})}
 
 
 # ── 시나리오 이름·설명 (tram_scenarios.csv → 화면 표기와 실제 값이 항상 일치) ──
@@ -79,7 +84,7 @@ def score_industries(IS, w, after, scen_key="base"):
 
 # ── AI에게 보낼 상권 정보 묶음 ──
 def area_context(code, info, fc=None, IS=None, weights=None, ind_area=None, events=None, st_areas=None,
-                 scen_key="base"):
+                 scen_key="base", rentp=None, comp=None, tour=None):
     r = info.loc[code]
     g = lambda k, nd=1: (None if k not in r or pd.isna(r[k]) else (round(float(r[k]), nd) if not isinstance(r[k], str) else r[k]))
     ctx = {"상권": f"{code} {r['name']} ({r.gu}, {r.type})",
@@ -88,7 +93,8 @@ def area_context(code, info, fc=None, IS=None, weights=None, ind_area=None, even
            "상대 쇠퇴 위험 점수(0~100, 20개 상권 중 순위 기반)": g("risk_score", 0), "위험 주요 원인": g("risk_drivers"),
            "상대 성장 가능 점수(0~100)": g("growth_score", 0), "성장 주요 근거": g("growth_drivers"),
            "점포 수(2026-06)": g("n_stores", 0), "주요 업종": g("top3_mid"),
-           "대전 내 점포 비중 5년 변화(%)": g("store_share_chg_5y_pct"), "분기 폐업률(%, 최근 3년)": g("close_rate_q_pct", 2),
+           "대전 내 점포 비중 5년 변화(%)": (g("store_share_chg_5y_pct") if abs(float(r.get("store_share_chg_5y_pct") or 0)) < 200
+                                      else f"{g('store_share_chg_5y_pct')} (2021 대형 쇼핑몰 입점 점포가 한꺼번에 등록된 왜곡 → 점포 지표는 해석하지 말 것)"), "분기 폐업률(%, 최근 3년)": g("close_rate_q_pct", 2),
            "공시지가 5년·10년 상승률(%)": (g("land_chg_5y_pct"), g("land_chg_10y_pct")),
            "가까운 트램 정거장": f"{g('nearest_tram', 0)}번, {g('nearest_tram_m', 0)}m",
            "트램 효과(개통 초기 1~4년, 땅값 기준 추정 %) 낮음/기본/높음": (g("tram_effect_low", 2), g("tram_effect", 2), g("tram_effect_high", 2))}
@@ -109,6 +115,32 @@ def area_context(code, info, fc=None, IS=None, weights=None, ind_area=None, even
         _b, _a = _b[_b.code == code].set_index("industry").score, _a[_a.code == code].set_index("industry").score
         ctx["업종 점수(100점, 20개 상권 중 상대, 트램 건설 전→후)"] = {
             i: (f"{_b[i]:.0f}→{_a[i]:.0f}" if pd.notna(_b.get(i)) else "점포 부족") for i in ind_list(IS)}
+    if "abs_decline" in r and isinstance(r.get("abs_decline"), str) and r["abs_decline"] != "판단 안 함":
+        ctx["절대 쇠퇴 신호(대전 전체 기준, 상대 점수의 보조)"] = f"{r['abs_decline']}" + (
+            f" — {r['abs_decline_why']}" if isinstance(r.get("abs_decline_why"), str) and r["abs_decline"] != "없음" else "")
+    if rentp is not None:
+        rp = rentp[(rentp.level == "상권") & (rentp.key == code)]
+        if len(rp):
+            x = rp.iloc[0]
+            drv = x.rent_drivers if isinstance(x.rent_drivers, str) and x.rent_drivers else "뚜렷한 원인 없음"
+            ctx["임대료 부담 신호(개통 뒤 나중의 위험, 상대 순위·금액 아님)"] = (
+                f"{x.rent_pressure}" + (f" (점수 {x.rent_pressure_score:.0f}, 원인: {drv})" if x.rent_pressure != "해당 없음" else ""))
+    if comp is not None:
+        cp = comp[(comp.level == "상권") & (comp.key == code) & (comp.scenario == scen_key)]
+        if len(cp):
+            y = cp.year.max(); x = cp[cp.year == y].iloc[0]
+            ctx[f"업종 변화: 음식점 중 카페·빵집 비중 2026→{y}(트램 {scen_key} 시나리오)"] = (
+                f"{x.cafe_bakery_share_now * 100:.1f}% → {x.cafe_bakery_share * 100:.1f}% (+{x.cafe_bakery_pp:.1f}%p, 카페·빵집 약 {x.cafe_bakery_add:.0f}곳 상대 증가. "
+                "대전 1호선 인허가 근거, 식사 음식점 몫은 그만큼 줄어듦)")
+    if tour is not None:
+        tq = tour[(tour.kind == "area") & (tour.id == code)]
+        if len(tq):
+            t = tq.iloc[0]
+            if t.tourism_type == "관광자원형":
+                ctx["관광(보조 관점, 시나리오): 관문→상권 접근성 변화로 본 방문 변화"] = (
+                    f"관광지 가까움({t.top_poi}). 방문 변화 시나리오 기본 {t.visit_base_pct:+.1f}%, 상한 {t.visit_high_pct:+.1f}% — 인과 근거 없음, 범위로만")
+            else:
+                ctx["관광(보조 관점)"] = "영향권 안 관광지 없음 → 관광 시나리오 0"
     if events is not None:
         ev = events[events.area_codes.fillna("").str.contains(code)]
         if len(ev):
@@ -125,27 +157,37 @@ def context_text(ctx):
     return json.dumps(ctx, ensure_ascii=False, default=str, indent=1)
 
 
-def build_prompt(ctx_text, scen_text, scen_help):
-    return f"""너는 대전 상권 분석가야. 아래는 우리 팀이 공공데이터로 분석한 상권 정보야.
+def build_prompt(ctx_text, scen_text, scen_help, extra=None):
+    """기존 프롬프트. extra(이용자 추가 질문)가 있으면 맨 뒤에 붙여 7번 항목으로 답하게 함."""
+    base = f"""너는 대전 상권 분석가야. 아래는 우리 팀이 공공데이터로 분석한 상권 정보야.
 {ctx_text}
 
 [지표 설명]
-- 점수: 20개 상권 안 상대 순위(0~100). 절대적 쇠퇴 판정이 아님
+- 점수: 20개 상권 안 상대 순위(0~100). 절대적 쇠퇴 판정이 아님. '절대 쇠퇴 신호'가 '없음'이면 "다른 상권보다 덜 좋을 뿐 대전 전체 기준으로 쇠퇴 중은 아님"이라고 말할 것
 - 진단: 상대 쇠퇴 위험 50점 이상이면서 상권 점포 절반 이상이 트램 정거장 500m 안이면 '트램 반등 기회', 아니면 '쇠퇴 우려', 위험 50 미만이면 '성장 지속'/'정체·안정'. 진단 안정도가 0.8 미만이면 '불확실'이라고 꼭 말할 것
 - 트램 효과: {TRAM_DEF}. 시나리오 근거: {' / '.join(scen_help)}. 지하철 효과를 지상 트램에 빌려 쓴 것이라 과대일 수 있음. 선택된 시나리오: {scen_text}
+- 핵심 메시지: 트램은 가게 매출보다 상권의 가치(땅값)와 업종 구성(카페 쪽으로)을 바꾸고, 그 결과 임대료 부담이 나중의 위험. '반등 기회'는 땅값이 오를 곳이라는 뜻이며 가게 생존은 임대료 신호와 같이 봐야 함
+- 임대료 부담 신호: 땅값-매출 격차·폐업률·업종 교체를 조합한 상대 순위(측정값 아님). '높음'이면 개통 뒤 몇 년 지나 임대료가 오를 수 있는 곳
 - 업종 점수: 성장·규모·특화도·생존·땅값(+건설 후 트램 효과)을 업종 안 20개 상권 순위로 합친 100점 점수
 - 공시지가 예측: 상권별 ARIMA + 트램 효과, 80% 범위가 넓어 비교용
-- 매출 금액은 위치별 실측이 없어 사용하지 않음
+- 매출 금액은 위치별 실측이 없어 사용하지 않음. 공사 기간(2025~2028) 매출 손실은 동 평균으로는 확인되지 않았고 펜스 앞 가게는 해외에서 −30~50%
 - 관광: 보조 관점. 트램이 관광객을 늘렸다는 인과 근거는 없음. 관광을 언급할 때는 '접근성이 좋아지면 방문이 늘 수 있다'는 시나리오로만, 범위로 쓰고 '관광객 ○명 증가'·'관광 매출 ○원' 같은 확정 표현은 쓰지 말 것
 
 [작성 형식] 한국어, 각 항목 1~2줄, 숫자 근거를 괄호로 인용
-1. 한 줄 요약 (현재 상태: 성장/정체/쇠퇴)
+1. 한 줄 요약 (현재 상태: 성장/정체/쇠퇴, 절대 신호 여부)
 2. 근거 수치 3개
-3. 트램 개통 기회
-4. 위험 요인
+3. 트램 개통 뒤: 상권 가치(땅값)와 업종 구성이 어떻게 바뀌나
+4. 위험 요인: 임대료 부담 신호·공사 기간·그 밖의 위험
 5. 유리한 업종 2개와 조심할 업종 1개 (업종 점수·업종 비율 변화 근거)
-6. 상권 활성화 정책 제안 1개
+6. 시가 할 일 1개 · 상인이 할 일 1개
 추정치는 '추정'이라고 표시하고, 위 정보에 없는 사실은 지어내지 마."""
+    if extra and str(extra).strip():
+        base += f"""
+
+[이용자의 추가 질문]
+{str(extra).strip()[:1500]}
+위 1~6번을 다 쓴 뒤 '7. 질문에 대한 답'을 덧붙여 3~5줄로 답해. 답도 위 정보와 지표 설명 안에서만 하고, 정보에 없는 것은 "이 분석에는 없는 내용"이라고 말해. 투자·매매 권유처럼 들리는 확정 표현은 쓰지 마."""
+    return base
 
 
 # ── Gemini 호출 ──
@@ -183,4 +225,5 @@ def saved_entry(saved, code):
     if not isinstance(e, dict) or not str(e.get("text", "")).strip():
         return None
     return {"text": e["text"], "generated_at": e.get("generated_at") or saved.get("generated_at", ""),
-            "scenario": e.get("scenario") or saved.get("scenario", ""), "model": e.get("model") or saved.get("model", "")}
+            "scenario": e.get("scenario") or saved.get("scenario", ""), "model": e.get("model") or saved.get("model", ""),
+            "kind": e.get("kind") or saved.get("kind", "저장본")}

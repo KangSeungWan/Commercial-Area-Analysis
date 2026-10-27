@@ -9,6 +9,7 @@ from about_page import show_about                                      # 분석 
 from tram_evidence_page import open_tram_evidence                      # 트램 효과 근거 팝업
 import ai_comment as ac                                                # AI 상권 해설 (실시간 + 저장본)
 import tourism_page                                                    # 트램과 관광 (부수 효과, 별도 화면)
+import ai_page                                                         # AI 상권 해설 (별도 화면, 프리미엄)
 try:
     import map3d                                                       # 3D 지도 (deck.gl 부품)
 except Exception:                                                      # 파일이 없으면 3D 선택지만 숨김
@@ -452,7 +453,7 @@ if ss.page == "cover":
     st.stop()
 
 # ================================================================ 사이드바
-PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "상권·행정동 비교", "tourism": "트램과 관광"}
+PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}), "industry": "업종 점수", "compare": "상권·행정동 비교", "ai": "AI 해설", "tourism": "트램과 관광"}
 if ss.page not in PAGES:
     ss.page = "map"
 st.sidebar.title("대전 트램 상권 지도")
@@ -1537,7 +1538,7 @@ if PAGE == "map":
             comp_tab("행정동", k_, dinfo.loc[k_, "dong"])
     else:
         st.subheader(f"{short(sel)} 자세히 보기", anchor=False)
-        t_fc, t_comp, t_land, t_store, t_ai = st.tabs(["땅값 전망", "업종 구성", "땅값 흐름", "점포 수", "AI 해설"], key="detail_tab")
+        t_fc, t_comp, t_land, t_store = st.tabs(["땅값 전망", "업종 구성", "땅값 흐름", "점포 수"], key="detail_tab")
         with t_comp:
             comp_tab("상권", sel, short(sel))
         with t_fc:
@@ -1564,70 +1565,10 @@ if PAGE == "map":
             else:
                 st.info("점포 수 결과 파일이 없습니다.")
 
-        def area_context(code):
-            """AI 해설용 상권 정보 묶음 (지금 화면의 시나리오·업종 가중치 기준)."""
-            return ac.area_context(code, info, fc, IS, ss.ind_w, ind_area, events, st_areas, SCEN_KEY)
-
-        @st.cache_data(show_spinner=False)
-        def ai_area(ctx_text, scen_text, nonce=0):
-            return ac.generate(ac.build_prompt(ctx_text, scen_text, SCEN_HELP),
-                               setting("GEMINI_API_KEY"), setting("GEMINI_MODEL", ac.DEFAULT_MODEL))
-
-        def ai_error_box(err):
-            with st.expander("오류 내용 보기 (발표자용)"):
-                st.code(err, language=None)
-
-        @st.fragment
-        def ai_panel():                                        # 해설 버튼은 이 부분만 다시 그림 (지도는 그대로)
-            key = (sel, scen)
-            ss.setdefault("ai", {})
-            res = ss.ai.get(key)
-            saved = ac.saved_entry(load_ai_saved(ac.SAVED_PATH.stat().st_mtime if ac.SAVED_PATH.exists() else 0), sel)
-            if st.button("AI 해설 다시 받기" if res else "AI 해설 받기", key="ai_btn"):
-                n = ss.get("_ai_n", 0) + (1 if res else 0)
-                with st.spinner("AI가 해설을 쓰는 중입니다. 10초쯤 걸립니다."):
-                    try:
-                        res = {"src": "live", "text": ai_area(ac.context_text(area_context(sel)), scen, n)}
-                        ss._ai_n = n
-                    except Exception as e:
-                        k_ = setting("GEMINI_API_KEY")
-                        err = f"{type(e).__name__}: {e}"
-                        err = err.replace(k_, "****") if k_ else err          # 오류 원문에 키가 섞여도 화면에 나오지 않게
-                        why = "API 키가 설정되어 있지 않습니다." if isinstance(e, ac.NoApiKey) else "인터넷 연결이나 AI 서비스에 문제가 있습니다."
-                        if res and res["src"] == "live":                       # 앞서 받은 실시간 해설은 그대로 둠
-                            res = {**res, "err": err, "why": why}
-                        else:
-                            res = {"src": "saved" if saved else "none", "err": err, "why": why}
-                ss.ai[key] = res
-
-            if res and res["src"] == "live":
-                if res.get("err"):
-                    st.caption(f"새 해설을 받지 못해 앞서 받은 해설을 그대로 보여 드립니다. {res['why']}")
-                st.markdown(res["text"])
-                if res.get("err"):
-                    ai_error_box(res["err"])
-                with st.expander("AI에게 보낸 정보 보기"):
-                    st.json(area_context(sel))
-            elif res and res["src"] == "saved" and saved:
-                st.markdown(f'<span class="ai-saved">미리 만들어 둔 해설({saved["generated_at"][:10]})</span>',
-                            unsafe_allow_html=True)
-                st.caption(f"지금은 AI 해설을 실시간으로 불러올 수 없어 미리 만들어 둔 해설을 보여 드립니다. {res['why']}"
-                           + (f" 이 해설은 '{saved['scenario']}' 시나리오와 기본 업종 가중치를 기준으로 만들었습니다."
-                              if saved["scenario"] else ""))
-                st.markdown(saved["text"])
-                ai_error_box(res["err"])
-                with st.expander("이 해설을 만들 때 쓴 정보 보기"):
-                    st.json(ac.area_context(sel, info, fc, IS, W_DEF, ind_area, events, st_areas, "base"))
-            elif res:
-                st.warning(f"지금은 AI 해설을 불러올 수 없습니다. {res['why']} 잠시 뒤 'AI 해설 다시 받기'를 눌러 주세요.")
-                st.caption("미리 만들어 둔 해설도 없습니다. 발표 전에 python tram_model/make_ai_comments.py 를 실행해 두세요.")
-                ai_error_box(res["err"])
-            else:
-                st.caption("진단·예측·상권 가치(땅값) 기준 트램 효과·업종 점수를 근거로 해설을 만듭니다. 받은 해설은 다른 상권을 보고 와도 남아 있습니다."
-                           + (" 실시간 호출이 안 되면 미리 만들어 둔 해설을 보여 드립니다." if saved else ""))
-
-        with t_ai:
-            ai_panel()
+        _ab1, _ab2 = st.columns([1, 4])
+        _ab1.button("AI 해설 보기", icon=":material/smart_toy:", key="to_ai", on_click=lambda: ss.update(page="ai", ai_pick=sel),
+                    help="이 상권의 AI 해설 화면으로 (프리미엄: 질문을 적어 맞춤 해설)")
+        _ab2.caption("AI 해설은 별도 화면으로 옮겼습니다. 진단·전망·업종 점수·임대료 신호를 근거로 설명하고, 프리미엄에서는 묻고 싶은 것을 적어 맞춤 답을 받습니다.")
 
 # ================================================================ 페이지 1-2: 3D 지도 (넓게)
 elif PAGE == "map3d":
@@ -1807,6 +1748,13 @@ elif PAGE == "industry":
             if ss.ind_w != W_DEF:
                 b2.caption("조정한 가중치로 지도·순위를 계산 중 (기본: " +
                            ", ".join(f"{ITEM.get(k, k)} {v:.0f}" for k, v in W_DEF.items()) + ")")
+
+# ================================================================ 페이지 4: AI 상권 해설 (프리미엄)
+elif PAGE == "ai":
+    ai_page.render(st, dict(info=info, fc=fc, IS=IS, weights=ss.ind_w, ind_area=ind_area, events=events, st_areas=st_areas,
+                            scen_key=SCEN_KEY, scen_text=scen, scen_help=SCEN_HELP, rentp=rentp, comp=comp89,
+                            tour=read_csv(f"{OUT}/tourism_layer.csv", dtype={"id": str}),
+                            api_key=setting("GEMINI_API_KEY"), model=setting("GEMINI_MODEL", ac.DEFAULT_MODEL), names=NM))
 
 # ================================================================ 페이지 4: 트램과 관광 (부수 효과)
 elif PAGE == "tourism":
