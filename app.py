@@ -172,6 +172,7 @@ h1.page-t{font-family:'Newsreader','Noto Serif KR',serif;font-weight:300;font-si
 .st-key-stnpanel{background:#fff;border-left:4px solid #23272e !important}   /* DESIGN Station Card: 노선 위의 한 점 */
 .ai-saved{display:inline-block;padding:2px 10px;border-radius:6px;font-size:13px;font-weight:600;color:#2a332a;background:#eff2e8;border:1px solid #c9d5c5}
 .lg{display:flex;align-items:center;gap:8px;font-size:13px;color:#2a332a;margin:2px 0 4px 0;flex-wrap:wrap}
+.lg .it{display:inline-flex;align-items:center;white-space:nowrap}
 .lg .bar{width:180px;height:10px;border-radius:3px}.lg .dot{width:11px;height:11px;border-radius:50%;display:inline-block;margin:0 4px 0 10px}
 .maphead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px;
   border:1px solid #e1e6df;border-bottom:none;border-radius:10px 10px 0 0;padding:8px 12px;background:#fff;margin-bottom:-2px}
@@ -235,7 +236,7 @@ def legend_bar(label, stops, lo, hi, kind, center=None):
 
 def legend_cat(label, items):
     return f'<div class="lg"><b>{label}</b>' + "".join(
-        f'<span class="dot" style="background:rgb({c[0]},{c[1]},{c[2]})"></span>{n}' for n, c in items) + "</div>"
+        f'<span class="it"><span class="dot" style="background:rgb({c[0]},{c[1]},{c[2]})"></span>{n}</span>' for n, c in items) + "</div>"
 
 
 TIP_STYLE = {"backgroundColor": "#ffffff", "color": "#0a1d08", "fontSize": "12.5px", "lineHeight": "1.5",
@@ -435,7 +436,7 @@ from about_page import open_about, other_sectors_line
 
 _qp = st.query_params if hasattr(st, "query_params") else {}
 if "page" not in ss:
-    ss.page = "map" if (_qp.get("view") == "map" or _qp.get("area")) else "cover"
+    ss.page = "map" if (_qp.get("view") == "map" or _qp.get("area") or _qp.get("dong")) else "cover"
 if ss.page == "cover":
     _stats = {"rebound": int((prof.quadrant == "트램 반등 기회").sum()) if "quadrant" in prof else "-",
               "base": f"{_TS['base'].effect_pct:+.1f}%" if "base" in _TS else "-",
@@ -494,7 +495,7 @@ ss.setdefault("show_region", False)                       # 대전 전체 권역
 ss.setdefault("show_label", True)
 ss.setdefault("map_view", "평면")
 UNITS = ["핵심 상권 20", "행정동 82"] if dprof is not None and dgj is not None else ["핵심 상권 20"]
-ss.setdefault("unit_saved", UNITS[0])
+ss.setdefault("unit_saved", UNITS[-1] if _qp.get("unit") == "dong" and len(UNITS) > 1 else UNITS[0])
 if ss.unit_saved not in UNITS:
     ss.unit_saved = UNITS[0]
 MAP_VIEWS = ["평면", "3D"] if map3d is not None else ["평면"]
@@ -772,6 +773,8 @@ for _mk in ("map3d", "map3d_full"):                       # 3D 지도 클릭: {"
         ss.sel_area, ss.page = _m3["goto"], "map"
         st.rerun()
 sel = ss.sel_area
+if dprof is not None and "sel_dong" not in ss and str(qp.get("dong") or "") in set(dprof.dong_id):   # 공유 링크의 동
+    ss.sel_dong = str(qp.get("dong"))
 if dprof is not None and ss.get("sel_dong") not in set(dprof.dong_id):   # 처음: 반등 기회 동 중 위험 1위
     _rd = dprof[dprof.quadrant_after == "트램 반등 기회"].sort_values("risk_score", ascending=False).dong_id
     ss.sel_dong = _rd.iloc[0] if len(_rd) else dprof.dong_id.iloc[0]
@@ -1553,8 +1556,17 @@ if PAGE == "map":
                                 "골목상권 누적은 월간 상권동향 보고서(2026-01~07)의 전월 대비 %를 곱한 값으로 12월→7월 계절성이 섞여 있음.")
             st.caption(src(f"{SRC_AREA} (진단 근거·지표)", f"{SRC_TRAM} (트램 효과 수준)"))
 
-    try:                                                   # 공유 링크: 지금 선택이 주소창에 남음
-        st.query_params["area"] = sel
+    try:                                                   # 공유 링크: 지금 선택이 주소창에 남음 (보기 단위에 맞는 키만)
+        if DONG:
+            st.query_params["unit"] = "dong"
+            st.query_params["dong"] = str(ss.sel_dong)
+            if "area" in st.query_params:
+                del st.query_params["area"]
+        else:
+            st.query_params["area"] = sel
+            for _k in ("unit", "dong"):
+                if _k in st.query_params:
+                    del st.query_params[_k]
         if ss.sel_station is not None:
             st.query_params["station"] = str(ss.sel_station)
         elif "station" in st.query_params:
