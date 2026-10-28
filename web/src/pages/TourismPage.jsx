@@ -2,6 +2,7 @@ import { useState } from "react";
 import MapView from "../MapView.jsx";
 import { Loading, Tabs, Seg } from "../ui.jsx";
 import { useData, pct, short } from "../lib.js";
+import { KINDS, poiKind, badgeColor, iconSvg, BADGE } from "../icons.js";
 
 export default function TourismPage() {
   const { data, error } = useData(["tourism", "meta", "geo_dongs", "geo_gu"]);
@@ -37,9 +38,7 @@ function Daejeon({ D }) {
     </div>
     <div className="split" style={{ marginTop: 0 }}>
       <div className="mapbox">
-        <div className="maphead"><div className="lg"><span className="it"><span className="dot" style={{ background: "rgb(127,79,36)" }} />관광지 {T.poi.filter(p => !p.gateway && p.lat).length}곳</span>
-          <span className="it"><span className="dot" style={{ background: "#23272e" }} />관문(교통) {T.poi.filter(p => p.gateway && p.lat).length}곳</span>
-          <span className="it muted">대략적 위치(약 100m)</span></div>
+        <div className="maphead"><PoiLegend pois={T.poi.filter(p => p.lat)} />
           <div className="sym"><span><span className="ln" />트램 2호선</span><span><span className="st" />정거장</span></div></div>
         <MapView keyProp="dong_id" gu={D.geo_gu} polys={D.geo_dongs} polyAlpha={60} fill={{}} fillKey="t" stations={D.meta.stations} route={D.meta.route} tramAfter
           pois={T.poi.filter(p => p.lat)} stationTip={s => { const t = S.find(x => x.station_no === s.no); return `<b>${s.no}번 ${s.name}</b><br/>${t?.pois || "500m 안 관광지 없음"}`; }}
@@ -108,4 +107,22 @@ function How({ T }) {
         <td className="small">{r.city_system}</td><td className="small">{r.finding}</td><td>{r.url && <a href={r.url} target="_blank" rel="noopener noreferrer">원문</a>}</td></tr>)}</tbody></table></div>
     <p className="src">자세한 근거: 트램 관광 효과 문헌 90건 · 관광지 67곳 인터넷 대조 검증</p>
   </>;
+}
+
+// 지도 범례: 쓰인 그림 종류만, 개수와 함께 (관문 먼저)
+function PoiLegend({ pois }) {
+  const cnt = {};
+  pois.forEach(p => { const k = poiKind(p); cnt[k] = (cnt[k] || 0) + 1; });
+  const order = ["train", "bus", ...Object.keys(KINDS).filter(k => k !== "train" && k !== "bus")].filter(k => cnt[k]);
+  return (
+    <div className="poi-lg">
+      {order.map(k => (
+        <span key={k} className="it">
+          <span className="ic" aria-hidden="true" dangerouslySetInnerHTML={{ __html: iconSvg(k, k === "train" || k === "bus" ? BADGE.gate : BADGE.poi, 20) }} />
+          {KINDS[k].label} {cnt[k]}
+        </span>
+      ))}
+      <span className="it muted small">작은 그림 = 소규모 문화재 · 위치는 대략(약 100m)</span>
+    </div>
+  );
 }

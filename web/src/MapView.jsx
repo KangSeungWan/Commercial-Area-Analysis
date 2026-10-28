@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { poiKind, badgeColor, ATLAS_URL, ATLAS_MAP } from "./icons.js";
 import { ROUTE_C } from "./lib.js";
 
 const TIP = { backgroundColor: "#fff", color: "#0a1d08", fontSize: "12.5px", lineHeight: "1.5", borderRadius: "8px", border: "1px solid #e1e6df",
@@ -123,8 +124,10 @@ export default function MapView(p) {
       autoHighlight: true, highlightColor: [35, 39, 46, 255], updateTriggers: { getLineColor: P.tramAfter } }));
     if (sel) L.push(new D.ScatterplotLayer({ id: "selstop", data: [sel], getPosition: d => [d.lon, d.lat], getRadius: 90, radiusMinPixels: 7,
       getFillColor: [...ROUTE_C, 255], getLineColor: [255, 255, 255, 255], stroked: true, lineWidthMinPixels: 2 }));
-    if (P.pois?.length) L.push(new D.ScatterplotLayer({ id: "pois", data: P.pois, getPosition: d => [d.lon, d.lat], getRadius: 40, radiusMinPixels: 3.5,
-      getFillColor: d => d.gateway ? [35, 39, 46, 255] : [127, 79, 36, 220], getLineColor: [255, 255, 255, 255], stroked: true, lineWidthMinPixels: 1, pickable: true }));
+    // 관광지·관문: 종류별 그림 배지(icons.js). 문화재(소규모)는 작게
+    if (P.pois?.length) L.push(new D.IconLayer({ id: "pois", data: P.pois, getPosition: d => [d.lon, d.lat],
+      iconAtlas: ATLAS_URL, iconMapping: ATLAS_MAP, getIcon: d => poiKind(d) + badgeColor(d),
+      getSize: d => (d.gateway ? 30 : d.type === "문화재(소규모)" ? 18 : 25), sizeUnits: "pixels", pickable: true, autoHighlight: false }));
     if (P.gu?.labels?.length && P.showGu !== false) L.push(new D.TextLayer({ id: "gu-names", data: P.gu.labels, getPosition: d => d.pos,
       getText: d => d.name.split("").join(" "), characterSet: "auto", fontFamily: "Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif",
       fontWeight: 700, getSize: 15, getColor: [91, 103, 81, 235], fontSettings: { sdf: true }, outlineWidth: 5, outlineColor: [252, 252, 249, 240], pickable: false }));
