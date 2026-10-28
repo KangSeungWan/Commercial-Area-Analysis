@@ -535,16 +535,20 @@ def _pick_mm(widget):
             ss.mm = "quadrant"
     return cb
 _SCEN_ORD = ["tram_effect_low", "tram_effect", "tram_effect_high"]     # 화면 순서: 낮음 · 기본 · 높음
+SHOW_TRAM = PAGE in ("map", "map3d", "industry")            # 건설 전/후 값을 실제로 쓰는 화면만
+SHOW_SCEN = PAGE in ("map", "map3d", "industry", "compare", "ai")   # 시나리오 값을 쓰는 화면 (관광은 둘 다 안 씀)
 with st.container(horizontal=True, vertical_alignment="bottom", gap="medium", key="ctlbar"):
     if PAGE in ("map", "compare") and len(UNITS) > 1:
         st.segmented_control("보기 단위", UNITS, key="unit_w", required=True, on_change=_keep("unit_saved", "unit_w"),
                              help="핵심 상권 20: 점포가 모인 상권(트램 500m 효과를 재는 단위) / "
                                   "행정동 82: 대전 전체를 행정동으로 나눠 같은 방식으로 진단(82개 동 안 상대 순위)")
-    st.segmented_control("트램 2호선", TRAM_MODES, key="tram_w", required=True, on_change=_keep("tram_saved", "tram_w"),
-                         help="건설 전: 트램이 없을 때의 진단·전망, 노선은 옅은 계획선 / "
-                              "건설 후: 상권 가치(땅값) 효과를 넣은 진단·전망·업종 점수(트램이 닿는 상권만 오름)")
-    st.segmented_control("상권 가치 효과 시나리오", sorted(SCEN, key=lambda k: _SCEN_ORD.index(SCEN[k])), key="scen_w",
-                         required=True, on_change=_keep("scen_saved", "scen_w"), disabled=ss.tram_saved != "건설 후",
+    if SHOW_TRAM:
+        st.segmented_control("트램 2호선", TRAM_MODES, key="tram_w", required=True, on_change=_keep("tram_saved", "tram_w"),
+                             help="건설 전: 트램이 없을 때의 진단·전망, 노선은 옅은 계획선 / "
+                                  "건설 후: 상권 가치(땅값) 효과를 넣은 진단·전망·업종 점수(트램이 닿는 상권만 오름)")
+    if SHOW_SCEN:
+        st.segmented_control("상권 가치 효과 시나리오", sorted(SCEN, key=lambda k: _SCEN_ORD.index(SCEN[k])), key="scen_w",
+                         required=True, on_change=_keep("scen_saved", "scen_w"), disabled=SHOW_TRAM and ss.tram_saved != "건설 후",
                          help=" / ".join(SCEN_HELP) + " · 효과 = 수준 × 업종 비율 × 상권 중 500m 안 비율 · "
                               f"상권 가치(땅값) 효과 = {TRAM_DEF} · 건설 전에는 쓰지 않음")
 top = st.container() if PAGE == "map" else None           # 지도 화면: 결론 띠 자리 (값이 정해진 뒤 채움)
@@ -1624,7 +1628,7 @@ if PAGE == "map":
         _ab1, _ab2 = st.columns([1, 4])
         _ab1.button("AI 해설 보기", icon=":material/smart_toy:", key="to_ai", on_click=lambda: ss.update(page="ai", ai_pick=sel),
                     help="이 상권의 AI 해설 화면으로 (프리미엄: 질문을 적어 맞춤 해설)")
-        _ab2.caption("AI 해설은 별도 화면으로 옮겼습니다. 진단·전망·업종 점수·임대료 신호를 근거로 설명하고, 프리미엄에서는 묻고 싶은 것을 적어 맞춤 답을 받습니다.")
+        _ab2.caption("이 상권의 진단·전망·업종 점수·임대료 신호를 AI가 풀어 설명합니다. 궁금한 것을 직접 물어볼 수도 있습니다.")
 
 # ================================================================ 페이지 1-2: 3D 지도 (넓게)
 elif PAGE == "map3d":

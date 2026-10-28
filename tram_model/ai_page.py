@@ -28,12 +28,10 @@ def _mask(text, key):
 
 def render(st, D):
     st.markdown('<h1 class="page-t">AI 상권 해설</h1>', unsafe_allow_html=True)
-    c1, c2 = st.columns([3, 2])
-    with c1:
-        st.caption("상권을 고르면 진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 해설을 받습니다. "
-                   "**프리미엄**에서는 묻고 싶은 것을 직접 적어 그 상권에 맞춘 답을 함께 받습니다. "
-                   "숫자는 모두 이 앱의 분석 결과에서 나오고, AI는 그것을 설명·해석하는 역할만 합니다.")
-    with c2:
+    st.caption("상권을 고르면 진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 해설을 받습니다. "
+               "**프리미엄**에서는 묻고 싶은 것을 직접 적어 그 상권에 맞춘 답을 함께 받습니다. "
+               "숫자는 모두 이 앱의 분석 결과에서 나오고, AI는 그것을 설명·해석하는 역할만 합니다.")
+    with st.expander("이용 방식 (무료 · 프리미엄, 요금 예시)", expanded=False):          # 분석 시연에서 요금표가 앞에 나오지 않게 접어 둠
         st.markdown("".join(
             f'<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:3px 0;border-bottom:1px solid #eee">'
             f'<span><b>{n}</b> · {d}</span><span style="white-space:nowrap">{p}</span></div>'
