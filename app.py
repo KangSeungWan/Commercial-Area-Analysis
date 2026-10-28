@@ -268,10 +268,10 @@ def _bbox(geo):
 
 # 지도 화면: 지도가 화면 왼쪽 약 60%로 줄어듦 → 20개 상권 핵심 영역 + 정거장 전체가 들어가게 맞춤
 # (상권은 남북 약 17km로 세로가 김 → 높이가 줌을 정함. 폭은 1440px 화면의 지도 칸 약 560px 기준)
-MAP_H, MAP_W = 600, 560
+MAP_H, MAP_W = 600, 610                                  # 지도 칸 실제 폭: 1100px 화면 약 580px, 1440px 약 610~790px → 좁은 쪽에 맞춤
 MAP3D_H = 780                                              # '3D 지도' 화면 높이 (노트북 한 화면에 조작 줄과 함께 들어가게)
 _xs, _ys = _bbox(gj)
-VIEW_MAP = fit_view(_xs + stations.lon.tolist(), _ys + stations.lat.tolist(), MAP_W, MAP_H)
+VIEW_MAP = fit_view(_xs + stations.lon.tolist(), _ys + stations.lat.tolist(), MAP_W, MAP_H, pad=0.04)
 IND_H = 460                                                # 업종 점수 화면 지도 (본문 폭 약 1000px)
 VIEW_IND = fit_view(_xs + stations.lon.tolist(), _ys + stations.lat.tolist(), 900, IND_H)
 
@@ -483,7 +483,7 @@ if ss.get("mm") not in MAPM:
     ss.mm = "quadrant"
 ss.setdefault("tram_saved", "건설 후")
 ss.setdefault("scen_saved", list(SCEN)[0])
-ss.setdefault("show_region", True)
+ss.setdefault("show_region", False)                       # 대전 전체 권역 채우기: 분석 대상처럼 보여 기본 끔(⚙ 에서 켬)
 ss.setdefault("show_label", True)
 ss.setdefault("map_view", "평면")
 UNITS = ["핵심 상권 20", "행정동 82"] if dprof is not None and dgj is not None else ["핵심 상권 20"]
@@ -512,7 +512,21 @@ if st.sidebar.button("처음 화면으로", use_container_width=True, key="to_co
 st.sidebar.caption("자료 출처 · " + SRC_8989_FULL)
 
 # ================================================================ 조작 줄 (모든 화면 맨 위: 건설 전/후 + 시나리오)
-ss.tram_w, ss.mm_w, ss.scen_w, ss.unit_w = ss.tram_saved, ss.mm, ss.scen_saved, ss.unit_saved
+MM_CORE = [k for k in ("quadrant", "tram_sel", "comp", "rent") if k in MAPM]
+MM_REF = [k for k in MAPM if k not in MM_CORE]
+ss.tram_w, ss.scen_w, ss.unit_w = ss.tram_saved, ss.scen_saved, ss.unit_saved
+ss.mm_w = ss.mm if ss.mm in MM_CORE else None
+ss.mmr_w = ss.mm if ss.mm in MM_REF else None
+
+
+def _pick_mm(widget):
+    def cb():
+        v = ss.get(widget)
+        if v:
+            ss.mm = v
+        elif widget == "mmr_w":                             # 참고 지표 ✕ 로 지우면 진단으로
+            ss.mm = "quadrant"
+    return cb
 _SCEN_ORD = ["tram_effect_low", "tram_effect", "tram_effect_high"]     # 화면 순서: 낮음 · 기본 · 높음
 with st.container(horizontal=True, vertical_alignment="bottom", gap="medium", key="ctlbar"):
     if PAGE in ("map", "compare") and len(UNITS) > 1:
@@ -528,8 +542,12 @@ with st.container(horizontal=True, vertical_alignment="bottom", gap="medium", ke
                               f"상권 가치(땅값) 효과 = {TRAM_DEF} · 건설 전에는 쓰지 않음")
 top = st.container() if PAGE == "map" else None           # 지도 화면: 결론 띠 자리 (값이 정해진 뒤 채움)
 if PAGE == "map":
-    st.segmented_control("지도에 칠할 것", list(MAPM), key="mm_w", required=True, format_func=MAPM_SHORT.get,
-                         on_change=_keep("mm", "mm_w"), help="업종별 점수 지도는 '업종 점수' 화면에 있음")
+    with st.container(horizontal=True, vertical_alignment="bottom", gap="small", key="mmbar"):
+        st.segmented_control("지도에 칠할 것", MM_CORE, key="mm_w", format_func=MAPM_SHORT.get,
+                             on_change=_pick_mm("mm_w"), help="발표 순서: 진단 → 상권 가치 → 업종 → 임대료. 업종별 점수 지도는 '업종 점수' 화면에 있음")
+        if MM_REF:
+            st.selectbox("참고 지표", MM_REF, key="mmr_w", index=None, placeholder="참고 지표 ▾", format_func=MAPM_SHORT.get,
+                         on_change=_pick_mm("mmr_w"), label_visibility="collapsed", width=150)
 if ss.pop("open_tram_ev", False):                          # 결론 띠의 '트램 효과 근거' 버튼 → 팝업 (컨테이너 밖에서 열기)
     open_tram_evidence(st)
 tram_mode = ss.tram_saved
@@ -556,10 +574,13 @@ if fc is not None:
 def comp_rent_metrics(row, a, b):
     """패널 지표 2개: 업종 변화(카페) · 임대료 부담 위험."""
     pp, now, y34, add = row.get("comp_pp"), row.get("comp_now"), row.get("comp_2034"), row.get("comp_add")
+    notes = []
     if pd.notna(pp):
         a.metric("업종 변화 (카페)", f"+{pp:.1f}%p" if tram_after else "없음",
-                 (f"카페·빵집 비중 {now * 100:.1f}→{y34 * 100:.1f}% · 카페 +{add:.0f}곳(2034)" if tram_after
-                  else f"건설 후 +{pp:.1f}%p ({scen.split()[0]} 시나리오)"), delta_color="off", delta_arrow="off", help=HELP["comp"])
+                 (f"카페 +{add:.0f}곳 (2034)" if tram_after
+                  else f"건설 후 +{pp:.1f}%p"), delta_color="off", delta_arrow="off", help=HELP["comp"])
+        if tram_after:
+            notes.append(f"카페·빵집 비중 {now * 100:.1f}→{y34 * 100:.1f}%")
     else:
         a.metric("업종 변화 (카페)", "-")
     g = row.get("rent") if tram_after else "해당 없음"
@@ -567,9 +588,12 @@ def comp_rent_metrics(row, a, b):
     stab = row.get("rent_stab")
     stab_txt = (f" · 가중치 8변형 중 {stab * 100:.0f}% 같은 등급" + (" ⚑ 민감" if stab < 0.6 else "")) if pd.notna(stab) and tram_after and g != "해당 없음" else ""
     b.metric("임대료 부담 신호", (g + (" ⚑" if pd.notna(stab) and stab < 0.6 else "")) if isinstance(g, str) else "-",
-             ((f"높은 요소: {drv}" if drv else "") + " · 상대 순위, 금액 아님" + stab_txt) if tram_after and g != "해당 없음"
+             "상대 순위 · 금액 아님" if tram_after and g != "해당 없음"
              else ("트램 효과가 거의 없는 곳" if g == "해당 없음" and tram_after else None),
              delta_color="off", delta_arrow="off", help=HELP["rent"])
+    if tram_after and g != "해당 없음" and (drv or stab_txt):
+        notes.append("임대료 신호 " + (f"높은 요소: {drv}" if drv else "") + stab_txt)
+    return notes
 
 
 def rent_market_line(code):
@@ -967,10 +991,17 @@ if PAGE == "map":
             st.pills("트램 반등 기회 행정동", rebd, key="dchip_w",
                      format_func=lambda c: dinfo.loc[c, "dong"] + (" ⚠" if c in hi else ""),
                      on_change=_pickd("dchip_w"), label_visibility="collapsed")
+        else:
+            hi = []
+        kbox = st.container()
+        det = st.expander("이야기 순서 ①~⑤ · 숫자 읽는 법", expanded=False)
+        with det:
+            story_bar()
             if hi:
                 st.markdown(f'<div class="rentnote"><span class="dot" style="background:{RENT_HEX["높음"]}"></span>'
                             f'그중 <b>{len(hi)}곳</b>은 임대료 부담 신호가 높음(⚠) = <b>조건부 기회</b> — 땅값은 오르지만 점포당 매출은 거의 그대로일 곳. '
                             '건물주의 기회가 기존 상인의 기회가 되려면 개통 뒤 보호 장치가 필요</div>', unsafe_allow_html=True)
+        with det:
             sens_d = [dinfo.loc[c, "dong"] for c in dprof.dong_id if ("행정동", str(c)) in SENS]
             if sens_d:
                 st.caption("⚑ 정거장 추정 좌표에 따라 진단이 바뀔 수 있는 동: " + ", ".join(sens_d)
@@ -983,14 +1014,19 @@ if PAGE == "map":
         cnt = dprof.quadrant.value_counts()
         tot = dprof.money_gain_base_eok.sum() if "money_gain_base_eok" in dprof else None
         gk = f"money_gain_{SCEN_KEY}_eok"
-        st.markdown('<div class="kpi">' + "".join(
-            f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
-            for q in QC if cnt.get(q, 0))
-            + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(float(dprof[gk].sum()))}</b> (82개 동 합계, 공시지가 기준)</span>'
-               if tram_after and gk in dprof and tot else "")
-            + '</div>', unsafe_allow_html=True)
-        st.caption(src(f"{SRC_DONG} (82개 행정동 진단·지표)", f"{SRC_TRAM} (트램 효과 수준)")
-                   + " · 진단은 82개 동 안 상대 순위라 핵심 상권 20의 진단과 다를 수 있음")
+        nsig = sum(1 for c in dprof.dong_id if ("행정동", str(c)) in SENS or DEV.get(str(c), ("",))[0] == "개발지")
+        with kbox:
+            st.markdown('<div class="kpi">' + "".join(
+                f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
+                for q in QC if cnt.get(q, 0))
+                + (f'<span class="sep">⚠ 임대료 신호 높음 · ⚑ 좌표 민감 · ⌂ 개발지 — 아래 펼쳐서 확인</span>' if (hi or nsig) else "")
+                + '</div>', unsafe_allow_html=True)
+        with det:
+            if tram_after and gk in dprof and tot:
+                st.markdown(f'<div class="kpi"><span class="sep">정거장 500m 안 땅값 <b>+{eok(float(dprof[gk].sum()))}</b> (82개 동 합계, 공시지가 기준)</span></div>',
+                            unsafe_allow_html=True)
+            st.caption(src(f"{SRC_DONG} (82개 행정동 진단·지표)", f"{SRC_TRAM} (트램 효과 수준)")
+                       + " · 진단은 82개 동 안 상대 순위라 핵심 상권 20의 진단과 다를 수 있음")
 
     def dong_panel():                                      # 행정동 보기의 오른쪽 패널
         k = ss.sel_dong
@@ -1065,12 +1101,16 @@ if PAGE == "map":
                            + (f". 트램 뒤 점포당 매출 변화는 땅값보다 작을 것(1호선 역세권: 땅값 효과의 {SALES_RATIO:.2f}배)" if SALES_RATIO else ""))
             mv = d.get(f"money_gain_{SCEN_KEY}_eok")
             m1.metric("상권 가치 효과", f"{d.tram_sel:+.1f}%" if tram_after else "없음",
-                      ((f"500m 안 땅값 +{eok(mv)} · " if pd.notna(mv) and mv > 0 else "") + tram_range(d)) if tram_after
-                      else f"건설 후 {d.tram_sel:+.1f}% ({scen})",
+                      (f"500m 안 땅값 +{eok(mv)}" if pd.notna(mv) and mv > 0 else tram_range(d)) if tram_after
+                      else f"건설 후 {d.tram_sel:+.1f}%",
                       delta_color="off", delta_arrow="off",
                       help=TRAM_DEF + f" · 지금 시나리오: {scen} · 동 효과 = 동 점포 중 500m 안 비율 × 수준"
                            + " · 금액 = 동 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외)")
-            comp_rent_metrics(d, m2, m3)
+            _nt = comp_rent_metrics(d, m2, m3)
+            if tram_after and tram_range(d):
+                _nt.insert(0, f"상권 가치 효과 {tram_range(d)}")
+            if _nt:
+                st.caption(" · ".join(_nt))
             notes = [f"주요 업종: {d.top3}"] if pd.notna(d.get("top3")) else []
             if isinstance(d.get("areas"), str) and d.areas:
                 notes.append(f"겹치는 핵심 상권: {d.areas}")
@@ -1110,7 +1150,6 @@ if PAGE == "map":
 
     # ================================================================ ① 결론 띠 (조작 줄보다 위)
     with top:
-        story_bar()
         if DONG:
             dong_verdict()
         else:
@@ -1127,25 +1166,31 @@ if PAGE == "map":
                 hi = [c for c in REB if tram_after and "rent" in info and info.loc[c, "rent"] == "높음"]
                 st.pills("트램 반등 기회 상권", REB, key="chip_w", format_func=lambda c: short(c) + (" ⚠" if c in hi else ""),
                          on_change=_pick("chip_w"), label_visibility="collapsed")
-                if hi:
-                    st.markdown(f'<div class="rentnote"><span class="dot" style="background:{RENT_HEX["높음"]}"></span>'
-                                f'그중 <b>{len(hi)}곳</b>은 임대료 부담 신호가 높음(⚠) = <b>조건부 기회</b> — 땅값은 오르지만 점포당 매출은 거의 그대로일 곳. '
-                                '건물주의 기회가 기존 상인의 기회가 되려면 개통 뒤 보호 장치가 필요</div>', unsafe_allow_html=True)
+            else:
+                hi = []
             if "quadrant" in prof:
                 cnt = prof.quadrant.value_counts()
                 with st.container(horizontal=True, vertical_alignment="center", gap="small"):
                     st.markdown('<div class="kpi">' + "".join(
                         f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
                         for q in QC if cnt.get(q, 0))
-                        + (f'<span class="sep">상권 가치(땅값) 효과: 상권 전체로 펴면 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
-                             f'(정거장 500m 안 {_TS[SCEN_KEY].effect_pct:+.1f}% × 500m 안 점포 비율)</span>'
-                           if tram_after and SCEN_KEY in _TS else "")
-                        + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
-                           f'(공시지가 기준, 개통 1~4년)</span>' if tram_after and money_of("ALL", SCEN_KEY) else "")
+                        + (f'<span class="sep">⚠ = 임대료 부담 신호 높음(조건부 기회)</span>' if hi else "")
                         + '</div>', unsafe_allow_html=True, width="content")
                     st.button("트램 효과 근거", icon=":material/fact_check:", type="tertiary", key="tram_ev_top",
                               on_click=lambda: ss.update(open_tram_ev=True),
                               help="트램 효과 숫자의 근거: 대전 1호선 땅값·점포 분석, 해외 트램 사례, 앱에 쓰는 방식")
+            with st.expander("이야기 순서 ①~⑤ · 숫자 읽는 법", expanded=False):
+                story_bar()
+                if hi:
+                    st.markdown(f'<div class="rentnote"><span class="dot" style="background:{RENT_HEX["높음"]}"></span>'
+                                f'반등 기회 중 <b>{len(hi)}곳</b>은 임대료 부담 신호가 높음(⚠) = <b>조건부 기회</b> — 땅값은 오르지만 점포당 매출은 거의 그대로일 곳. '
+                                '건물주의 기회가 기존 상인의 기회가 되려면 개통 뒤 보호 장치가 필요</div>', unsafe_allow_html=True)
+                if tram_after and SCEN_KEY in _TS:
+                    st.markdown(f'<div class="kpi"><span class="sep">상권 가치(땅값) 효과: 상권 전체로 펴면 평균 <b>{prof.tram_sel.mean():+.1f}%</b> '
+                                f'(정거장 500m 안 {_TS[SCEN_KEY].effect_pct:+.1f}% × 500m 안 점포 비율)</span>'
+                                + (f'<span class="sep">정거장 500m 안 땅값 <b>+{eok(money_of("ALL", SCEN_KEY))}</b> '
+                                   f'(공시지가 기준, 개통 1~4년)</span>' if money_of("ALL", SCEN_KEY) else "")
+                                + '</div>', unsafe_allow_html=True)
                 st.caption(src(f"{SRC_AREA} (진단·상권 값)", f"{SRC_TRAM} (트램 효과 수준)"))
 
     # ================================================================ ③ 지도 | 선택 상권
@@ -1449,13 +1494,17 @@ if PAGE == "map":
                       help=HELP["close_rate_q_pct"])
             _mv = money_of(sel, SCEN_KEY)
             m1.metric("상권 가치 효과", f"{r.tram_sel:+.1f}%" if tram_after else "없음",
-                      ((f"500m 안 땅값 +{eok(_mv)} · " if _mv else "") + tram_range(r)) if tram_after
-                      else f"건설 후 {r.tram_sel:+.1f}% ({scen})" + (f" · +{eok(_mv)}" if _mv else ""),
+                      (f"500m 안 땅값 +{eok(_mv)}" if _mv else tram_range(r)) if tram_after
+                      else f"건설 후 {r.tram_sel:+.1f}%",
                       delta_color="off", delta_arrow="off",
                       help=TRAM_DEF + f" · 지금 시나리오: {scen}"
                            + (" · 금액 = 이 상권 안 정거장 500m 필지의 2026 공시지가 총액 × 효과 % (공공 시설 땅 제외, 시세로는 더 큼)"
                               if _mv else ""))
-            comp_rent_metrics(r, m2, m3)
+            _nt = comp_rent_metrics(r, m2, m3)
+            if tram_after and tram_range(r):
+                _nt.insert(0, f"상권 가치 효과 {tram_range(r)}")
+            if _nt:
+                st.caption(" · ".join(_nt))
             _rm = rent_market_line(sel)
             if _rm:
                 st.caption(_rm, help="한국부동산원 상업용부동산 임대동향(2022~2026). 부동산원 상권 경계는 이 앱의 상권과 달라 이름으로 대응했고, "
