@@ -14,3 +14,8 @@ tram_model/outputs/parcel_value.csv.gz
 
 # 8989 상권분석 원본 (대용량, 약관상 재배포 금지)
 tram_model/data/raw/8989/raw/
+
+# 웹사이트: 빌드 결과(dist)는 배포용이라 저장소에 넣지 않음 (web/README.md 참고)
+web/dist/
+web/node_modules/
+_to_delete/
