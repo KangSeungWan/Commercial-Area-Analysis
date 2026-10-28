@@ -280,6 +280,8 @@ MAP_H, MAP_W = 600, 610                                  # 지도 칸 실제 폭
 MAP3D_H = 780                                              # '3D 지도' 화면 높이 (노트북 한 화면에 조작 줄과 함께 들어가게)
 _xs, _ys = _bbox(gj)
 VIEW_MAP = fit_view(_xs + stations.lon.tolist(), _ys + stations.lat.tolist(), MAP_W, MAP_H, pad=0.04)
+_dxs, _dys = _bbox(dgj) if dgj is not None else (_xs, _ys)
+VIEW_DONG = fit_view(_dxs, _dys, MAP_W, MAP_H, pad=0.02)   # 행정동 보기: 대전 82개 동 경계 전체가 들어가게
 IND_H = 460                                                # 업종 점수 화면 지도 (본문 폭 약 1000px)
 VIEW_IND = fit_view(_xs + stations.lon.tolist(), _ys + stations.lat.tolist(), 900, IND_H)
 
@@ -390,8 +392,37 @@ SRC_AREA = "outputs/area_profile.csv"                      # 화면 숫자의 �
 SRC_TRAM = "outputs/tram_scenarios.csv"                    # 수준(낮음·기본·높음). 원 추정은 landprice_effects.csv
 
 
+_SRC_NAME = {                                              # 결과 파일 → 화면에 보일 자료 이름 (파일명은 분석 방법 창 '데이터' 탭에)
+    "area_profile": "상권 진단·지표", "tram_scenarios": "트램 효과 수준(대전 1호선)", "dong_map_profile": "행정동 진단·지표",
+    "composition_now": "업종 구성(상가정보 2026-06)", "composition_forecast": "업종 변화 전망", "sector_evidence_share": "업종 근거 점검",
+    "forecast_land": "땅값 전망", "dong_forecast_land": "행정동 땅값 전망", "dong_year_panel": "행정동 땅값(공시지가)",
+    "landprice_area_panel": "상권 땅값(공시지가)", "dong_panel_store": "행정동 점포 수(상가정보)", "store_panel": "상권 점포 수(상가정보)",
+    "dong_panel_8989": "행정동 카드매출", "station_summary": "정거장 500m 요약", "station_areas": "정거장별 상권",
+    "dong_station_summary": "정거장별 행정동", "sangkwon_polygons": "상권 경계", "dong_map": "행정동 경계", "area_events": "상권 사건 목록",
+    "industry_scores": "업종 점수", "industry_score_weights": "업종 점수 가중치", "rent_pressure": "임대료 부담 신호",
+    "dong_tram_money": "트램 효과 금액", "dong_8989_summary": "행정동 카드매출 요약",
+}
+
+
+# 지도 화면 기호 설명 (한 곳에서 같은 문구로: 상권 보기·행정동 보기 집계 줄)
+ICON_KEY = ('<span class="sep" title="⚠ 반등 기회 중 임대료 부담 신호가 높은 곳 · ⚑ 정거장 추정 좌표나 임대료 신호 가중치를 바꾸면 결과가 바뀔 수 있는 곳 · '
+            '⌂ 신도시·택지 개발로 트램 없어도 땅값이 오르는 동 · ? 는 눌러서 설명 보기">'
+            '기호: ⚠ 임대료 신호 높음(조건부 기회) · ⚑ 가정에 민감 · ⌂ 개발지 · ? 설명</span>')
+
+
 def src(*files):
-    return "출처: " + ", ".join(files)
+    """화면 아래 출처 한 줄: 'outputs/x.csv (설명)' → 설명, 설명 없는 파일 → 자료 이름, 나머지 글은 그대로."""
+    import re
+    out = []
+    for f in files:
+        f = str(f)
+        m = re.match(r"^\s*(?:outputs/|data/)\S+\.(?:csv|geojson|json)\s*(?:\((.*)\))?\s*$", f)
+        if m:
+            stem = re.sub(r"^.*/|\.(csv|geojson|json)$", "", f.split(" (")[0].strip())
+            f = m.group(1) or _SRC_NAME.get(stem, stem)
+        if f and f not in out:
+            out.append(f)
+    return "자료: " + " · ".join(out)
 
 
 def eok(v):
@@ -825,30 +856,49 @@ def store_chart(code):
     return (line + rule).properties(height=280)
 
 
-def forecast_chart(code, with_tram):
-    f = fc[fc.code == code].set_index("year")
-    h = lp[lp.code == code].set_index("year").idx
+def land_fc_chart(f, h, with_tram):
+    """땅값 전망 그래프 (상권·행정동 공용). f = 전망(연도 색인, 2026=100), h = 실제 지수(2015=100).
+    트램 시나리오와 추세 전망의 차이를 남색 띠로 칠하고 끝에 '트램 몫'을 적음 — 기본 시나리오에서는 두 선이 거의 붙어 차이가 안 보였음."""
     b = h.iloc[-1] / 100
     band = pd.DataFrame({"year": f.index, "lo": f.lo80 * b, "hi": f.hi80 * b})
     parts = [pd.DataFrame({"year": h.loc[2015:].index, "v": h.loc[2015:].values, "구분": "실제"}),
              pd.DataFrame({"year": f.index, "v": f.base_path.values * b, "구분": "추세 전망 (트램 없음)"})]
     dom, rng, dash = ["실제", "추세 전망 (트램 없음)"], ["#222222", "#9aa0a6"], [[1, 0], [5, 4]]
-    if with_tram:
-        parts.append(pd.DataFrame({"year": f.index, "v": f.tram_base.values * b, "구분": "시나리오 (트램 건설 후)"}))
-        dom, rng, dash = dom + ["시나리오 (트램 건설 후)"], rng + [TRAM_INK], dash + [[1, 0]]
-    ln = pd.concat(parts)
-    a_ = alt.Chart(band).mark_area(opacity=.22, color="#9aa0a6").encode(
+    layers = [alt.Chart(band).mark_area(opacity=.12, color="#9aa0a6").encode(
         x=alt.X("year:Q", axis=alt.Axis(format="d"), title=None),
-        y=alt.Y("lo:Q", title="지수 (2015=100)", scale=alt.Scale(zero=False)), y2="hi:Q")
-    l_ = alt.Chart(ln).mark_line(strokeWidth=2.5).encode(
+        y=alt.Y("lo:Q", title="지수 (2015=100)", scale=alt.Scale(zero=False)), y2="hi:Q",
+        tooltip=[alt.Tooltip("year:Q", title="연도"), alt.Tooltip("lo:Q", format=".1f", title="추세 80% 범위 아래"),
+                 alt.Tooltip("hi:Q", format=".1f", title="위")])]
+    if with_tram:
+        col = {"base": "tram_base", "low": "tram_low", "high": "tram_high"}[SCEN_KEY]   # 고른 시나리오 (예전엔 상권 그래프가 늘 기본)
+        tr = f[col].values * b
+        parts.append(pd.DataFrame({"year": f.index, "v": tr, "구분": "시나리오 (트램 건설 후)"}))
+        dom, rng, dash = dom + ["시나리오 (트램 건설 후)"], rng + [TRAM_INK], dash + [[1, 0]]
+        gap = pd.DataFrame({"year": f.index, "lo": f.base_path.values * b, "hi": tr})
+        gap = gap[gap.year >= OPEN_YEAR]
+        layers.append(alt.Chart(gap).mark_area(opacity=.35, color=TRAM_INK).encode(x="year:Q", y="lo:Q", y2="hi:Q"))
+        if len(gap):
+            e = gap.iloc[-1]
+            d_pt, d_pct = e.hi - e.lo, (e.hi / e.lo - 1) * 100 if e.lo else 0
+            lab = pd.DataFrame({"year": [e.year], "v": [e.hi], "t": [f"트램 몫 {d_pct:+.1f}% ({int(e.year)})"]})
+            layers.append(alt.Chart(lab).mark_text(align="right", dx=-4, dy=-10, fontSize=12, fontWeight="bold", color=TRAM_INK)
+                          .encode(x="year:Q", y="v:Q", text="t"))
+    ln = pd.concat(parts)
+    layers.insert(1, alt.Chart(ln).mark_line(strokeWidth=2.5).encode(
         x="year:Q", y="v:Q", color=alt.Color("구분:N", scale=alt.Scale(domain=dom, range=rng),
                                              legend=alt.Legend(orient="top", title=None)),
         strokeDash=alt.StrokeDash("구분:N", scale=alt.Scale(domain=dom, range=dash), legend=None),
-        tooltip=["구분", "year", alt.Tooltip("v:Q", format=".1f")])
+        tooltip=["구분", "year", alt.Tooltip("v:Q", format=".1f")]))
     op = alt.Chart(pd.DataFrame({"year": [OPEN_YEAR], "t": ["트램 개통"]}))
-    return (a_ + l_ + op.mark_rule(color="#23272e", strokeDash=[2, 2]).encode(x="year:Q")
-            + op.mark_text(align="left", dx=4, color="#23272e").encode(x="year:Q", y=alt.value(10), text="t")).properties(height=280)
+    layers += [op.mark_rule(color="#23272e", strokeDash=[2, 2]).encode(x="year:Q"),
+               op.mark_text(align="left", dx=4, color="#23272e").encode(x="year:Q", y=alt.value(10), text="t")]
+    return alt.layer(*layers).properties(height=280)
 
+
+def forecast_chart(code, with_tram):
+    f = fc[fc.code == code].set_index("year")
+    h = lp[lp.code == code].set_index("year").idx
+    return land_fc_chart(f, h, with_tram)
 
 COMP_GROUPS = ["카페", "빵·과자", "식사·주점", "소매", "생활서비스", "교육", "보건의료", "기타"]
 
@@ -907,27 +957,7 @@ def dong_forecast_chart(k, with_tram):
     h = dyp[dyp.dong_id == k].set_index("year").land_idx.dropna()
     if not len(f) or not len(h):
         return None
-    b = h.iloc[-1] / 100
-    band = pd.DataFrame({"year": f.index, "lo": f.lo80 * b, "hi": f.hi80 * b})
-    parts = [pd.DataFrame({"year": h.loc[2015:].index, "v": h.loc[2015:].values, "구분": "실제"}),
-             pd.DataFrame({"year": f.index, "v": f.base_path.values * b, "구분": "추세 전망 (트램 없음)"})]
-    dom, rng, dash = ["실제", "추세 전망 (트램 없음)"], ["#222222", "#9aa0a6"], [[1, 0], [5, 4]]
-    if with_tram:
-        col = {"base": "tram_base", "low": "tram_low", "high": "tram_high"}[SCEN_KEY]
-        parts.append(pd.DataFrame({"year": f.index, "v": f[col].values * b, "구분": "시나리오 (트램 건설 후)"}))
-        dom, rng, dash = dom + ["시나리오 (트램 건설 후)"], rng + [TRAM_INK], dash + [[1, 0]]
-    ln = pd.concat(parts)
-    a_ = alt.Chart(band).mark_area(opacity=.22, color="#9aa0a6").encode(
-        x=alt.X("year:Q", axis=alt.Axis(format="d"), title=None),
-        y=alt.Y("lo:Q", title="지수 (2015=100)", scale=alt.Scale(zero=False)), y2="hi:Q")
-    l_ = alt.Chart(ln).mark_line(strokeWidth=2.5).encode(
-        x="year:Q", y="v:Q", color=alt.Color("구분:N", scale=alt.Scale(domain=dom, range=rng), legend=alt.Legend(orient="top", title=None)),
-        strokeDash=alt.StrokeDash("구분:N", scale=alt.Scale(domain=dom, range=dash), legend=None),
-        tooltip=["구분", "year", alt.Tooltip("v:Q", format=".1f")])
-    op = alt.Chart(pd.DataFrame({"year": [OPEN_YEAR], "t": ["트램 개통"]}))
-    return (a_ + l_ + op.mark_rule(color="#23272e", strokeDash=[2, 2]).encode(x="year:Q")
-            + op.mark_text(align="left", dx=4, color="#23272e").encode(x="year:Q", y=alt.value(10), text="t")).properties(height=280)
-
+    return land_fc_chart(f, h, with_tram)
 
 def dong_land_chart(k, name):
     h = dyp[dyp.dong_id == k][["year", "land_idx"]].dropna().assign(구분=name)
@@ -1033,7 +1063,7 @@ if PAGE == "map":
             st.markdown('<div class="kpi">' + "".join(
                 f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
                 for q in QC if cnt.get(q, 0))
-                + (f'<span class="sep">⚠ 임대료 신호 높음 · ⚑ 좌표 민감 · ⌂ 개발지 — 아래 펼쳐서 확인</span>' if (hi or nsig) else "")
+                + ICON_KEY
                 + '</div>', unsafe_allow_html=True)
         with det:
             if tram_after and gk in dprof and tot:
@@ -1188,7 +1218,7 @@ if PAGE == "map":
                     st.markdown('<div class="kpi">' + "".join(
                         f'<span><span class="dot" style="background:{QHEX[q]}"></span>{q} <b>{cnt.get(q, 0)}</b>곳</span>'
                         for q in QC if cnt.get(q, 0))
-                        + (f'<span class="sep">⚠ = 임대료 부담 신호 높음(조건부 기회)</span>' if hi else "")
+                        + ICON_KEY
                         + '</div>', unsafe_allow_html=True, width="content")
                     st.button("트램 효과 근거", icon=":material/fact_check:", type="tertiary", key="tram_ev_top",
                               on_click=lambda: ss.update(open_tram_ev=True),
@@ -1255,19 +1285,24 @@ if PAGE == "map":
             pri = prof.assign(p=prof.n_stores.fillna(0) + 1e6 * prof.code.isin(REB)    # 선택 > 반등 기회 > 점포 많은 순
                               + 1e9 * (prof.code == sel)).sort_values("p", ascending=False).code
             boxes, lab = [], []
+            GAP, DOT_R = 4, 9                              # 이름 상자 사이 여백, 다른 상권 점을 피하는 반경 (픽셀)
+            dots = {c_: px(*xy_, view=VIEW_MAP) for c_, xy_ in cen_xy.items()}
             for c in pri:
                 if c not in cen_xy:
                     continue
                 t = NM[c].split("(")[0]
                 x, y = px(*cen_xy[c], view=VIEW_MAP)
+                other = [v_ for k_, v_ in dots.items() if k_ != c]
                 em = LABEL_PX / 0.72                       # 한글 높이 약 0.72em, 한 글자 폭 약 1em
                 w, h = len(t) * em + 0.64 * em + 4, 1.24 * em + 3   # 이름 상자 (글자 + 여백) 픽셀 크기
                 for dx, dy in [(0, 0), (0, h), (0, -h), (w / 2 + 6, 0), (-w / 2 - 6, 0), (w / 2 + 6, h), (-w / 2 - 6, h),
                                (w / 2 + 6, -h), (-w / 2 - 6, -h), (0, 1.9 * h), (0, -1.9 * h)]:
                     bx = (x + dx - w / 2, y + dy - h / 2, x + dx + w / 2, y + dy + h / 2)
                     inside = -MAP_W / 2 + 6 < bx[0] and bx[2] < MAP_W / 2 - 6 and -MAP_H / 2 + 6 < bx[1] and bx[3] < MAP_H / 2 - 26
-                    if inside and (c == sel or not any(not (bx[2] < o[0] or bx[0] > o[2] or bx[3] < o[1] or bx[1] > o[3])
-                                                       for o in boxes)):
+                    clash = any(not (bx[2] + GAP < o[0] or bx[0] - GAP > o[2] or bx[3] + GAP < o[1] or bx[1] - GAP > o[3])
+                                for o in boxes)
+                    on_dot = any(bx[0] - DOT_R < ox_ < bx[2] + DOT_R and bx[1] - DOT_R < oy_ < bx[3] + DOT_R for ox_, oy_ in other)
+                    if inside and (c == sel or not (clash or on_dot)):
                         break                              # 지도 틀 안(아래는 지도 출처 표기 자리 비움)이고 안 겹치는 첫 자리
                 else:
                     continue
@@ -1318,7 +1353,7 @@ if PAGE == "map":
                 ring_ = g_["coordinates"][0] if g_["type"] == "Polygon" else max((p_[0] for p_ in g_["coordinates"]), key=len)
                 cx_, cy_ = sum(p_[0] for p_ in ring_) / len(ring_), sum(p_[1] for p_ in ring_) / len(ring_)
                 lb_, lt_ = label_shapes((dinfo.loc[ss.sel_dong, "dong"],), (cx_,), (cy_,), ((0, 0),), (True,),
-                                        view=(VIEW_MAP["latitude"], VIEW_MAP["zoom"]))
+                                        view=(VIEW_DONG["latitude"], VIEW_DONG["zoom"]))
                 if lb_:
                     layers.append(pdk.Layer("GeoJsonLayer", lb_, id="label_bg", filled=True, stroked=False, pickable=False,
                                             get_fill_color="properties.fill"))
@@ -1367,7 +1402,7 @@ if PAGE == "map":
         if not _mv3d:
             show_map(deck(layers, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>"
                                            "<div><span style='color:{qcolor}'>●</span> {type}</div>{val_label}"},
-                          view=pdk.ViewState(**VIEW_MAP, min_zoom=10, max_zoom=16)), height=MAP_H)
+                          view=pdk.ViewState(**(VIEW_DONG if DONG else VIEW_MAP), min_zoom=10, max_zoom=16)), height=MAP_H)
         stn_opts = [0] + list(STN)                         # 0 = 선택 안 함 (None 이면 빈 칸으로 보여서)
         ss.stn_w = ss.sel_station if ss.sel_station in STN else 0
         c_cap, c_stn = st.columns([3, 2], vertical_alignment="center")
@@ -1582,9 +1617,9 @@ if PAGE == "map":
         with d_fc:
             ch_ = dong_forecast_chart(k_, tram_after) if dfl is not None and dyp is not None else None
             if ch_ is not None:
-                st.caption("회색 띠 = 트램 없는 추세 전망(ARIMA)의 80% 범위 · 남색 선 = 거기에 트램 효과 %를 더한 시나리오(모델이 트램을 배운 것이 아님) · 동 점포 중 500m 안 비율만큼 효과")
+                st.caption("남색 띠 = 트램 몫(시나리오 − 추세 전망) · 옅은 회색 띠 = 트램 없는 추세 전망(ARIMA)의 80% 범위 · 남색 선은 추세에 트램 효과 %를 더한 시나리오(모델이 트램을 배운 것이 아님) · 동 점포 중 500m 안 비율만큼 효과")
                 st.altair_chart(ch_)
-                st.caption(src("outputs/dong_forecast_land.csv", "outputs/dong_year_panel.csv (실제 값)"))
+                st.caption(src("outputs/dong_forecast_land.csv", "outputs/dong_year_panel.csv (땅값 실제, 공시지가)"))
             else:
                 st.info("이 동의 땅값 예측 결과가 없습니다.")
         with d_land:
@@ -1615,11 +1650,11 @@ if PAGE == "map":
             comp_tab("상권", sel, short(sel))
         with t_fc:
             if fc is not None and lp is not None and sel in set(fc.code):
-                st.caption("회색 띠 = 트램 없는 추세 전망(ARIMA)의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선 = 거기에 트램 효과 %를 더한 시나리오(모델이 트램을 배운 것이 아님) · "
+                st.caption("남색 띠 = 트램 몫(시나리오 − 추세 전망) · 옅은 회색 띠 = 트램 없는 추세 전망(ARIMA)의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선은 추세에 트램 효과 %를 더한 시나리오(모델이 트램을 배운 것이 아님) · "
                            + ("상권 가치(땅값) 기준 트램 효과는 대전 1호선처럼 개통 1~4년에 가장 크고 이후 줄어듦" if tram_after
                               else "위에서 '건설 후'를 고르면 상권 가치(땅값) 기준 트램 효과 경로가 함께 나옴"))
                 st.altair_chart(forecast_chart(sel, tram_after))
-                st.caption(src("outputs/forecast_land.csv", "outputs/landprice_area_panel.csv (실제 값)"))
+                st.caption(src("outputs/forecast_land.csv", "outputs/landprice_area_panel.csv (땅값 실제, 공시지가)"))
             else:
                 st.info("이 상권의 땅값 예측 결과가 없습니다.")
         with t_land:
@@ -1695,18 +1730,30 @@ elif PAGE == "industry":
             c_ = f["properties"]["code"]
             v_ = _sc.get(c_)
             _fc["features"].append({"type": "Feature", "geometry": f["geometry"], "properties": {
-                "code": c_, "name": NM[c_], "fill": _col[c_][:3] + [200 if c_ == sel else 165],
+                "code": c_, "name": NM[c_], "fill": _col[c_][:3] + ([90 if c_ == sel else 60] if _src is rg else [200 if c_ == sel else 165]),
                 "val_label": f"{cur} 점수 <b>{v_:.0f}</b> (트램 {tram_mode})" if pd.notna(v_) else f"{cur}: 점포 부족"}})
         _sel_fc = {"type": "FeatureCollection", "features": [f for f in _fc["features"] if f["properties"]["code"] == sel]}
+        _vl = {x["properties"]["code"]: x["properties"]["val_label"] for x in _fc["features"]}
+        _core = {"type": "FeatureCollection", "features": [          # 상권 핵심(점포 밀집)만 진하게 — 권역은 옅게 (산·외곽까지 점수처럼 보이지 않게)
+            {"type": "Feature", "geometry": f["geometry"], "properties": {
+                "code": f["properties"]["code"], "name": NM[f["properties"]["code"]],
+                "fill": _col[f["properties"]["code"]][:3] + [225], "val_label": _vl.get(f["properties"]["code"], "")}}
+            for f in gj["features"]]} if _src is rg else None
         _lay = [pdk.Layer("GeoJsonLayer", _fc, id="areas", pickable=True, stroked=True, filled=True,
                           get_fill_color="properties.fill", get_line_color=[255, 255, 255, 255], line_width_min_pixels=1,
-                          auto_highlight=True, highlight_color=[255, 255, 255, 90]),
-                pdk.Layer("GeoJsonLayer", _sel_fc, id="sel_halo", stroked=True, filled=False,
+                          auto_highlight=True, highlight_color=[255, 255, 255, 90])]
+        if _core:
+            _lay.append(pdk.Layer("GeoJsonLayer", _core, id="core", pickable=True, stroked=True, filled=True,
+                                  get_fill_color="properties.fill", get_line_color=[255, 255, 255, 255], line_width_min_pixels=1))
+        _lay += [pdk.Layer("GeoJsonLayer", _sel_fc, id="sel_halo", stroked=True, filled=False,
                           get_line_color=[255, 255, 255, 255], line_width_min_pixels=7),
                 pdk.Layer("GeoJsonLayer", _sel_fc, id="sel_area", stroked=True, filled=False,
                           get_line_color=ROUTE_C + [255], line_width_min_pixels=3)] + lay_route
         st.markdown(f'<div class="maphead">{legend_bar(f"{cur} 점수 (100점, 트램 {tram_mode})", _stops, _lo, _hi, "seq_good")}'
-                    f'<div class="sym"><span class="ln"></span>트램 2호선</div></div>', unsafe_allow_html=True)
+                    f'<div class="sym"><span class="ln"></span>트램 2호선'
+                    + ('<span class="sq strong"></span>상권 핵심(점포 밀집) · 진하게<span class="sq weak"></span>그 상권이 가장 가까운 권역 · 옅게'
+                       if _core else "")
+                    + '</div></div>', unsafe_allow_html=True)
         show_map(deck(_lay, {"html": "<div style='font-weight:700;font-size:14px'>{name}</div>{val_label}"},
                       view=pdk.ViewState(**VIEW_IND, min_zoom=10, max_zoom=16)), key="map_ind", height=IND_H)
         T = B[B.industry == cur][["code", "name", "n_stores", "growth", "lq", f"tram_effect_{SCEN_KEY}", "flag"]].copy()

@@ -296,7 +296,7 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
     return { x, y: a[1] + (b[1] - a[1]) * t, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI };
   }
 
-  const S = { p: 0, mx: 0, my: 0, tx: 0, ty: 0, run: 0, intro: 0, fade: 0 };
+  const S = { p: 0, mx: 0, my: 0, tx: 0, ty: 0, run: 0, intro: 0 };
   const INK = { d: 0, want: 0 };                            // 글자색 전환 상태 (0 먹색, 1 리넨)
   const el = {
     skyTop: q(".skyTop"), skyBot: q(".skyBot"), sun: q(".sun"), sunDisc: q(".sunDisc"), sunHalo: q(".sunHalo"),
@@ -343,15 +343,6 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
       const span = W + 260, x = ((S.run + P * W * 1.4) % span + span) % span - 130;
       const r = onRidge(x);
       tram.setAttribute("transform", `translate(${r.x.toFixed(1)},${(r.y + 2).toFixed(1)}) rotate(${r.ang.toFixed(2)})`);
-      // 제목·부제·버튼 위를 지날 때는 흐리게 (글자를 가리지 않게)
-      const tb = tram.getBoundingClientRect();
-      const hit = [".cv-hero h1", ".cv-hero .cv-sub", ".cv-hero .cv-actions"].some(sel => {
-        const e = q(sel); if (!e) return false; const hb = e.getBoundingClientRect();
-        return !(tb.right < hb.left || tb.left > hb.right || tb.bottom < hb.top || tb.top > hb.bottom);
-      });
-      const hero = q(".cv-hero"), ho = hero ? +getComputedStyle(hero).opacity || 0 : 0;   // 첫 화면 글자가 보일 때만
-      S.fade += ((hit ? ho : 0) - S.fade) * .18;
-      tram.style.opacity = (1 - .85 * S.fade).toFixed(3);
       tram.querySelector(".tramWin").setAttribute("fill", lerp("#eff2e8", "#f2e9cf", n));
       tram.querySelector(".tramBeam").setAttribute("opacity", n * .35);
     }
