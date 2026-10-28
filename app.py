@@ -2,7 +2,12 @@ import json, os, sys
 import numpy as np
 import streamlit as st, pandas as pd, pydeck as pdk, altair as alt
 
-st.set_page_config(page_title="대전 트램 상권 지도", layout="wide", page_icon=":material/tram:")
+try:                                                       # 휴대폰이면 사이드바를 접은 채 시작 ('auto' 가 열린 채로 뜨는 경우가 있어 기기로 판단)
+    _MOBILE = "Mobi" in (st.context.headers.get("User-Agent") or "")
+except Exception:
+    _MOBILE = False
+st.set_page_config(page_title="대전 트램 상권 지도", layout="wide", page_icon=":material/tram:",
+                   initial_sidebar_state="collapsed" if _MOBILE else "auto")
 sys.path.insert(0, "tram_model")
 from tram_route import route_paths
 from about_page import show_about                                      # 분석 방법 팝업
@@ -157,8 +162,9 @@ h1.page-t{font-family:'Newsreader','Noto Serif KR',serif;font-weight:300;font-si
 .why{background:#eff2e8;border:1px solid #e1e6df;border-radius:10px;padding:12px 16px;margin:4px 0 6px 0;color:#2a332a}
 .why-h{font-size:13px;font-weight:600;color:#4a6d47;margin-bottom:4px}
 .why-rule{font-size:15px;font-weight:600;color:#0a1d08;margin-bottom:8px;line-height:1.45}
-.why-r{display:grid;grid-template-columns:7.2em 3.6em 1fr;gap:8px;font-size:13.5px;line-height:1.45;padding:3px 0}
-.why-r .l{color:#6b7860}.why-r b{color:#0a1d08;text-align:right;font-variant-numeric:tabular-nums}
+.why-r{display:grid;grid-template-columns:minmax(6.5em,auto) 1fr;column-gap:10px;row-gap:1px;font-size:13.5px;line-height:1.45;padding:4px 0}
+.why-r .l{color:#6b7860}.why-r b{color:#0a1d08;font-variant-numeric:tabular-nums}
+.why-r .d{grid-column:2;color:#4a5648;font-size:13px}
 .why-f{font-size:12.5px;color:#6b7860;margin-top:8px;padding-top:7px;border-top:1px solid #e1e6df}
 .stn-t{font-size:16px;font-weight:600;color:#0a1d08}
 .story{font-size:13px;color:#4a5648;background:#f3f5ef;border:1px solid #e1e6df;border-radius:8px;padding:6px 11px;margin:0 0 8px 0;line-height:1.55;word-break:keep-all}.story b{color:#0a1d08;font-weight:600}.story .ar{color:#9aa596;margin:0 4px}
@@ -170,6 +176,7 @@ h1.page-t{font-family:'Newsreader','Noto Serif KR',serif;font-weight:300;font-si
 .maphead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px;
   border:1px solid #e1e6df;border-bottom:none;border-radius:10px 10px 0 0;padding:8px 12px;background:#fff;margin-bottom:-2px}
 .maphead .lg{margin:0}
+@media (max-width:640px){[data-testid="stButtonGroup"] div[role="radiogroup"],[data-testid="stButtonGroup"]>div{flex-wrap:wrap}}
 .st-key-mapbar{border:1px solid #e1e6df;border-bottom:none;border-radius:10px 10px 0 0;padding:4px 6px 4px 12px;background:#fff;margin-bottom:-2px}
 .maphead-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px}
 .maphead-in .lg{margin:0}.maphead-in .hint{font-size:12.5px;color:#4a6d47;font-weight:600}
@@ -1321,7 +1328,7 @@ if PAGE == "map":
             if _mv3d:
                 with h_l, st.container(horizontal=True, vertical_alignment="center", gap="small"):
                     st.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 진단 4분류 · 기둥 높이·연도는 지도 안에서 고름'
-                                '</div><span class="hint">기둥·정거장을 누르면 오른쪽·아래에 표시</span></div>',
+                                '</div><span class="hint">기둥·정거장을 누르면 진단 패널에 표시</span></div>',
                                 unsafe_allow_html=True, width="content")
                     st.button("크게 보기", icon=":material/open_in_full:", type="tertiary", key="to_map3d",
                               on_click=lambda: ss.update(page="map3d"), help="3D 지도만 넓은 화면으로 보기")
@@ -1358,10 +1365,10 @@ if PAGE == "map":
         ss.stn_w = ss.sel_station if ss.sel_station in STN else 0
         c_cap, c_stn = st.columns([3, 2], vertical_alignment="center")
         if DONG:
-            c_cap.caption("행정동을 누르면 오른쪽에 진단이, 정거장 점을 누르면 아래에 500m 영향권이 나옵니다 · "
+            c_cap.caption("행정동을 누르면 진단 패널(넓은 화면은 옆, 좁은 화면은 아래)이, 정거장 점을 누르면 지도 아래에 500m 영향권이 나옵니다 · "
                           "검은 윤곽선 = 핵심 상권 20  \n" + src(SRC_DONG, "outputs/dong_map.geojson (행정동 경계, 통계청 2023)"))
         else:
-            c_cap.caption("상권을 누르면 오른쪽에 진단이, 정거장 점을 누르면 아래에 500m 영향권이 나옵니다  \n"
+            c_cap.caption("상권을 누르면 진단 패널(넓은 화면은 옆, 좁은 화면은 아래)이, 정거장 점을 누르면 지도 아래에 500m 영향권이 나옵니다  \n"
                           + src("outputs/forecast_land.csv" if am == "land_fc" else SRC_AREA,
                                 "outputs/sangkwon_polygons.geojson (상권 경계)"))
         c_stn.selectbox("정거장 선택", stn_opts, key="stn_w", on_change=_pick_stn,
