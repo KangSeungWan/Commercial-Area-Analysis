@@ -240,7 +240,11 @@ def main():
     save("geo_core.json", geo("sangkwon_polygons.geojson", "code"))
     if (OUT / "sangkwon_regions.geojson").exists():
         save("geo_regions.json", geo("sangkwon_regions.geojson", "code"))
-    save("geo_dongs.json", geo("dong_map.geojson", "dong_id"))
+    gd = geo("dong_map.geojson", "dong_id")
+    save("geo_dongs.json", gd)
+    # 자체 바탕 지도: 행정동 경계 → 시·구 경계 선 + 구 이름 자리 (외부 지도 타일 없이)
+    import web_basemap
+    save("geo_gu.json", web_basemap.build(gd, geo("sangkwon_polygons.geojson", "code"), paths, stn))
 
     # ── 그래프용 시계열 ──
     sp = csv(OUT / "store_panel.csv", dtype={"period": str})

@@ -4,6 +4,7 @@ import { ROUTE_C } from "./lib.js";
 const TIP = { backgroundColor: "#fff", color: "#0a1d08", fontSize: "12.5px", lineHeight: "1.5", borderRadius: "8px", border: "1px solid #e1e6df",
   boxShadow: "0 4px 14px rgba(0,0,0,.14)", padding: "8px 11px", fontFamily: "Pretendard Variable, Pretendard, sans-serif", maxWidth: "260px" };
 const BASEMAP = "https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png";
+const NGII_BOUNDS = [127.239536, 36.177161, 127.594721, 36.506619];
 const BASEMAP_LABELS = "https://basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png";
 
 function bbox(fcs, pts) {
@@ -32,7 +33,18 @@ export default function MapView(p) {
   const latest = useRef(p); latest.current = p;
 
   // 라벨 겹침 정리: 우선순위 높은 것부터, 겹치면 생략
+  // 축척 막대: 화면 폭 1/5 안에서 1·2·5km 중 맞는 길이
+  function scaleBar(viewState) {
+    const sb = el.current && el.current.querySelector(".map-scale");
+    if (!sb || !viewState) return;
+    const mpp = 40075016.686 * Math.cos(viewState.latitude * Math.PI / 180) / (512 * Math.pow(2, viewState.zoom));
+    const maxPx = Math.max(60, Math.min(140, el.current.clientWidth / 5));
+    const km = [0.5, 1, 2, 5, 10].filter(k => k * 1000 / mpp <= maxPx).pop() || 0.5;
+    sb.querySelector("i").style.width = Math.round(km * 1000 / mpp) + "px";
+    sb.querySelector("span").textContent = (km < 1 ? km * 1000 + " m" : km + " km");
+  }
   function dedupe(viewState) {
+    scaleBar(viewState);
     const D = window.deck, P = latest.current;
     if (!D || !P.labels || !el.current) return;
     const vp = new D.WebMercatorViewport({ ...viewState, width: el.current.clientWidth, height: el.current.clientHeight });
@@ -68,6 +80,9 @@ export default function MapView(p) {
           renderSubLayers: pr => { const { boundingBox: [[w, s], [e, n]] } = pr.tile; return new D.BitmapLayer(pr, { data: null, image: pr.data, bounds: [w, s, e, n] }); } }));
       }
     }
+    // 자체 바탕: 대전 땅(밝게) — 시 경계 안쪽을 칠해 바깥(시 밖)과 구분
+    if (P.gu?.city?.length) L.push(new D.PolygonLayer({ id: "land", data: P.gu.city, getPolygon: d => d, filled: true, stroked: false,
+      getFillColor: [252, 252, 249, 255], pickable: false }));
     if (P.base) L.push(new D.GeoJsonLayer({ id: "base", data: P.base, stroked: true, filled: true, getFillColor: [248, 249, 245, 60],
       getLineColor: [165, 172, 159, 130], lineWidthMinPixels: 0.6, pickable: false }));
     const key = P.keyProp;
@@ -78,6 +93,15 @@ export default function MapView(p) {
     if (P.polys) L.push(new D.GeoJsonLayer({ id: "polys", data: P.polys, pickable: true, stroked: true, filled: true,
       getFillColor: f => fillOf(f, P.polyAlpha ?? 225), getLineColor: [255, 255, 255, 255], lineWidthMinPixels: 1, autoHighlight: true, highlightColor: [255, 255, 255, 90],
       updateTriggers: { getFillColor: P.fillKey } }));
+    // 구 경계(얇게) · 시 경계(조금 굵게) — 통계청 행정동 경계에서 만든 자체 선
+    if (P.gu?.gu?.length) L.push(new D.PathLayer({ id: "gu-lines", data: P.gu.gu, getPath: d => d, getColor: [42, 51, 42, 150],
+      widthUnits: "pixels", getWidth: 1.6, capRounded: true, jointRounded: true, pickable: false }));
+    if (P.gu?.city?.length) L.push(new D.PathLayer({ id: "city-line", data: P.gu.city, getPath: d => d, getColor: [42, 51, 42, 210],
+      widthUnits: "pixels", getWidth: 2.2, capRounded: true, jointRounded: true, pickable: false }));
+    // 꺼 둠(10-28): 국토지리정보원 어린이지도여행 백지도에는 공공누리 표시가 없어 저작권정책상 담당부서 사전 협의 필요. 허락 받으면 backdrop={true}
+    // 국토지리정보원(국토정보플랫폼) 대전광역시 지도 1:200,000 — 시 경계·갑천·금강·대청호 (공공누리 출처표시).
+    // 상권·행정동 색 위에 옅게 얹어 강·호수 위치를 보여 줌. 위치는 행정동 경계에 맞춰 보정(평균 오차 약 1px ≈ 80m)
+    if (P.backdrop === true) L.push(new D.BitmapLayer({ id: "ngii", image: "./img/daejeon_ngii.png", bounds: NGII_BOUNDS, opacity: 0.75 }));
     if (P.sel) {
       const src = (P.regions && P.showRegion) ? P.regions : P.polys;
       const sf = { type: "FeatureCollection", features: (src?.features || []).filter(f => f.properties[key] === P.sel) };
@@ -101,6 +125,9 @@ export default function MapView(p) {
       getFillColor: [...ROUTE_C, 255], getLineColor: [255, 255, 255, 255], stroked: true, lineWidthMinPixels: 2 }));
     if (P.pois?.length) L.push(new D.ScatterplotLayer({ id: "pois", data: P.pois, getPosition: d => [d.lon, d.lat], getRadius: 40, radiusMinPixels: 3.5,
       getFillColor: d => d.gateway ? [35, 39, 46, 255] : [127, 79, 36, 220], getLineColor: [255, 255, 255, 255], stroked: true, lineWidthMinPixels: 1, pickable: true }));
+    if (P.gu?.labels?.length && P.showGu !== false) L.push(new D.TextLayer({ id: "gu-names", data: P.gu.labels, getPosition: d => d.pos,
+      getText: d => d.name.split("").join(" "), characterSet: "auto", fontFamily: "Pretendard Variable, Pretendard, Apple SD Gothic Neo, sans-serif",
+      fontWeight: 700, getSize: 15, getColor: [91, 103, 81, 235], fontSettings: { sdf: true }, outlineWidth: 5, outlineColor: [252, 252, 249, 240], pickable: false }));
     if (P.labels && P.showLabels !== false) {
       const keep = new Set((labelKeys || "").split("|"));
       const data = P.labels.filter(l => keep.has(l.key));
@@ -161,6 +188,8 @@ export default function MapView(p) {
   return (
     <div className="map" ref={el} role="application" aria-label={p.ariaLabel || "대전 트램 상권 지도"}>
       {err && <div className="map-msg">{err}</div>}
+      <div className="map-scale" aria-hidden="true"><i /><span /></div>
+      {p.backdrop === true && p.basemap !== true && <div className="map-attr">바탕 지도: 국토지리정보원</div>}
       {p.basemap === true && <div className="map-attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> 기여자 © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a></div>}
     </div>
   );

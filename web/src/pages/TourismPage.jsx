@@ -4,7 +4,7 @@ import { Loading, Tabs, Seg } from "../ui.jsx";
 import { useData, pct, short } from "../lib.js";
 
 export default function TourismPage() {
-  const { data, error } = useData(["tourism", "meta", "geo_dongs"]);
+  const { data, error } = useData(["tourism", "meta", "geo_dongs", "geo_gu"]);
   const [tab, setTab] = useState("dj");
   if (!data) return <Loading error={error} />;
   return (
@@ -39,7 +39,7 @@ function Daejeon({ D }) {
       <div className="mapbox">
         <div className="maphead"><div className="lg"><span className="it">정거장에 마우스를 올리거나 누르면 500m 안 관광지가 보입니다</span></div>
           <div className="sym"><span><span className="ln" />트램 2호선</span><span><span className="st" />정거장</span></div></div>
-        <MapView keyProp="dong_id" polys={D.geo_dongs} polyAlpha={60} fill={{}} fillKey="t" stations={D.meta.stations} route={D.meta.route} tramAfter
+        <MapView keyProp="dong_id" gu={D.geo_gu} polys={D.geo_dongs} polyAlpha={60} fill={{}} fillKey="t" stations={D.meta.stations} route={D.meta.route} tramAfter
           stationTip={s => { const t = S.find(x => x.station_no === s.no); return `<b>${s.no}번 ${s.name}</b><br/>${t?.pois || "500m 안 관광지 없음"}`; }}
           ariaLabel="관광지와 트램 정거장 지도" />
       </div>

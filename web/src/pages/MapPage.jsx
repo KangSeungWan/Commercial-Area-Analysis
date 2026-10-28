@@ -4,7 +4,7 @@ import { Controls, Seg, Help, QBadge, Tabs, ForecastChart, LineChart, StoreChart
 import { useData, useApp, setState, go, useRoute, view, METRICS, metricLabel, colorize, QC, QHEX, RENT_C, rgb, pct, pp, int, eok, short,
   scenLabel, TRAM_DEF, HELP, ruleText, f1 } from "../lib.js";
 
-const NEED = ["meta", "areas", "dongs", "geo_core", "geo_regions", "geo_dongs", "series_area", "series_dong", "composition"];
+const NEED = ["meta", "areas", "dongs", "geo_core", "geo_regions", "geo_dongs", "geo_gu", "series_area", "series_dong", "composition"];
 
 export default function MapPage() {
   const { data, error } = useData(NEED);
@@ -106,7 +106,7 @@ function MapInner({ D }) {
             </div>
           </div>
           <MapView key={dong ? "dong" : "area"} keyProp={dong ? "dong_id" : "code"} base={dong ? null : D.geo_dongs}
-            regions={dong ? null : D.geo_regions} showRegion={!dong && st.region} fitTo={D.geo_core} polys={dong ? D.geo_dongs : D.geo_core} polyAlpha={dong ? 200 : 225}
+            gu={D.geo_gu} regions={dong ? null : D.geo_regions} showRegion={!dong && st.region} fitTo={D.geo_core} polys={dong ? D.geo_dongs : D.geo_core} polyAlpha={dong ? 200 : 225}
             fill={fill} fillKey={fillKey} sel={selKey} onPick={pick} stations={meta.stations} route={meta.route} line1={meta.line1}
             tramAfter={st.tramAfter} station={st.station} onStation={no => setState({ station: no })} tooltip={tooltip} stationTip={stationTip}
             labels={labels} showLabels={st.labels} ariaLabel={dong ? "행정동 82개 지도" : "핵심 상권 20개 지도"} />
