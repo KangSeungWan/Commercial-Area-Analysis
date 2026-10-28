@@ -87,7 +87,6 @@ function MapInner({ D }) {
   return (
     <div className="page">
       <Controls meta={meta} unit />
-      <Story D={D} st={st} dong={dong} rows={rows} V={V} />
       <Verdict D={D} st={st} dong={dong} reb={reb} V={V} A={A} DG={DG} rows={rows} selKey={selKey} pick={pick} />
 
       <div className="split">
@@ -188,19 +187,28 @@ function Verdict({ D, st, dong, reb, V, A, DG, rows, selKey, pick }) {
           </button>
         ))}
       </div>
-      {hi.length > 0 && (
+      <div className="kpi">
+        {Object.keys(QC).filter(q => cnt[q]).map(q => <span key={q}><span className="dot" style={{ background: QHEX[q] }} />{q} <b>{cnt[q]}</b>곳</span>)}
+        <span className="muted symkey">⚠ 임대료 신호 높음{dong && " · ⚑ 가정에 민감 · ⌂ 개발지"} · <span className="help" aria-hidden="true">?</span> 누르면 설명</span>
+      </div>
+      <details className="more">
+        <summary>이야기 순서 ①~⑤ · 숫자 읽는 법</summary>
+        <div className="more-in">
+          <Story D={D} st={st} dong={dong} rows={rows} />
+          {hi.length > 0 && (
         <p className="rentnote"><span className="dot" style={{ background: rgb(RENT_C["높음"]) }} />그중 <b>{hi.length}곳</b>은 임대료 부담 신호가 높음(⚠) = <b>조건부 기회</b>.
           땅값은 오르지만 점포당 매출은 거의 그대로일 곳이라, 건물주의 기회가 기존 상인의 기회가 되려면 개통 뒤 보호 장치가 필요합니다.</p>
       )}
-      <div className="kpi">
-        {Object.keys(QC).filter(q => cnt[q]).map(q => <span key={q}><span className="dot" style={{ background: QHEX[q] }} />{q} <b>{cnt[q]}</b>곳</span>)}
-        {avg != null && <span className="muted">상권 전체로 펴면 평균 <b>{pct(avg)}</b> (500m 안 {pct(meta.scen[st.scen].effect_pct)} × 500m 안 점포 비율)</span>}
-        {st.tramAfter && moneyAll > 0 && <span className="muted">정거장 500m 안 땅값 <b>+{eok(moneyAll)}</b> (공시지가 기준, 개통 1~4년{dong ? ", 82개 동 합계" : ""})</span>}
-        <button type="button" className="linkbtn" onClick={() => go("/about", { tab: "evidence" })}>트램 효과 근거</button>
-      </div>
+          <div className="kpi">
+            {avg != null && <span>상권 전체로 펴면 평균 <b>{pct(avg)}</b> (500m 안 {pct(meta.scen[st.scen].effect_pct)} × 500m 안 점포 비율)</span>}
+            {st.tramAfter && moneyAll > 0 && <span>정거장 500m 안 땅값 <b>+{eok(moneyAll)}</b> (공시지가 기준, 개통 1~4년{dong ? ", 82개 동 합계" : ""})</span>}
+            <button type="button" className="linkbtn" onClick={() => go("/about", { tab: "evidence" })}>트램 효과 근거 보기</button>
+          </div>
       {sens.length > 0 && <p className="src">⚑ 정거장 추정 좌표에 따라 진단이 바뀔 수 있는 동: {sens.join(", ")} (좌표를 0~300m 옮겨 300번 다시 계산) · 핵심 상권 20곳은 모두 안정</p>}
       {dev.length > 0 && <p className="src">⌂ 신도시·택지 개발로 트램 없어도 오르는 동: {dev.join(", ")}{meta.city.dev_money != null && ` — 트램 효과 금액(기본)의 ${Math.round(meta.city.dev_money)}%가 이 동들에 있음`}{meta.city.dev_l1 != null && `. 1호선 효과는 개발지를 빼고 다시 계산해도 +${meta.city.dev_l1.toFixed(1)}%`}</p>}
-      <p className="src">출처: {dong ? "outputs/dong_map_profile.csv (82개 행정동 진단·지표, 82개 동 안 상대 순위)" : "outputs/area_profile.csv (진단·상권 값)"}, outputs/tram_scenarios.csv (트램 효과 수준)</p>
+      <p className="src">자료: {dong ? "행정동 진단·지표 (82개 동 안 상대 순위)" : "상권 진단·지표 (20개 상권 안 상대 순위)"} · 트램 효과 수준</p>
+        </div>
+      </details>
     </section>
   );
 }
@@ -302,9 +310,9 @@ function AreaPanel({ D, a, v, st }) {
       <div style={{ marginTop: 14 }}>
         <Tabs value={tab} onChange={setTab} tabs={[["fc", "땅값 전망"], ["comp", "업종 구성"], ["land", "땅값 흐름"], ["store", "점포 수"]]} />
         {tab === "fc" && <>
-          <p className="chart-cap">회색 띠 = 트램 없는 추세 전망(ARIMA)의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선 = 거기에 트램 효과를 더한 시나리오</p>
+          <p className="chart-cap">회색 띠 = 트램 없는 추세 전망(ARIMA)의 80% 범위(넓으므로 상권끼리 비교용) · 남색 선 = 거기에 트램 효과를 더한 시나리오 · 남색 띠 = 트램 몫</p>
           <ForecastChart hist={ser.land[a.code]} fc={ser.fc[a.code]} scen={st.scen} after={st.tramAfter} />
-          <p className="src">출처: outputs/forecast_land.csv, outputs/landprice_area_panel.csv</p></>}
+          <p className="src">자료: 상권 땅값 예측 · 상권 땅값 지수 (국토교통부 개별공시지가)</p></>}
         {tab === "comp" && <CompTab comp={comp} groups={D.composition.groups} st={st} name={short(a.name)} sl={sl} />}
         {tab === "land" && <>
           <p className="chart-cap">대전 전체와 비교 · 회색 점선 = 이 상권의 주요 사건(마우스를 올리면 내용)</p>
@@ -314,7 +322,7 @@ function AreaPanel({ D, a, v, st }) {
         {tab === "store" && <>
           <p className="chart-cap">회색 점선 = 자료 수집 기준이 바뀐 분기 (그때의 급변은 자료 탓일 수 있음)</p>
           <StoreChart data={ser.store[a.code]} breaks={ser.breaks} />
-          <p className="src">출처: outputs/store_panel.csv (소상공인시장진흥공단 상가정보 42개 분기)</p></>}
+          <p className="src">자료: 소상공인시장진흥공단 상가(상권)정보 42개 분기</p></>}
       </div>
     </section>
   );
@@ -331,7 +339,7 @@ function CompTab({ comp, groups, st, name, sl }) {
     <p className="chart-cap">대전 1호선 근거: 역 500m 안 카페 수 +25%, 음식점 중 카페 비중 +1.4%p(1단계)·+4.0%p(2단계 따로 재현). 다른 업종은 근거가 약해 그대로 둠 → 바뀌는 것은 카페 몫. 식사 음식점 비중은 −5%p(1호선 실측)라 기존 식당에는 경쟁·전환 압력</p>
     <CompChart groups={groups} now={now} later={later} />
     {st.tramAfter && <p className="small" style={{ marginTop: 6 }}><b>{name}</b>: 카페 {comp.n["카페"]}곳 중 {Math.round((comp.near500_cafe || 0) * 100)}%가 정거장 500m 안 → 2034년까지 카페 약 <b>{Math.round(ad.cafe)}곳</b> 상대 증가 ({sl})</p>}
-    <p className="src">출처: outputs/composition_now.csv (상가정보 2026-06), outputs/composition_forecast.csv</p>
+    <p className="src">자료: 업종 구성 (상가정보 2026-06) · 업종 변화 예측</p>
   </>;
 }
 
@@ -380,7 +388,7 @@ function DongPanel({ D, d, v, st }) {
         {tab === "comp" && <CompTab comp={comp} groups={D.composition.groups} st={st} name={d.dong} sl={sl} />}
         {tab === "land" && <LineChart yLabel="지수 (2015=100)" series={[{ name: d.dong, color: "var(--chart-blue)", data: ser.land[d.dong_id] || [] }, { name: "대전 전체", color: "#9aa0a6", data: D.series_area.land.ALL || [] }]} />}
         {tab === "store" && <StoreChart data={ser.store[d.dong_id]} breaks={D.series_area.breaks} />}
-        <p className="src">출처: outputs/dong_map_profile.csv, dong_forecast_land.csv, dong_year_panel.csv, dong_panel_store.csv</p>
+        <p className="src">자료: 행정동 진단·지표 · 행정동 땅값 예측 · 행정동 연도별 지표 · 점포 수</p>
       </div>
     </section>
   );

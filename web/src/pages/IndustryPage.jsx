@@ -49,9 +49,9 @@ function Inner({ D }) {
         <div className="ctl-g"><span className="ctl-l">업종</span>
           <Seg label="업종" options={industry.order.map(i => [i, i])} value={ind} onChange={setInd} /></div>
       </div>
-      <div className="split" style={{ gridTemplateColumns: "minmax(0,3fr) minmax(300px,1.3fr)" }}>
+      <div className="split split-ind">
         <div className="tablewrap">
-          <table className="t">
+          <table className="t wide">
             <thead><tr><th>순위</th><th>상권</th><th>진단</th><th className="r">점포</th><th>{ind} 점수 {st.tramAfter ? `(건설 전 → 후, ${scenLabel(meta, st.scen)})` : "(건설 전)"}</th></tr></thead>
             <tbody>
               {list.map((r, i) => (
@@ -72,7 +72,7 @@ function Inner({ D }) {
           </table>
         </div>
         <aside className="box bone">
-          <h3>가중치 바꿔 보기</h3>
+          <h2>가중치 바꿔 보기</h2>
           <p className="small muted" style={{ marginBottom: 10 }}>항목 비중을 바꾸면 순위가 바로 다시 계산됩니다. AI 해설 화면도 같은 가중치를 씁니다.</p>
           {items.map(w => (
             <div className="slider" key={w.key} title={`${w.method} — ${w.rationale}`}>
@@ -89,7 +89,7 @@ function Inner({ D }) {
           </details>
         </aside>
       </div>
-      <p className="src">출처: outputs/industry_scores.csv, industry_score_weights.csv · 행을 누르면 지도에서 그 상권이 열립니다</p>
+      <p className="src">자료: 업종 점수 · 항목 비중 · 행을 누르면 지도에서 그 상권이 열립니다</p>
     </div>
   );
 }

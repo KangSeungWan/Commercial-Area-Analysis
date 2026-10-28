@@ -46,7 +46,7 @@ function Daejeon({ D }) {
       </div>
       <div>
         <div className="box">
-          <h3>기대할 수 있는 것, 조심할 것</h3>
+          <h2>기대할 수 있는 것, 조심할 것</h2>
           <ul className="list" style={{ color: "var(--moss)" }}>
             <li><b>만년동·과학관·엑스포 일대(정거장 220·221)</b>: 수목원·과학관·신세계·한빛탑이 모여 트램이 가장 의미 있는 곳. 다만 대전역에서는 지금 버스가 더 빨라 기본 시나리오 효과는 작습니다.</li>
             <li><b>대전역·원도심</b>(성심당·중앙시장·으능정이): 관광 수요는 가장 크지만 역에서 걸어가는 거리라 트램으로 달라지는 것이 거의 없습니다.</li>
@@ -64,7 +64,7 @@ function Daejeon({ D }) {
       <div className="tablewrap"><table className="t"><thead><tr><th>정거장</th><th>관광지 (거리)</th></tr></thead>
         <tbody>{S.filter(s => s.n_poi > 0).sort((a, b) => b.tour_score - a.tour_score).map(s => <tr key={s.station_no}><td>{s.station_no} {s.station_name}</td><td className="small">{s.pois}</td></tr>)}</tbody></table></div>
     </div>
-    <p className="src">시나리오: 관문 4곳(대전역·대전복합터미널·서대전역·유성복합터미널, 하루 이용객 비율로 가중)에서 상권까지 이동 시간이 트램으로 줄어드는 만큼 방문이 는다고 가정(해외 고속철 탄력성 0~1.0 차용). 이동 시간은 근사(환승 제외). 효과는 개통 후 2년쯤에 절반. 출처: outputs/tourism_layer.csv · tourism_station.csv</p>
+    <p className="src">시나리오: 관문 4곳(대전역·대전복합터미널·서대전역·유성복합터미널, 하루 이용객 비율로 가중)에서 상권까지 이동 시간이 트램으로 줄어드는 만큼 방문이 는다고 가정(해외 고속철 탄력성 0~1.0 차용). 이동 시간은 근사(환승 제외). 효과는 개통 후 2년쯤에 절반. 자료: 관광 접근성 시나리오 · 정거장별 관광지</p>
   </>;
 }
 
@@ -74,7 +74,7 @@ function World({ T }) {
     <div className="tablewrap"><table className="t"><thead><tr><th>도시·노선</th><th>무엇을 봤나</th><th>숫자</th><th>읽는 법</th><th>등급</th><th>원문</th></tr></thead>
       <tbody>{T.good.map(r => <tr key={r.city} className={r.grade === "하" ? "dim" : ""}><td><b style={{ fontWeight: 600 }}>{r.city}</b></td><td>{r.what}</td><td className="num">{r.num}</td><td className="small">{r.read}</td><td>{r.grade}</td>
         <td><a href={r.url} target="_blank" rel="noopener noreferrer">원문</a></td></tr>)}</tbody></table></div>
-    <h3 style={{ fontSize: 16, margin: "18px 0 6px" }}>같이 봐야 할 사례 (효과 없음·부작용)</h3>
+    <h2 style={{ fontSize: 16, margin: "18px 0 6px" }}>같이 봐야 할 사례 (효과 없음·부작용)</h2>
     <ul className="list">{T.caution.map(r => <li key={r.city}><b>{r.city}</b>: {r.text} · 등급 {r.grade} · <a href={r.url} target="_blank" rel="noopener noreferrer">원문</a></li>)}</ul>
   </>;
 }
@@ -94,10 +94,10 @@ function How({ T }) {
   const rows = T.literature.filter(r => g.includes(grade(r.reliability)));
   return <>
     <div className="grid2">
-      <div className="box"><h3>이 화면이 말하지 않는 것</h3>
+      <div className="box"><h2>이 화면이 말하지 않는 것</h2>
         <ul className="list small"><li>'트램이 관광객을 몇 명 늘린다', '관광 매출 몇 억 원' 같은 확정 숫자</li><li>해외 관광도시 수치를 대전에 그대로 적용</li>
           <li>카드 매출의 외지인 비율 (자료에 거주지 구분이 없음)</li><li>개통 후 실제 효과 (2030년 이후 자료로 검증해야 함)</li></ul></div>
-      <div className="box"><h3>쓸 수 있는 숫자 (시나리오 재료)</h3>
+      <div className="box"><h2>쓸 수 있는 숫자 (시나리오 재료)</h2>
         <ul className="list small">{T.params.slice(0, 9).map(p => <li key={p.param_id}>{p.paper}: <b>{p.value}</b> {p.unit}</li>)}</ul></div>
     </div>
     <div className="ctl" style={{ marginTop: 18 }}><div className="ctl-g"><span className="ctl-l">문헌 {T.literature.length}건 · 신뢰도</span>
@@ -105,6 +105,6 @@ function How({ T }) {
     <div className="tablewrap"><table className="t"><thead><tr><th>등급</th><th>분야</th><th>출처</th><th>도시·노선</th><th>결과</th><th>원문</th></tr></thead>
       <tbody>{rows.map(r => <tr key={r.id} className={grade(r.reliability) === "하" ? "dim" : ""}><td>{grade(r.reliability)}</td><td className="small">{r.group}</td><td className="small">{r.source}</td>
         <td className="small">{r.city_system}</td><td className="small">{r.finding}</td><td>{r.url && <a href={r.url} target="_blank" rel="noopener noreferrer">원문</a>}</td></tr>)}</tbody></table></div>
-    <p className="src">자세한 근거: tram_model/docs/근거_트램관광효과.md · 관광지 검증: tram_model/docs/검증_관광지목록.md</p>
+    <p className="src">자세한 근거: 트램 관광 효과 문헌 90건 · 관광지 67곳 인터넷 대조 검증</p>
   </>;
 }

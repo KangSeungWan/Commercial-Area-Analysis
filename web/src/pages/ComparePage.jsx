@@ -36,7 +36,7 @@ export default function ComparePage() {
         <p className="page-sub">머리글을 누르면 정렬됩니다. 행을 누르면 지도에서 그 곳이 열립니다. 점수는 {dong ? "82개 동" : "20개 상권"} 안 상대 순위입니다.</p>
       </div>
       <div className="tablewrap">
-        <table className="t">
+        <table className="t wide">
           <thead><tr>
             <H id="name">{dong ? "행정동" : "상권"}</H><H id="quadrant">진단</H><H id="stab" r>안정도</H>
             <H id="risk" r tip={HELP.risk}>상대 위험</H><H id="growth" r tip={HELP.growth}>상대 성장</H><H id="abs" tip={HELP.abs}>절대 쇠퇴 신호</H>
@@ -62,7 +62,7 @@ export default function ComparePage() {
           </tbody>
         </table>
       </div>
-      <p className="src">{!dong && "* 도룡동 점포 비중은 2021 대형 쇼핑몰 입점 점포가 한꺼번에 등록된 왜곡이라 해석하지 않습니다. "}출처: {dong ? "outputs/dong_map_profile.csv · 카드매출 증감: " + meta.sources.s8989 : "outputs/area_profile.csv"} · outputs/tram_scenarios.csv · composition_forecast.csv · rent_pressure.csv</p>
+      <p className="src">{!dong && "* 도룡동 점포 비중은 2021 대형 쇼핑몰 입점 점포가 한꺼번에 등록된 왜곡이라 해석하지 않습니다. "}자료: {dong ? "행정동 진단·지표 · 카드매출 증감: " + meta.sources.s8989 : "상권 진단·지표"} · 트램 효과 수준 · 업종 변화 예측 · 임대료 부담 신호</p>
     </div>
   );
 }

@@ -28,9 +28,9 @@ export default function AIPage() {
         <p className="page-sub">진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 받은 해설입니다. 숫자는 모두 이 분석의 결과이고, AI는 그것을 설명하는 역할만 합니다.</p>
       </div>
       <div className="plans" style={{ marginBottom: 16 }}>
-        <div><h3><span>무료 · 기본 해설</span><span className="num">0원</span></h3>
+        <div><h2><span>무료 · 기본 해설</span><span className="num">0원</span></h2>
           <p>상권 20곳의 해설을 미리 만들어 두었습니다(기본 시나리오·기본 업종 가중치). 지금 이 화면에서 바로 볼 수 있습니다.</p></div>
-        <div><h3><span>프리미엄 · 맞춤 해설</span><span className="num">월 9,900원 (예시)</span></h3>
+        <div><h2><span>프리미엄 · 맞춤 해설</span><span className="num">월 9,900원 (예시)</span></h2>
           <p>실시간 생성, 내가 고른 시나리오·업종 가중치 반영, 그리고 묻고 싶은 것을 적어 그 상권에 맞춘 답을 함께 받습니다. 요금은 사업 모델 예시입니다.</p></div>
       </div>
       <div className="ctl">
@@ -45,7 +45,7 @@ export default function AIPage() {
           {a.abs_decline && <> · 절대 쇠퇴 신호 {a.abs_decline}</>}</div>
       </div>
 
-      <div className="split" style={{ gridTemplateColumns: "minmax(0,3fr) minmax(320px,2fr)", marginTop: 4 }}>
+      <div className="split split-ai">
         <section className="panel" aria-label="해설">
           <div className="badges" style={{ marginTop: 0 }}>
             <span className="badge gray">기본 해설 {e.generated_at ? `(${String(e.generated_at).slice(0, 10)} 작성)` : ""}</span>
@@ -63,7 +63,7 @@ export default function AIPage() {
           </div>
         </section>
         <aside className="box bone">
-          <h3>추가로 묻고 싶은 것 <span className="badge gray" style={{ marginLeft: 4 }}>프리미엄</span></h3>
+          <h2>추가로 묻고 싶은 것 <span className="badge gray" style={{ marginLeft: 4 }}>프리미엄</span></h2>
           <p className="small muted" style={{ margin: "2px 0 6px" }}>예시를 누르면 아래에 채워집니다.</p>
           <div className="pills">{EXAMPLES.map(x => <button key={x} type="button" onClick={() => setExtra(x)}>{x}</button>)}</div>
           <label className="sr" htmlFor="ai-q">질문</label>

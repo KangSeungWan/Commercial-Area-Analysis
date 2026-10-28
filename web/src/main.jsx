@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import "./app.css";
 import { useRoute, useApp, go } from "./lib.js";
 import Cover from "./pages/Cover.jsx";
@@ -29,10 +29,18 @@ function Map3D() {
 
 function App() {
   const { path } = useRoute();
-  useEffect(() => { document.title = path === "/" ? "대전 트램 상권 지도" : `${TITLES[path] || ""} · 대전 트램 상권 지도`; window.scrollTo(0, 0); }, [path]);
+  const mainRef = useRef(null), first = useRef(true);
+  useEffect(() => {
+    document.title = path === "/" ? "대전 트램 상권 지도" : `${TITLES[path] || ""} · 대전 트램 상권 지도`; window.scrollTo(0, 0);
+    // 화면이 바뀌면 본문으로 초점 이동(화면 읽기 프로그램), 좁은 화면에서는 고른 메뉴가 보이게
+    if (!first.current) mainRef.current?.focus({ preventScroll: true });
+    first.current = false;
+    document.querySelector('.nav a[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [path]);
   const Page = { "/": Cover, "/map": MapPage, "/3d": Map3D, "/industry": IndustryPage, "/compare": ComparePage, "/ai": AIPage, "/tourism": TourismPage, "/about": AboutPage }[path] || MapPage;
   return (
     <>
+      <a className="skip" href="#main" onClick={e => { e.preventDefault(); mainRef.current?.focus(); }}>본문으로 건너뛰기</a>
       <header className="top">
         <div className="top-in">
           <a className="mark" href="#/" aria-label="처음 화면으로"><i /><span>대전 트램 상권 지도</span></a>
@@ -42,7 +50,7 @@ function App() {
           <span className="top-src">2030 개통 트램 2호선 · 공공데이터 분석</span>
         </div>
       </header>
-      <main><Page /></main>
+      <main id="main" ref={mainRef} tabIndex={-1}><Page /></main>
       <footer className="foot">
         <div className="foot-in">
           <p>자료: 국토교통부 개별공시지가, 소상공인시장진흥공단 상가(상권)정보, 대전시 트램 2호선 정거장 자료, 2021 대전 소상공인 실태조사, 한국부동산원 임대동향,

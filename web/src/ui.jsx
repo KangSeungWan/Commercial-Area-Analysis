@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useRef, useId, useEffect } from "react";
 import { marked } from "marked";
 import { scaleLinear, scaleTime, scaleBand } from "d3-scale";
 import { line as d3line, area as d3area } from "d3-shape";
@@ -12,8 +12,31 @@ export function MD({ text, inline = false, className = "md" }) {
     : <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
+/** ? 설명: 누르거나(터치) 마우스를 올리거나 키보드로 고르면 화면 안에 맞춰 뜸. Esc 로 닫힘 */
 export function Help({ tip }) {
-  return <span className="help" tabIndex={0} data-tip={tip} aria-label={tip}>?</span>;
+  const [pos, setPos] = useState(null);
+  const ref = useRef(null), id = useId();
+  const open = () => {
+    const b = ref.current.getBoundingClientRect(), w = Math.min(300, innerWidth - 24);
+    const left = Math.max(12, Math.min(b.left + b.width / 2 - w / 2, innerWidth - w - 12));
+    const below = b.bottom + 8, up = innerHeight - b.top + 8;
+    setPos(b.bottom > innerHeight * 0.66 ? { left, bottom: up, width: w } : { left, top: below, width: w });
+  };
+  const close = () => setPos(null);
+  useEffect(() => {
+    if (!pos) return;
+    const k = e => e.key === "Escape" && close();
+    const out = e => { if (!ref.current?.contains(e.target)) close(); };
+    addEventListener("keydown", k); addEventListener("scroll", close, true); addEventListener("pointerdown", out);
+    return () => { removeEventListener("keydown", k); removeEventListener("scroll", close, true); removeEventListener("pointerdown", out); };
+  }, [pos]);
+  return (
+    <>
+      <button type="button" ref={ref} className="help" aria-label={"설명: " + tip} aria-expanded={!!pos} aria-describedby={pos ? id : undefined}
+        onClick={e => { e.stopPropagation(); open(); }} onMouseEnter={open} onMouseLeave={close} onFocus={open} onBlur={close}>?</button>
+      {pos && <span role="tooltip" id={id} className="tip" style={pos}>{tip}</span>}
+    </>
+  );
 }
 
 export function Seg({ options, value, onChange, big, disabled, label }) {
@@ -56,7 +79,9 @@ export function Controls({ meta, unit = false }) {
 
 export function QBadge({ q }) {
   if (!q) return null;
-  return <span className="badge" style={{ background: QHEX[q] || "#999", color: QTXT[q] || "#fff" }}>{q}</span>;
+  // 글자 대비 4.5:1 이상이 되도록 배지 바탕만 조금 진하게 (지도 색은 그대로)
+  const bg = { "성장 지속": "#1e7d4a" }[q] || QHEX[q] || "#999";
+  return <span className="badge" style={{ background: bg, color: QTXT[q] || "#fff" }}>{q}</span>;
 }
 
 export function Tabs({ tabs, value, onChange }) {
@@ -103,18 +128,23 @@ export function ForecastChart({ hist, fc, scen, after, openYear = 2030 }) {
   const L = d3line().x(d => x(d[0])).y(d => y(d[1]));
   const A = d3area().x(d => x(d.y)).y0(d => y(d.lo)).y1(d => y(d.hi));
   const last = [h[h.length - 1][0], h[h.length - 1][1]];
+  const end = rows[rows.length - 1];
+  const share = after && end.base ? (end.tram / end.base - 1) * 100 : null;
+  const T = d3area().x(d => x(d.y)).y0(d => y(d.base)).y1(d => y(d.tram));
   return (
     <div className="chart">
       <Legend items={[["실제", "#222"], ["추세 전망 (트램 없음)", "#9aa0a6", true], ...(after ? [["시나리오 (트램 건설 후)", "var(--tram-ink)"]] : [])]} />
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="땅값 지수 실제와 전망 (2015=100)">
         <Axes x={x} y={y} xTicks={x.ticks(6)} yTicks={y.ticks(5)} xfmt={d => d} />
-        <path d={A(rows)} fill="#9aa0a6" opacity=".22" />
+        <path d={A(rows)} fill="#9aa0a6" opacity=".14" />
+        {after && <path d={T(rows)} fill="var(--tram-ink)" opacity=".22" />}
         <path d={L([last, ...rows.map(r => [r.y, r.base])])} fill="none" stroke="#9aa0a6" strokeWidth="2.2" strokeDasharray="5 4" />
         {after && <path d={L([last, ...rows.map(r => [r.y, r.tram])])} fill="none" stroke="var(--tram-ink)" strokeWidth="2.5" />}
         <path d={L(h)} fill="none" stroke="#222" strokeWidth="2.5" />
         <line x1={x(openYear)} x2={x(openYear)} y1={M.t} y2={H - M.b} stroke="var(--route)" strokeDasharray="2 2" />
-        <text x={x(openYear) + 4} y={M.t + 10} fontSize="11" fill="var(--route)">트램 개통</text>
-        <text x={M.l} y={M.t - 1} fontSize="10.5" fill="var(--sage-gray)">지수 (2015=100)</text>
+        <text x={x(openYear) + 4} y={M.t + 10} fontSize="12" fill="var(--route)">트램 개통</text>
+        <text x={M.l} y={M.t - 1} fontSize="12" fill="var(--sage-gray)">지수 (2015=100)</text>
+        {share != null && <text x={x(end.y)} y={y(end.tram) - 8} fontSize="12.5" fontWeight="600" textAnchor="end" fill="var(--tram-ink)">트램 몫 {share >= 0 ? "+" : ""}{share.toFixed(1)}% ({end.y})</text>}
       </svg>
     </div>
   );
