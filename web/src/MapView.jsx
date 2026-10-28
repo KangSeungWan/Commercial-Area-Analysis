@@ -158,7 +158,7 @@ export default function MapView(p) {
           const Q = latest.current;
           let html = null;
           if (layer.id === "stations") html = Q.stationTip?.(object);
-          else if (layer.id === "pois") html = `<b>${object.name}</b><br/><span style="color:#6b7860">${object.gateway ? "관문(교통)" : object.type}</span>`;
+          else if (layer.id === "pois") html = `<b>${object.name}</b><br/><span style="color:#5b6751">${object.gateway ? "관문(교통)" : object.type} · 대략적 위치</span>`;
           else if (object.properties) html = Q.tooltip?.(object.properties[Q.keyProp]);
           return html ? { html, style: TIP } : null;
         },

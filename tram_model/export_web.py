@@ -311,8 +311,11 @@ def main():
     poi = csv(DATA / "tourism_poi.csv", dtype=str, keep_default_na=False)
     if poi is not None:
         pz = poi[(poi.use_in_tourism == "1") | (poi.get("gateway", "0") == "1")]
-        # 좌표는 공개하지 않음: 관광지 좌표가 카카오 로컬 API 결과라 저장·재제공 금지(카카오 데브톡 답변 2026-09·10) → 이름·종류만
+        # 좌표: geocode_tourism_public.py 로 공공데이터(상가정보·개별공시지가)에서 다시 잡은 값(10-28, 카카오 아님).
+        # 공개 지도에는 '대략적 위치'로 소수 3자리(약 100m)까지만. 2곳은 OpenStreetMap(ODbL) → src 로 표시
         tour["poi"] = [dict(id=r.poi_id, name=r["name"], type=r.tour_type, gu=r.gu,
+                            lat=round(float(r.lat), 3), lon=round(float(r.lon), 3),
+                            src="osm" if "OpenStreetMap" in str(r.get("coord_source", "")) else "public",
                             gateway=r.get("gateway", "0") == "1") for _, r in pz.iterrows() if r.lat and r.lon]
     lit = csv(DATA / "literature_tram_tourism.csv")
     tour["literature"] = records(lit, ["id", "group", "source", "city_system", "year", "finding", "reliability", "use_in_project", "url"])

@@ -37,10 +37,12 @@ function Daejeon({ D }) {
     </div>
     <div className="split" style={{ marginTop: 0 }}>
       <div className="mapbox">
-        <div className="maphead"><div className="lg"><span className="it">정거장에 마우스를 올리거나 누르면 500m 안 관광지가 보입니다</span></div>
+        <div className="maphead"><div className="lg"><span className="it"><span className="dot" style={{ background: "rgb(127,79,36)" }} />관광지 {T.poi.filter(p => !p.gateway && p.lat).length}곳</span>
+          <span className="it"><span className="dot" style={{ background: "#23272e" }} />관문(교통) {T.poi.filter(p => p.gateway && p.lat).length}곳</span>
+          <span className="it muted">대략적 위치(약 100m)</span></div>
           <div className="sym"><span><span className="ln" />트램 2호선</span><span><span className="st" />정거장</span></div></div>
         <MapView keyProp="dong_id" gu={D.geo_gu} polys={D.geo_dongs} polyAlpha={60} fill={{}} fillKey="t" stations={D.meta.stations} route={D.meta.route} tramAfter
-          stationTip={s => { const t = S.find(x => x.station_no === s.no); return `<b>${s.no}번 ${s.name}</b><br/>${t?.pois || "500m 안 관광지 없음"}`; }}
+          pois={T.poi.filter(p => p.lat)} stationTip={s => { const t = S.find(x => x.station_no === s.no); return `<b>${s.no}번 ${s.name}</b><br/>${t?.pois || "500m 안 관광지 없음"}`; }}
           ariaLabel="관광지와 트램 정거장 지도" />
       </div>
       <div>
@@ -63,7 +65,7 @@ function Daejeon({ D }) {
       <div className="tablewrap"><table className="t"><thead><tr><th>정거장</th><th>관광지 (거리)</th></tr></thead>
         <tbody>{S.filter(s => s.n_poi > 0).sort((a, b) => b.tour_score - a.tour_score).map(s => <tr key={s.station_no}><td>{s.station_no} {s.station_name}</td><td className="small">{s.pois}</td></tr>)}</tbody></table></div>
     </div>
-    <p className="src">관광지 위치 점은 공개 사이트에 싣지 않습니다(좌표 자료 이용 조건). 관광지 이름과 거리는 정거장 표에서 볼 수 있습니다. 시나리오: 관문 4곳(대전역·대전복합터미널·서대전역·유성복합터미널, 하루 이용객 비율로 가중)에서 상권까지 이동 시간이 트램으로 줄어드는 만큼 방문이 는다고 가정(해외 고속철 탄력성 0~1.0 차용). 이동 시간은 근사(환승 제외). 효과는 개통 후 2년쯤에 절반. 자료: 관광 접근성 시나리오 · 정거장별 관광지</p>
+    <p className="src">관광지 위치는 공개된 주소(대전시 명소 목록·관광정보)를 공공데이터(소상공인 상가정보 건물 좌표·국토부 개별공시지가 필지)로 바꾼 대략적 위치이며, 2곳은 © OpenStreetMap 기여자(ODbL). 시나리오: 관문 4곳(대전역·대전복합터미널·서대전역·유성복합터미널, 하루 이용객 비율로 가중)에서 상권까지 이동 시간이 트램으로 줄어드는 만큼 방문이 는다고 가정(해외 고속철 탄력성 0~1.0 차용). 이동 시간은 근사(환승 제외). 효과는 개통 후 2년쯤에 절반. 자료: 관광 접근성 시나리오 · 정거장별 관광지</p>
   </>;
 }
 
