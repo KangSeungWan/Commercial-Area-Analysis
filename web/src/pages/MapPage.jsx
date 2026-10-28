@@ -375,8 +375,6 @@ function DongPanel({ D, d, v, st }) {
           d={st.tramAfter ? `${v.money > 0 ? `500m 안 땅값 +${eok(v.money)} · ` : ""}낮음 ${pct(d.tram_effect_low)} ~ 높음 ${pct(d.tram_effect_high)}` : `건설 후 ${pct(v.tram)} (${sl})`} />
         {compMetric(v, st, sl)}
         {rentMetric(d, v, st)}
-        <Metric l="카드매출 2025→2026" v={pct(d.s89_sales_yoy_pct)} h={"출처: " + meta.sources.s8989 + ". 1~8월 같은 달끼리 비교. 금액보다 비율·증감으로 해석"}
-          d={d.s89_market_caveat ? "현금·비카드 거래 영향 가능" : "8989 추정매출, 같은 달 비교"} />
         <div className="mgroup">지금 상태</div>
         <Metric l="점포 수 (2026-06)" v={int(d.n_stores)} d={d.store_share_chg_5y_pct != null ? `비중 5년 ${pct(d.store_share_chg_5y_pct)}` : null} />
         <Metric l="땅값 5년 상승률" v={pct(d.land_chg_5y_pct)} d={d.land_rel_idx != null ? `대전 평균 대비 ${Math.round(d.land_rel_idx)}` : null} />

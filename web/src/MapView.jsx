@@ -160,6 +160,7 @@ export default function MapView(p) {
   return (
     <div className="map" ref={el} role="application" aria-label={p.ariaLabel || "대전 트램 상권 지도"}>
       {err && <div className="map-msg">{err}</div>}
+      {p.basemap !== false && <div className="map-attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> 기여자 © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a></div>}
     </div>
   );
 }

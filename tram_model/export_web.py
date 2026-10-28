@@ -4,7 +4,8 @@
 출력: web_data/  (React 사이트가 그대로 읽음. 사이트 빌드 때 public/data 로 복사)
 
 공개 원칙 (8989 재배포 금지 · API 키)
-- 8989 원자료·월별 매출·금액은 넣지 않음. 행정동 '카드매출 증감(%)'만 출처와 함께 (앱 화면과 같은 요약 지표)
+- 8989 원자료·월별 매출·금액·행정동별 카드매출 증감(%)은 넣지 않음 (10-28 결정: 공개 사이트에서 누구나 내려받을 수 있어
+  재단 '재배포 금지' 조건과 겹칠 수 있음 → 재단 확인 전까지 제외. Streamlit 앱·발표에는 그대로). 분석 결과 요약(공사 −1.4% 등)만 출처와 함께
 - AI 해설은 미리 만든 기본 해설만. Gemini 키·실시간 호출 없음
 - 개인정보 없음. 모든 값은 분석 결과(통계)이며 원자료 행이 아님
 """
@@ -179,7 +180,7 @@ def main():
                 "land_chg_5y_pct", "land_chg_10y_pct", "land_rel_idx", "store_share_chg_5y_pct", "type_name", "risk_score", "growth_score",
                 "risk_drivers", "growth_drivers", "quadrant_stability", "quadrant_alt", "quadrant_uncertain", "abs_decline", "abs_decline_n",
                 "abs_decline_why", "small", "areas", "score_note", "survey_bad_pct", "tram_effect", "tram_effect_low", "tram_effect_high",
-                "s89_sales_yoy_pct", "s89_market_caveat", "quadrant_after", "quadrant_before"]
+                "quadrant_after", "quadrant_before"]  # s89_sales_yoy_pct·s89_market_caveat 는 공개 제외(위 공개 원칙)
         for r in D.to_dict("records"):
             k = r["dong_id"]
             d = {c: r.get(c) for c in keep if c in r}

@@ -17,7 +17,7 @@ export default function ComparePage() {
     return { key: dong ? r.dong_id : r.code, name: dong ? r.name : short(r.name), r, v,
       quadrant: v.quadrant, stab: r.quadrant_stability, risk: r.risk_score, growth: r.growth_score, abs: r.abs_decline,
       tram: v.tram_sel, comp: v.comp, rent: v.rent, rentScore: (R_ORD[v.rent] || 0) * 1000 + (r.rent?.score || 0),
-      land5: r.land_chg_5y_pct, share: r.store_share_chg_5y_pct, extra: dong ? r.s89_sales_yoy_pct : r.close_rate_q_pct, n: r.n_stores };
+      land5: r.land_chg_5y_pct, share: r.store_share_chg_5y_pct, extra: dong ? null : r.close_rate_q_pct, n: r.n_stores };
   });
   const [k, dir] = sort;
   const val = r => (k === "rent" ? r.rentScore : k === "abs" ? (A_ORD[r.abs] ?? -1) : k === "name" ? r.name : r[k]);
@@ -41,7 +41,7 @@ export default function ComparePage() {
             <H id="name">{dong ? "행정동" : "상권"}</H><H id="quadrant">진단</H><H id="stab" r>안정도</H>
             <H id="risk" r tip={HELP.risk}>상대 위험</H><H id="growth" r tip={HELP.growth}>상대 성장</H><H id="abs" tip={HELP.abs}>절대 쇠퇴 신호</H>
             <H id="tram" r>상권 가치 효과</H><H id="comp" r tip={HELP.comp}>업종 변화</H><H id="rent" tip={HELP.rent}>임대료 신호</H>
-            <H id="land5" r>땅값 5년</H><H id="share" r>점포 비중 5년</H><H id="extra" r>{dong ? "카드매출 증감" : "분기 폐업률"}</H><H id="n" r>점포 수</H>
+            <H id="land5" r>땅값 5년</H><H id="share" r>점포 비중 5년</H>{!dong && <H id="extra" r>분기 폐업률</H>}<H id="n" r>점포 수</H>
           </tr></thead>
           <tbody>
             {rows.map(r => (
@@ -55,14 +55,14 @@ export default function ComparePage() {
                 <td className="r">{st.tramAfter && r.comp != null ? pp(r.comp) : "-"}</td>
                 <td>{r.rent}</td>
                 <td className="r">{pct(r.land5)}</td><td className="r">{r.share != null && Math.abs(r.share) > 200 ? <span title="2021 대형 쇼핑몰 입점 점포가 한꺼번에 등록된 왜곡 — 점포 지표는 해석하지 말 것">{pct(r.share)}*</span> : pct(r.share)}</td>
-                <td className="r">{dong ? pct(r.extra) : r.extra != null ? r.extra.toFixed(2) + "%" : "-"}</td>
+                {!dong && <td className="r">{r.extra != null ? r.extra.toFixed(2) + "%" : "-"}</td>}
                 <td className="r">{int(r.n)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="src">{!dong && "* 도룡동 점포 비중은 2021 대형 쇼핑몰 입점 점포가 한꺼번에 등록된 왜곡이라 해석하지 않습니다. "}자료: {dong ? "행정동 진단·지표 · 카드매출 증감: " + meta.sources.s8989 : "상권 진단·지표"} · 트램 효과 수준 · 업종 변화 예측 · 임대료 부담 신호</p>
+      <p className="src">{!dong && "* 도룡동 점포 비중은 2021 대형 쇼핑몰 입점 점포가 한꺼번에 등록된 왜곡이라 해석하지 않습니다. "}자료: {dong ? "행정동 진단·지표" : "상권 진단·지표"} · 트램 효과 수준 · 업종 변화 예측 · 임대료 부담 신호</p>
     </div>
   );
 }
