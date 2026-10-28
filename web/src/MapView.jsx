@@ -61,7 +61,8 @@ export default function MapView(p) {
     const D = window.deck, P = latest.current;
     const L = [];
     const rc = P.tramAfter ? [...ROUTE_C, 255] : [140, 146, 154, 210], rw = P.tramAfter ? 3 : 2;
-    if (P.basemap !== false) {
+    // 바탕 지도 타일(CARTO 래스터)은 2026-09-25부터 API 키가 필요해 기본으로 끔. 켜려면 basemap={true} + 키 붙은 주소
+    if (P.basemap === true) {
       for (const [id, url, op] of [["tiles", BASEMAP, 0.75]]) {
         L.push(new D.TileLayer({ id, data: url, minZoom: 0, maxZoom: 19, tileSize: 256, opacity: op,
           renderSubLayers: pr => { const { boundingBox: [[w, s], [e, n]] } = pr.tile; return new D.BitmapLayer(pr, { data: null, image: pr.data, bounds: [w, s, e, n] }); } }));
@@ -160,7 +161,7 @@ export default function MapView(p) {
   return (
     <div className="map" ref={el} role="application" aria-label={p.ariaLabel || "대전 트램 상권 지도"}>
       {err && <div className="map-msg">{err}</div>}
-      {p.basemap !== false && <div className="map-attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> 기여자 © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a></div>}
+      {p.basemap === true && <div className="map-attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> 기여자 © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a></div>}
     </div>
   );
 }
