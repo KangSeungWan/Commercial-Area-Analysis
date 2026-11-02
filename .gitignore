@@ -19,3 +19,8 @@ tram_model/data/raw/8989/raw/
 web/dist/
 web/node_modules/
 _to_delete/
+
+# 8989 재집계 표는 재단 조건(재배포 금지)상 저장소에 넣지 않음
+tram_model/outputs/8989/
+tram_model/outputs/station_sales_dong.csv
+tram_model/outputs/validation_closures_8989.csv
