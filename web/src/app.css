@@ -304,3 +304,4 @@ table.t.wide td:first-child, table.t.wide th:first-child { position: sticky; lef
 .poi-lg { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 12.5px; color: var(--moss); }
 .poi-lg .it { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .poi-lg .ic { display: inline-flex; width: 20px; height: 20px; }
+.notes.warnline { color: var(--ink); background: #fbf3e6; border-left: 3px solid var(--q-rebound); padding: 6px 10px; border-radius: 4px; margin-top: 6px; }

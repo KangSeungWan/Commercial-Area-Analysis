@@ -201,7 +201,7 @@ function Verdict({ D, st, dong, reb, V, A, DG, rows, selKey, pick }) {
       )}
           <div className="kpi">
             {avg != null && <span>상권 전체로 펴면 평균 <b>{pct(avg)}</b> (500m 안 {pct(meta.scen[st.scen].effect_pct)} × 500m 안 점포 비율)</span>}
-            {st.tramAfter && moneyAll > 0 && <span>정거장 500m 안 땅값 <b>+{eok(moneyAll)}</b> (공시지가 기준, 개통 1~4년{dong ? ", 82개 동 합계" : ""})</span>}
+            {st.tramAfter && moneyAll > 0 && <span>정거장 500m 안 땅값 <b>+{eok(moneyAll)}</b> (공시지가 기준, 개통 1~4년{dong ? ", 82개 동 합계" : ""}) — 기본 효과의 95% 구간이 0을 포함하므로 중심값일 뿐, 금액만 떼어 인용하지 마세요</span>}
             <button type="button" className="linkbtn" onClick={() => go("/about", { tab: "evidence" })}>트램 효과 근거 보기</button>
           </div>
       {sens.length > 0 && <p className="src">⚑ 정거장 추정 좌표에 따라 진단이 바뀔 수 있는 동: {sens.join(", ")} (좌표를 0~300m 옮겨 300번 다시 계산) · 핵심 상권 20곳은 모두 안정</p>}
@@ -303,6 +303,9 @@ function AreaPanel({ D, a, v, st }) {
         {a.rent_market && <>임대 시장(한국부동산원 '{a.rent_market.region}' {a.rent_market.kind} 상가): 공실률 {f1(a.rent_market.vac)}%, 임대가격지수 2022→2026 {pct(a.rent_market.idx)}. </>}
         {a.bad_pct != null && <>2021 실태조사({a.survey_dong}): 매출·이익 감소 {Math.round(a.decline_pct)}%, 폐업·전환 고려 {Math.round(a.closing_pct)}%(대전 평균 74%·7%, 코로나 시기). </>}
       </p>
+      {a.code === "A12" && <p className="notes">도룡동 점포 수 급증은 2021년 대전신세계 입점 매장이 등록된 영향입니다.</p>}
+      {(a.code === "A03" || a.code === "A04") && <p className="notes warnline">⚠ 전통시장 현금 거래가 카드매출에 빠져 이 상권의 매출 수치는 쓰지 마세요. 보도가 4m→2m로 줄어드는 공사 구간이라 피해가 가장 클 곳인데 가장 측정이 안 되는 곳입니다.</p>}
+      {(a.code === "A17" || a.code === "A18") && <p className="notes warnline">⌂ 정거장이 개발 수요({a.code === "A17" ? "도안 2·3단계" : "연축 혁신도시"})로 추가된 곳이라 땅값 상승에 개발 효과가 섞여 있습니다. 트램만의 효과로 읽지 마세요(KDI 2024).{a.code === "A17" ? " 인근 관저1·2동·도안동·원신흥동·상대동은 2010년 뒤 택지 필지가 2~200배로 늘어난 개발지입니다." : " 연축 도시개발(1,359호, 2024 실시계획 인가)은 아직 땅값에 반영 전입니다."}</p>}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "12px 0 6px" }}>
         <button type="button" className="btn ghost" onClick={() => go("/ai", { area: a.code })}>이 상권 AI 해설 보기</button>
         <button type="button" className="btn ghost" onClick={() => go("/3d", { area: a.code })}>3D로 보기</button>

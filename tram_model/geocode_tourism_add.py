@@ -1,3 +1,4 @@
+# 사용 중지(2026-10-28): 카카오 로컬 API 결과는 저장·재사용 금지(카카오 데브톡 답변) → 좌표는 geocode_tourism_public.py 로 공공데이터에서 다시 잡음. 다시 실행하지 말 것.
 """관광지 추가 후보(검증 2026-10-26)에 카카오 좌표를 붙여 data/tourism_poi.csv 에 더함 — 맥에서 실행.
 
 입력  data/tourism_poi.csv                 기존 79곳 (geocode_tourism_poi_kakao.py 결과 + 검증 반영)

@@ -1,0 +1,28 @@
+poi_id,name,address,mode,source
+P018,전통시장 유성5일장,대전광역시 유성구 장대동 191,,ktriptips(한국관광공사 관광정보) 유성장 https://www.ktriptips.com/kor/shopping/132259
+P021,숭현서원,대전광역시 유성구 엑스포로251번길 36,,ktriptips 숭현서원지 https://www.ktriptips.com/kor/tourspot/1058971
+P024,송애당,대전광역시 대덕구 계족산로17번길 60,,한국관광정보 송애당 https://xn--ok0b236bp0a.com/place/13405
+P061,로하스가족공원 캠핑장,대전광역시 대덕구 대청로 618-136,,인근 주소(대청댐 물문화관) https://xn--ok0b236bp0a.com/place/12576 — 캠핑장은 댐 아래 약 0.5km
+P063,대청호 자연생태관,대전광역시 동구 천개동로 41,,ktriptips https://www.ktriptips.com/kor/culture/736422
+P064,만인산 자연휴양림,대전광역시 동구 산내로 106,,한국관광정보 https://xn--ok0b236bp0a.com/place/14915
+P065,명상정원,대전광역시 동구 추동 680,,ktriptips https://www.ktriptips.com/kor/tourspot/3051657
+P066,상소오토캠핑장,대전광역시 동구 산내로 748,,ktriptips https://www.ktriptips.com/kor/leisure/2727458
+P069,세천유원지,대전광역시 동구 세천공원로 68,,ktriptips 세천공원 https://www.ktriptips.com/kor/tourspot/1622854
+P071,식장산전망대,대전광역시 동구 낭월동 300-1,,ktriptips 식장산 정상쉼터(전망대 인근) https://www.ktriptips.com/kor/tourspot/3490412
+P073,우암사적공원,대전광역시 동구 충정로 53,,ktriptips https://www.ktriptips.com/kor/tourspot/945477
+P074,찬샘마을,대전광역시 동구 냉천로 703,,ktriptips https://www.ktriptips.com/kor/tourspot/128413
+P077,한밭교육박물관,대전광역시 동구 우암로 96,,ktriptips https://www.ktriptips.com/kor/culture/130420
+P080,대전시립미술관,대전광역시 서구 둔산대로 155,,대전시립미술관 도로명 주소
+P085,계룡산 수통골,대전광역시 유성구 수통골로 47-3,,ktriptips https://www.ktriptips.com/kor/leisure/2407314
+P086,계룡스파텔 대온천탕,대전광역시 유성구 봉명동 539-1,,계룡스파텔 지번 주소 https://tourvis.com/hotel/hotels/712679
+P088,대전어린이회관,대전광역시 유성구 월드컵대로 32,,ktriptips(대전월드컵경기장 안) https://www.ktriptips.com/kor/culture/1125312
+P089,대전신세계 Art&Science(아쿠아리움·전망대),대전광역시 유성구 엑스포로 1,,ktriptips 대전 엑스포 아쿠아리움 https://www.ktriptips.com/kor/tourspot/2782788
+P091,솔로몬 로파크,대전광역시 유성구 엑스포로 219-39,,ktriptips https://www.ktriptips.com/kor/tourspot/741957
+P101,대전 아쿠아리움,대전광역시 중구 보문산공원로 469,,한국관광정보 https://xn--ok0b236bp0a.com/place/15584
+A05,소제동 카페거리(관사촌),대전광역시 동구 소제동 수향길,roadonly,원래 목록 주소 — 길 위 점포 좌표 중앙값
+A12,갑천생태호수공원,대전광역시 유성구 원신흥동,park,원래 목록 주소 — 원신흥동 공원 필지 중앙
+P005,단재 신채호 선생 생가터,대전광역시 중구 단재로229번길 47,,ktriptips https://www.ktriptips.com/kor/tourspot/1623995
+P040,대동하늘공원,대전광역시 동구 동대전로110번길 182,,ktriptips https://www.ktriptips.com/kor/tourspot/2612261
+P007,수운교의 성지 천단,대전광역시 유성구 자운로245번길 80,osm,OpenStreetMap 번지 일치(수운교 80 자운로245번길) — 상가정보에 이 길 점포 없음
+P050,대전시민천문대와 굴절망원경,대전광역시 유성구 과학로 213-48,osm,OpenStreetMap 번지 일치(213-48 과학로)
+P020,천연기념물센터,대전광역시 서구 만년동,park,도로명 유등로 927(만년동 — safehomes 건축물 정보). 이 구간 점포가 없어 만년동 공원 필지(한밭수목원) 중앙으로 근사 — 수백 m 오차 가능
