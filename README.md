@@ -1,7 +1,64 @@
 # 트램은 매출이 아니라 거리를 바꾼다
-대전 1호선 이중차분으로 미리 읽는 트램 2호선 상권 변화 사전 경고 지도
+**대전 1호선 이중차분으로 미리 읽는 트램 2호선 상권 변화 사전 경고 지도**
 
-공개 웹 지도: https://daejeon-tram-map.netlify.app
+[**▶ 공개 웹 지도 바로 열기**](https://daejeon-tram-map.netlify.app) · Python · Streamlit · pydeck · React · deck.gl · Gemini API · License: MIT
+
+![진단 지도: 트램 2호선 주변 핵심 상권 20곳을 성장 지속·트램 반등 기회·쇠퇴 우려·정체 4가지로 칠한 화면](docs/img/app_map.png)
+
+## 한눈에 보기
+대전 트램 2호선(2030 하반기 개통 예정)이 정거장 주변 상권을 어떻게 바꿀지, **이미 개통한 대전 1호선(2006)의 전후 변화**를 이중차분(DiD)으로 추정해 미리 보여 주는 분석 파이프라인과 지도 앱입니다.
+
+| 질문 | 결과 (요약) |
+|---|---|
+| 어디가 위험하고 어디가 기회인가 | 핵심 상권 20곳 → 성장 지속 8 · 트램 반등 기회 5 · 쇠퇴 우려 4 · 정체 3 (행정동 82곳도 같은 방식) |
+| 땅값은 오르나 | 정거장 주변 +1.8% (범위 0.9~5.8%), 500m 안 합계 약 +4,349억 원 |
+| 업종은 바뀌나 | 카페 수 +24.8%, 2034년까지 약 +272곳 (88~369) |
+| 매출도 오르나 | 점포당 매출 효과는 땅값 효과의 0.24배(통계적으로 유의하지 않음) — **거리는 바뀌지만 가게 하나의 매출은 거의 그대로** |
+| 임대료 부담은 | 반등 기회 5곳 중 3곳에서 임대료 신호 높음 |
+| 공사 기간 영향 | 공사 구간 카드매출 −1.4% (도소매 −2.3%) |
+| 진단이 맞는가 | 외부 지표와 교차 검증: 카드매출 ρ −0.32, 폐업률 ρ +0.24 |
+
+## 시스템 구조
+```mermaid
+flowchart LR
+  A["공공 자료 8종<br/>공시지가·상가정보·인허가<br/>임대동향·카드매출 등"] --> B["효과 추정<br/>1호선 이중차분 + 사건연구<br/>가짜(위약) 검정·강건성 변형"]
+  B --> C["진단·전망<br/>백분위 점수 4분류<br/>ARIMA + 트램 효과 시나리오"]
+  C --> D["검증<br/>외부 지표 상관<br/>좌표 흔들기 300회"]
+  D --> E1["Streamlit 앱<br/>pydeck 지도 · Gemini 해설"]
+  D --> E2["공개 웹<br/>React + deck.gl (Netlify)"]
+```
+
+`tram_model/run_all.py` 한 번으로 50여 단계 분석 전체를 다시 돌릴 수 있습니다(원본 자료 필요).
+
+## 빠른 실행
+```bash
+pip install -r tram_model/requirements.txt
+streamlit run app.py          # 저장소에 든 분석 결과로 지도 앱 실행 (http://localhost:8501)
+```
+- 설치 없이 보려면 [공개 웹 지도](https://daejeon-tram-map.netlify.app)를 여세요.
+- AI 실시간 해설은 `.streamlit/secrets.toml`에 `GEMINI_API_KEY`를 넣으면 켜집니다. 없으면 저장 해설만 보입니다. API 키는 저장소에 포함하지 않습니다.
+- 8989 상권분석 자료는 재배포 금지 조건 때문에 빠져 있어, 해당 수치가 필요한 일부 항목은 앱에서 표시되지 않을 수 있습니다.
+
+![3D 시제품: 상권별 땅값 전망을 기둥 높이로, 트램 노선과 운행 모습을 함께 표시](docs/img/app_3d.png)
+
+## 저장소 구성
+| 경로 | 내용 |
+|---|---|
+| `app.py` | Streamlit 지도 앱 (진단 지도, 상권 상세, AI 해설, 3D 보기) |
+| `app_3d.py` | 3D 시제품 |
+| `tram_model/` | 분석 코드 전체. 전체 재실행 `python tram_model/run_all.py`, 진행 기록 `PROGRESS.md` |
+| `tram_model/outputs/` | 공개용 분석 결과 (8989 행정동 값은 제외) |
+| `web/` | 공개 웹사이트 (React 정적 사이트). 자세한 내용은 `web/README.md` |
+| `web_data/` | 웹사이트용 자료 (`python tram_model/export_web.py` 로 생성) |
+
+### 공개 웹사이트 배포
+1. `python tram_model/export_web.py` → `web_data/` 갱신
+2. `cd web && node build.mjs --prod` → `web/dist/`
+3. `web/dist/` 폴더를 Netlify Drop(app.netlify.com/drop)에 끌어다 놓기
+
+## 한계
+- 효과는 1호선(지하철)에서 추정한 값을 트램에 옮긴 것이라, 노면 트램에서는 크기가 다를 수 있습니다. 서울 신림선(경전철) 결과로 방향만 교차 확인했습니다.
+- 트램 정거장 일부 좌표는 공개 도면 기준 추정값입니다.
 
 ## 자료 이용 안내 (꼭 읽어 주세요)
 - 이 저장소에는 **분석 코드·문서·공개용 결과 요약만** 들어 있습니다. 원본 데이터(`tram_model/data/raw/`)는 포함하지 않습니다.
@@ -14,23 +71,3 @@
 - 코드·문서 라이선스: MIT (`LICENSE`). 오픈소스 고지: `web/public/THIRD_PARTY_NOTICES.txt`.
 
 API 키는 `.streamlit/secrets.toml`에 두며 저장소에 포함하지 않습니다(`GEMINI_API_KEY`가 없으면 저장 해설만 표시됩니다).
-
----
-# Commercial-Area-Analysis
-
-대전 트램 2호선(2030 하반기 개통 예정) 정거장 주변 상권 분석.
-
-## 구성
-- `app.py` — Streamlit 앱 (발표·시연용. Gemini 실시간 AI 해설 포함). 실행: `streamlit run app.py`
-- `tram_model/` — 분석 코드·자료·결과. 전체 재실행: `python tram_model/run_all.py`, 진행 상황은 `PROGRESS.md`
-- `web/` — 공개 웹사이트 (React 정적 사이트). 자세한 내용은 `web/README.md`
-- `web_data/` — 웹사이트용 자료 (`python tram_model/export_web.py` 로 만듦)
-
-## 공개 웹사이트 배포
-1. `python tram_model/export_web.py` → `web_data/` 갱신
-2. `cd web && node build.mjs --prod` → `web/dist/`
-3. `web/dist/` 폴더를 Netlify Drop(app.netlify.com/drop)에 끌어다 놓기
-
-## 자료 사용 조건
-- 8989 상권분석(대전신용보증재단): 활용 허가(2026-10), 재배포 금지·출처 명시. 원자료와 행정동 단위 재집계 값은 저장소에 넣지 않음(효과 추정 요약만)
-- 이 저장소는 코드·문서·공개용 결과 요약만 담고, 원본 데이터(`tram_model/data/raw/`)와 API 키는 포함하지 않음. 자세한 출처와 조건은 위 "자료 이용 안내" 참고

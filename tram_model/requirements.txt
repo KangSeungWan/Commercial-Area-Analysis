@@ -6,3 +6,6 @@ openpyxl
 scikit-image
 matplotlib
 streamlit==1.65.*
+pydeck
+altair
+google-genai   # AI 실시간 해설(선택)
