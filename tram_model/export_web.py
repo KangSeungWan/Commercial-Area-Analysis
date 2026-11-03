@@ -25,6 +25,17 @@ OUT, DATA = HERE / "outputs", HERE / "data"
 DST = ROOT / "web_data"
 
 
+
+def _dir(x, tol=1.0):
+    """2034 땅값 전망 % → 방향만 (+1 오름 / 0 비슷 / −1 내림, ±1%p 안은 비슷). 공개 사이트에서 동별 % 를 내지 않기 위함."""
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return None
+    if x != x:
+        return None
+    return 1 if x > tol else (-1 if x < -tol else 0)
+
 def csv(p, **kw):
     p = Path(p)
     return pd.read_csv(p, encoding="utf-8-sig", **kw) if p.exists() else None
@@ -129,9 +140,9 @@ def main():
                                        "abs_decline_why", "survey_dong", "decline_pct", "closing_pct", "bad_pct",
                                        "tram_effect", "tram_effect_low", "tram_effect_high", "quadrant_after", "quadrant_before"]
              if hasattr(r, k)}
-        if c in f.index:
-            a["land_fc"] = {"none": f.loc[c, "base_path"] - 100, "base": f.loc[c, "tram_base"] - 100,
-                            "low": f.loc[c, "tram_low"] - 100, "high": f.loc[c, "tram_high"] - 100}
+        if c in f.index:                       # 2차 점검 A6: 공개 사이트에는 2034 땅값 전망을 방향(−1/0/+1)만
+            a["land_fc"] = {k_: _dir(f.loc[c, col] - 100) for k_, col in
+                            (("none", "base_path"), ("base", "tram_base"), ("low", "tram_low"), ("high", "tram_high"))}
         if comp is not None:
             cc = comp[(comp.level == "상권") & (comp.key == c) & (comp.year == comp.year.max())].set_index("scenario")
             a["comp"] = {s: dict(pp=cc.loc[s, "cafe_bakery_pp"], add=cc.loc[s, "cafe_bakery_add"], now=cc.loc[s, "cafe_bakery_share_now"],
@@ -143,9 +154,7 @@ def main():
                 a["rent"] = dict(grade=x.rent_pressure, score=x.rent_pressure_score,
                                  drivers=x.rent_drivers if isinstance(x.rent_drivers, str) else None,
                                  stab=x.get("rent_pressure_stability"))
-        if money is not None and c in set(money.code):
-            m = money.set_index("code").loc[c]
-            a["money"] = {s: m.get(f"gain_{s}_eok") for s in ("low", "base", "high")}
+        a["money"] = None                      # 2차 점검 A6: 금액(억 원)은 공개 사이트에 내지 않음 (앱·발표에는 범위와 함께)
         if sens is not None:
             s_ = sens[(sens.level == "상권") & (sens.key == c) & sens.sensitive.astype(bool)]
             a["sens"] = s_.note.iloc[0] if len(s_) else None
@@ -163,11 +172,7 @@ def main():
             a["stations"] = [dict(no=int(x.station_no), n=int(x.stores_in_500m), share=x.share_of_area_pct)
                              for x in st_areas[st_areas.code == c].itertuples()]
         areas.append(a)
-    if money is not None and "ALL" in set(money.code):
-        m = money.set_index("code").loc["ALL"]
-        money_all = {s: m.get(f"gain_{s}_eok") for s in ("low", "base", "high")}
-    else:
-        money_all = None
+    money_all = None                          # 2차 점검 A6: 공개 사이트에는 금액 없음
 
     # ── 행정동 82 ──
     dongs = []
@@ -184,9 +189,9 @@ def main():
         for r in D.to_dict("records"):
             k = r["dong_id"]
             d = {c: r.get(c) for c in keep if c in r}
-            d["land_fc"] = {"none": r.get("land_2034_base", np.nan) - 100, "base": r.get("land_2034_tram", np.nan) - 100,
-                            "low": r.get("land_2034_tram_low", np.nan) - 100, "high": r.get("land_2034_tram_high", np.nan) - 100}
-            d["money"] = {s: r.get(f"money_gain_{s}_eok") for s in ("low", "base", "high")}
+            d["land_fc"] = {k_: _dir(r.get(col, np.nan) - 100) for k_, col in
+                            (("none", "land_2034_base"), ("base", "land_2034_tram"), ("low", "land_2034_tram_low"), ("high", "land_2034_tram_high"))}
+            d["money"] = None
             if comp is not None:
                 cc = comp[(comp.level == "행정동") & (comp.key == k) & (comp.year == comp.year.max())].set_index("scenario")
                 d["comp"] = {s: dict(pp=cc.loc[s, "cafe_bakery_pp"], add=cc.loc[s, "cafe_bakery_add"], now=cc.loc[s, "cafe_bakery_share_now"],
@@ -298,6 +303,7 @@ def main():
     for c in info.index:
         ctx = ac.area_context(c, info, d["fc"], d["IS"], w, d["ind_area"], d["events"], d["st_areas"], "base",
                               d.get("rentp"), d.get("comp"), d.get("tour"))
+        ctx = {k_: v_ for k_, v_ in ctx.items() if not str(k_).startswith("관광(")}   # 2차 점검 A10: 관광 방문 % 공개 안 함
         e = ac.saved_entry(saved, c)
         ai[c] = dict(text=e["text"] if e else None, generated_at=e["generated_at"] if e else None, kind=e.get("kind") if e else None,
                      context=ctx, prompt=ac.build_prompt(ac.context_text(ctx), scen_text, scen_help))
@@ -306,7 +312,7 @@ def main():
     # ── 관광 ──
     tour = dict(layer=records(csv(OUT / "tourism_layer.csv", dtype={"id": str}),
                               ["kind", "id", "name", "tourism_type", "tour_level", "tour_score", "n_poi", "top_poi", "visitors_yr",
-                               "visit_low_pct", "visit_base_pct", "visit_high_pct", "dlnA_traffic", "dlnA_busslow"]),
+                               ]),                       # 2차 점검 A10: 관광 방문 증가 %는 공개하지 않음
                 station=records(csv(OUT / "tourism_station.csv")))
     poi = csv(DATA / "tourism_poi.csv", dtype=str, keep_default_na=False)
     if poi is not None:
@@ -335,8 +341,9 @@ def main():
     n = ap._numbers()
     fmt = lambda s: s.format(**n) if isinstance(s, str) else s
     about = dict(
-        numbers={k: v for k, v in n.items() if isinstance(v, (str, int, float))},
-        story=[dict(zip(["what", "verdict", "how", "result", "limit"], [fmt(x) for x in row])) for row in ap._story(n)],
+        numbers={k: v for k, v in n.items() if isinstance(v, (str, int, float))
+                 and not k.startswith(("money", "gap5", "value500"))},          # 2차 점검 A6: 금액은 공개 안 함
+        story=[dict(zip(["what", "verdict", "grade", "how", "result", "counter", "limit"], [fmt(x) for x in row])) for row in ap._story(n)],
         data=[dict(zip(["name", "source", "period", "size", "use"], r)) for r in ap.DATA],
         models=[dict(zip(["goal", "method", "result", "check"], [r[0], r[1], fmt(r[2]), r[3]])) for r in ap.MODELS],
         papers=[dict(zip(["tag", "paper", "use"], [r[0], r[1], fmt(r[2])])) for r in ap.PAPERS],

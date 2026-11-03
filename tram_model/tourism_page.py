@@ -104,14 +104,10 @@ def _daejeon(st):
         return
     A = L[L.kind == "area"]
     on = A[A.tourism_type == "관광자원형"]
-    c = st.columns(4)
+    c = st.columns(2)                                   # 2차 점검(11-03): 인과 근거가 없는 방문 증가 %는 첫 화면에서 뺌 → '근거와 방법' 안 표로만
     c[0].metric("관광지가 가까운 상권", f"{len(on)} / {len(A)}", f"그중 관광지 많은 곳 {int((on.tour_level == '강').sum())}",
                 delta_color="off", delta_arrow="off")
     c[1].metric("관광지가 있는 정거장", f"{int((S.n_poi > 0).sum())} / {len(S)}", "500m 안 (큰 공원 1km)",
-                delta_color="off", delta_arrow="off")
-    c[2].metric("방문 증가 (기본)", f"0 ~ +{on.visit_base_pct.max():.0f}%", "관문 → 상권 이동 시간 변화로 계산",
-                delta_color="off", delta_arrow="off")
-    c[3].metric("방문 증가 (상한)", f"최대 +{on.visit_high_pct.max():.0f}%", "버스가 느린 경우 · 탄력성 1.0",
                 delta_color="off", delta_arrow="off")
     st.markdown(
         "- **만년동·과학관·엑스포 일대(정거장 220·221)**: 수목원·과학관·신세계·한빛탑이 모여 있어 트램이 가장 의미 있는 곳. "
@@ -121,10 +117,8 @@ def _daejeon(st):
         "(히로시마·나가사키 관광객 37~40% 이용). 이 장점은 숫자로 넣지 못함\n"
         "- **축제 수송**: 0시 축제(중앙로) 기간 대전역·중앙로 정거장 이용 증가 예상 (에든버러 축제 주간 13.7만 명 참고)\n"
         "- **조심할 점**: 관광객이 몰리면 주민 혼잡(리스본·하코다테). 순환선이라 먼 관광지는 오히려 버스보다 느림")
-    t = on.sort_values("visit_high_pct", ascending=False)[["name", "tour_level", "top_poi", "visit_base_pct", "visit_high_pct"]].copy()
-    t["방문 증가 범위"] = [f"0 ~ +{b:.1f}% (상한 +{h:.1f}%)" if h > 0 else "변화 거의 없음" for b, h in zip(t.visit_base_pct, t.visit_high_pct)]
-    t = t[["name", "tour_level", "top_poi", "방문 증가 범위"]]
-    t.columns = ["상권", "관광지", "가까운 관광지", "방문 증가 범위 (시나리오)"]
+    t = on.sort_values("visit_high_pct", ascending=False)[["name", "tour_level", "top_poi"]].copy()
+    t.columns = ["상권", "관광지", "가까운 관광지"]
     t["관광지"] = t["관광지"].map({"강": "많음", "약": "조금"})
     c1, c2 = st.columns([3, 2])
     with c1:
@@ -137,7 +131,8 @@ def _daejeon(st):
         st.dataframe(s, hide_index=True, use_container_width=True)
     st.caption("시나리오: 관문 4곳(대전역·대전복합터미널·서대전역·유성복합터미널, 하루 이용객 비율로 가중)에서 상권까지 이동 시간이 "
                "트램으로 줄어드는 만큼 방문이 는다고 가정(해외 고속철 탄력성 0~1.0 차용). 이동 시간은 근사(환승 제외). "
-               "효과는 개통 후 2년쯤에 절반. 앱의 진단·점수에는 넣지 않음")
+               "효과는 개통 후 2년쯤에 절반. 앱의 진단·점수에는 넣지 않음. 트램이 관광객을 늘렸다는 인과 연구가 없어 상권별 방문 증가 %는 "
+               "화면에 숫자로 내지 않음(계산 결과는 outputs/tourism_layer.csv, 근거와 방법 참고)")
 
 
 def render(st):

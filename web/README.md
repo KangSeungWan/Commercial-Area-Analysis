@@ -17,4 +17,4 @@ cd web && node build.mjs --prod      # esbuild 필요 (npm i -D esbuild react re
 
 ## 공개 원칙
 - 8989 원자료·월별 매출·금액은 넣지 않음. 행정동 카드매출 증감(%)만 출처와 함께
-- Gemini 키 없음: AI 해설은 미리 만든 기본 해설 20곳. 프리미엄(맞춤 질문)은 안내만 — 실시간은 발표용 Streamlit 앱에서
+- Gemini 키 없음: AI 해설은 미리 만든 기본 해설 20곳. 맞춤 질문은 안내만 — 실시간은 발표용 Streamlit 앱에서

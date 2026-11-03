@@ -6,6 +6,9 @@ import { useData, useApp, setState, go, useRoute, view, METRICS, metricLabel, co
 
 const NEED = ["meta", "areas", "dongs", "geo_core", "geo_regions", "geo_dongs", "geo_gu", "series_area", "series_dong", "composition"];
 
+// 2차 점검(11-03) A6: 공개 사이트는 2034 땅값 전망을 % 대신 방향만 (export_web._dir: +1 / 0 / −1)
+const dirTxt = x => (x == null || Number.isNaN(x)) ? "-" : x > 0 ? "오르는 방향 ↑" : x < 0 ? "내리는 방향 ↓" : "비슷 →";
+
 export default function MapPage() {
   const { data, error } = useData(NEED);
   if (!data) return <Loading error={error} />;
@@ -95,7 +98,7 @@ function MapInner({ D }) {
             <span className="ctl-l">지도에 칠할 것</span>
             <Seg label="지도에 칠할 것" options={["quadrant", "tram_sel", "comp", "rent"].map(k => [k, METRICS[k].short])} value={m} onChange={v => setState({ metric: v })} />
             <span className="sep" aria-hidden="true" />
-            <Seg label="참고 지표" options={["land_fc", "land_chg_5y_pct", "store_share_chg_5y_pct"].map(k => [k, METRICS[k].short])} value={m} onChange={v => setState({ metric: v })} />
+            <Seg label="참고 지표" options={["land_chg_5y_pct", "store_share_chg_5y_pct"].map(k => [k, METRICS[k].short])} value={m} onChange={v => setState({ metric: v })} />
           </div>
           <div className="maphead">
             {legend}
@@ -152,11 +155,11 @@ function Story({ D, st, dong, rows }) {
   const ar = <span className="ar" aria-hidden="true">→</span>;
   return (
     <div className="story">
-      <span>① 트램은 <b>상권 가치</b>를 올리고(정거장 500m 땅값 {eff})</span>{ar}
-      <span>② <b>업종</b>을 카페 쪽으로 바꾸지만{cafe != null && ` (2034 대전 카페 +${Math.round(cafe)}곳)`}</span>{ar}
-      <span>③ <b>점포당 매출</b>은 덜 오릅니다{meta.sales_ratio != null && `(땅값 효과의 ${meta.sales_ratio.toFixed(2)}배)`}</span>{ar}
-      <span>④ 반등 기회 {reb.length}곳 중 <b>{nhi}곳은 임대료 부담</b> 위험</span>{ar}
-      <span>⑤ 시: 공사 중 매출 보전 → 개통 초 빈 점포 채우기 → 땅값 오른 뒤 상인 보호 · 상인: 계약 갱신을 개통(2030) 전후로</span>
+      <span>① <b>상권 가치</b>(땅값)는 오르는 방향 — 크기는 불확실(정거장 500m 기본 {eff}, 95% 구간 0 포함)</span>{ar}
+      <span>② <b>업종</b>은 카페 쪽으로 — 가장 확실한 변화{cafe != null && ` (2034 대전 카페 트램 없을 때보다 +${Math.round(cafe)}곳)`}</span>{ar}
+      <span>③ <b>점포당 매출</b>이 땅값만큼 오른 증거는 없음</span>{ar}
+      <span>④ 반등 기회 {reb.length}곳 중 <b>{nhi}곳은 땅값-장사 수익 간극</b>이 큼 — 지켜볼 곳</span>{ar}
+      <span>⑤ 시: 공사 중 매출 기록·지원 → 개통 초 빈 점포·업종 전환 지원 → 임대료가 실제로 오르기 시작하면 상인 보호 착수 · 상인: 내 계약의 갱신 시점·갱신요구권 확인</span>
     </div>
   );
 }
@@ -293,7 +296,7 @@ function AreaPanel({ D, a, v, st }) {
           d={st.tramAfter ? `${v.money > 0 ? `500m 안 땅값 +${eok(v.money)} · ` : ""}낮음 ${pct(a.tram_effect_low)} ~ 높음 ${pct(a.tram_effect_high)}` : `건설 후 ${pct(v.tram)} (${sl})`} />
         {compMetric(v, st, sl)}
         {rentMetric(a, v, st)}
-        <Metric l={`땅값 전망 2026→2034`} v={pct(v.land_fc)} d={st.tramAfter ? `트램 없으면 ${pct(a.land_fc?.none)}` : "트램 없는 추세"} />
+        <Metric l={`땅값 전망 2026→2034 (방향)`} v={dirTxt(v.land_fc)} d={st.tramAfter ? `트램 없으면 ${dirTxt(a.land_fc?.none)}` : "트램 없는 추세"} />
         <div className="mgroup">지금 상태</div>
         <Metric l="점포 수 (2026-06)" v={int(a.n_stores)} d={`대전 내 비중 5년 ${pct(a.store_share_chg_5y_pct)}`} />
         <Metric l="땅값 5년 상승률" v={pct(a.land_chg_5y_pct)} d={a.close_rate_q_pct != null ? `분기 폐업률 ${a.close_rate_q_pct.toFixed(2)}%` : null} />

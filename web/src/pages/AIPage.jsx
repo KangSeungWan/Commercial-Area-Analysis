@@ -27,12 +27,6 @@ export default function AIPage() {
         <h1 className="page-t">AI 상권 해설</h1>
         <p className="page-sub">진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 받은 해설입니다. 숫자는 모두 이 분석의 결과이고, AI는 그것을 설명하는 역할만 합니다.</p>
       </div>
-      <div className="plans" style={{ marginBottom: 16 }}>
-        <div><h2><span>무료 · 기본 해설</span><span className="num">0원</span></h2>
-          <p>상권 20곳의 해설을 미리 만들어 두었습니다(기본 시나리오·기본 업종 가중치). 지금 이 화면에서 바로 볼 수 있습니다.</p></div>
-        <div><h2><span>프리미엄 · 맞춤 해설</span><span className="num">월 9,900원 (예시)</span></h2>
-          <p>실시간 생성, 내가 고른 시나리오·업종 가중치 반영, 그리고 묻고 싶은 것을 적어 그 상권에 맞춘 답을 함께 받습니다. 요금은 사업 모델 예시입니다.</p></div>
-      </div>
       <div className="ctl">
         <div className="ctl-g" style={{ minWidth: "min(420px,100%)" }}>
           <label className="ctl-l" htmlFor="ai-area">상권</label>
@@ -54,7 +48,7 @@ export default function AIPage() {
           {e.text ? <MD text={e.text} /> : <p className="muted">이 상권의 해설이 아직 없습니다.</p>}
           {asked && (
             <div className="notice warn" style={{ marginTop: 14 }}>
-              <b>질문에 대한 맞춤 답은 프리미엄 실시간 기능입니다.</b> 이 공개 사이트에서는 AI 키를 보호하려고 실시간 호출을 열어 두지 않았습니다.
+              <b>질문에 대한 맞춤 답은 실시간 연결 때만 받을 수 있습니다.</b> 이 공개 사이트에서는 AI 키를 보호하려고 실시간 호출을 열어 두지 않았습니다.
               발표 시연 앱에서는 아래 '보내는 글' 그대로 AI에게 보내 7번 항목으로 답을 받습니다.
             </div>
           )}
@@ -63,7 +57,7 @@ export default function AIPage() {
           </div>
         </section>
         <aside className="box bone">
-          <h2>추가로 묻고 싶은 것 <span className="badge gray" style={{ marginLeft: 4 }}>프리미엄</span></h2>
+          <h2>추가로 묻고 싶은 것</h2>
           <p className="small muted" style={{ margin: "2px 0 6px" }}>예시를 누르면 아래에 채워집니다.</p>
           <div className="pills">{EXAMPLES.map(x => <button key={x} type="button" onClick={() => setExtra(x)}>{x}</button>)}</div>
           <label className="sr" htmlFor="ai-q">질문</label>
@@ -80,7 +74,7 @@ export default function AIPage() {
           <pre className="prompt">{prompt}</pre>
         </div>
       </details>
-      <p className="src">AI 해설은 분석 결과를 설명하는 참고 자료이며 투자·계약 판단의 근거가 아닙니다. 추정치는 '추정'으로 표시됩니다. 기본 해설은 앱이 보내는 것과 같은 글로 사전 작성한 뒤 팀이 수치를 대조했습니다.</p>
+      <p className="src">AI 해설은 분석 결과를 설명하는 참고 자료이며 투자·계약 판단의 근거가 아닙니다. 추정치는 '추정'으로 표시됩니다. 기본 해설은 앱이 보내는 것과 같은 글로 사전 작성한 뒤 숫자를 기계로 대조했습니다(보낸 정보에 없는 숫자 0개, 2026-11-03).</p>
     </div>
   );
 }

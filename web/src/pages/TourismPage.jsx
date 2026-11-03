@@ -28,13 +28,10 @@ function Daejeon({ D }) {
   const A = T.layer.filter(r => r.kind === "area");
   const on = A.filter(r => r.tourism_type === "관광자원형");
   const S = T.station;
-  const maxB = Math.max(...on.map(r => r.visit_base_pct || 0)), maxH = Math.max(...on.map(r => r.visit_high_pct || 0));
   return <>
     <div className="rows3">
       <div className="stat"><span className="v">{on.length} / {A.length}</span><span className="l">관광지가 가까운 상권</span><span className="d">그중 관광지 많은 곳 {on.filter(r => r.tour_level === "강").length}</span></div>
       <div className="stat"><span className="v">{S.filter(s => s.n_poi > 0).length} / {S.length}</span><span className="l">관광지가 있는 정거장</span><span className="d">500m 안 (큰 공원 1km)</span></div>
-      <div className="stat"><span className="v">0 ~ +{Math.round(maxB)}%</span><span className="l">방문 증가 (기본)</span><span className="d">관문 → 상권 이동 시간 변화로 계산</span></div>
-      <div className="stat"><span className="v">최대 +{Math.round(maxH)}%</span><span className="l">방문 증가 (상한)</span><span className="d">버스가 느린 경우 · 탄력성 1.0</span></div>
     </div>
     <div className="split" style={{ marginTop: 0 }}>
       <div className="mapbox">
@@ -58,9 +55,9 @@ function Daejeon({ D }) {
       </div>
     </div>
     <div className="grid2" style={{ marginTop: 18 }}>
-      <div className="tablewrap"><table className="t"><thead><tr><th>상권</th><th>관광지</th><th>가까운 관광지</th><th>방문 증가 범위 (시나리오)</th></tr></thead>
-        <tbody>{on.sort((a, b) => b.visit_high_pct - a.visit_high_pct).map(r => <tr key={r.id}><td>{short(r.name)}</td><td>{r.tour_level === "강" ? "많음" : "조금"}</td>
-          <td className="small">{r.top_poi}</td><td className="num">{r.visit_high_pct > 0.05 ? (r.visit_base_pct >= 0.05 ? `0 ~ ${pct(r.visit_base_pct)} (상한 ${pct(r.visit_high_pct)})` : `기본 0, 상한 ${pct(r.visit_high_pct)}`) : "변화 거의 없음"}</td></tr>)}</tbody></table></div>
+      <div className="tablewrap"><table className="t"><thead><tr><th>상권</th><th>관광지</th><th>가까운 관광지</th></tr></thead>
+        <tbody>{on.sort((a, b) => (b.tour_score || 0) - (a.tour_score || 0)).map(r => <tr key={r.id}><td>{short(r.name)}</td><td>{r.tour_level === "강" ? "많음" : "조금"}</td>
+          <td className="small">{r.top_poi}</td></tr>)}</tbody></table></div>
       <div className="tablewrap"><table className="t"><thead><tr><th>정거장</th><th>관광지 (거리)</th></tr></thead>
         <tbody>{S.filter(s => s.n_poi > 0).sort((a, b) => b.tour_score - a.tour_score).map(s => <tr key={s.station_no}><td>{s.station_no} {s.station_name}</td><td className="small">{s.pois}</td></tr>)}</tbody></table></div>
     </div>

@@ -24,3 +24,6 @@ _to_delete/
 tram_model/outputs/8989/
 tram_model/outputs/station_sales_dong.csv
 tram_model/outputs/validation_closures_8989.csv
+
+# pyarrow 없는 환경용 공시지가 CSV 판(대용량, landprice_long_portable.py 로 다시 만듦)
+tram_model/outputs/landprice_long_1990_2020.csv.gz

@@ -1,0 +1,214 @@
+﻿file,test,p_col,p,q_bh,p_lt_05,p_lt_01,q_lt_05
+validation_closures_8989_summary.csv,상가정보 폐업률 ↔ 8989 폐업률 (출처 간 일치),p,0.0,0.0,True,True,True
+sector_evidence_share.csv,2단계(2008) | 전체 음식점 수(밀도 맞춤) | %,p값,0.0,0.0,True,True,True
+sector_evidence_share.csv,2단계(2008) | 전체 음식점 수 | %,p값,0.0,0.0,True,True,True
+sector_evidence_other.csv,세탁업 | 5 2단계 역 재현(2008~) | %,p값,0.0,0.0,True,True,True
+sector_evidence_other.csv,미용업 | 5 2단계 역 재현(2008~) | %,p값,0.0,0.0,True,True,True
+sector_evidence_checks.csv,5 2단계 역 재현 (2008~) | 식사 음식점 | 처리 격자 83,p값,0.0,0.0,True,True,True
+sector_evidence_checks.csv,5 2단계 역 재현 (2008~) | 카페 | 처리 격자 83,p값,0.0,0.0,True,True,True
+dong_scores_validation.csv,growth_score | 8989 점포당 카드매출 2026,p_approx,0.0,0.0,True,True,True
+sector_evidence_checks.csv,6 밀도 맞춘 비교군 | 카페 | 비교군 2005년 음식점 ≥3곳,p값,0.0001,0.0024,True,True,True
+sector_evidence_checks.csv,5b 2단계 가짜 개통연도 2006 | 식사 음식점 | 0 근처여야 통과,p값,0.0002,0.0039,True,True,True
+survey_validation.csv,행정동 | 원도심(동·중·대덕) | 어려움(감소+폐업고려) %,p,0.0002,0.0039,True,True,True
+dong_scores_validation.csv,risk_score | 8989 점포당 카드매출 2026,p_approx,0.0007,0.0124,True,True,True
+sector_evidence_other.csv,숙박업 | 2 빈 격자 포함 | %,p값,0.0008,0.0131,True,True,True
+sector_evidence_checks.csv,6 밀도 맞춘 비교군 | 빵·과자 | 비교군 2005년 음식점 ≥3곳,p값,0.0009,0.0137,True,True,True
+sector_evidence_share.csv,1단계(2006) | 카페 비중(밀도 맞춤) | %p,p값,0.0011,0.0156,True,True,True
+survey_validation.csv,행정동 | 지가 대전 대비 변화 2016→2021 | 어려움(감소+폐업고려) %,p,0.0013,0.0173,True,True,True
+sector_evidence_share.csv,2단계(2008) | 카페 비중(밀도 맞춤) | %p,p값,0.0017,0.0213,True,True,True
+cafe_saturation_checks.csv,② 1호선 카페 효과 (비중별) | 2005 카페 0곳 격자,p,0.0024,0.0256,True,True,True
+sector_evidence_checks.csv,2 모든 음식점 격자(빈 곳 포함) | 카페,p값,0.0026,0.0256,True,True,True
+cafe_saturation_checks.csv,"② 1호선 카페 효과 (비중별) | 전체(2005 음식점 있던 격자, 카페 0곳 포함)",p,0.0026,0.0256,True,True,True
+dong_scores_validation.csv,risk_score | 8989 카드매출 증감 2025→2026(%),p_approx,0.0027,0.0256,True,True,True
+sector_evidence_checks.csv,0 기존(2005년 그 업종 있던 격자) | 카페,p값,0.0027,0.0256,True,True,True
+sector_evidence_other.csv,세탁업 | 5b 2단계 가짜 개통연도 2006 | %,p값,0.0029,0.0256,True,True,True
+line1_permits_effects.csv,업종: 카페 | 무작위 p=0.000,p값,0.003,0.0256,True,True,True
+line1_permits_sector.csv,카페 | 확실 (세 검사 모두 통과),p값,0.003,0.0256,True,True,True
+sector_evidence_share.csv,1단계(2006) | 전체 음식점 수(밀도 맞춤) | %,p값,0.0036,0.0295,True,True,True
+sector_evidence_share.csv,2단계(2008) | 카페 비중(음식점 중) | %p,p값,0.0044,0.0347,True,True,True
+sector_evidence_checks.csv,5 2단계 역 재현 (2008~) | 빵·과자 | 처리 격자 83,p값,0.0048,0.0365,True,True,True
+survey_validation.csv,행정동 | 점포 비중 변화 2016→2021 | 어려움(감소+폐업고려) %,p,0.0064,0.047,True,True,True
+sector_evidence_other.csv,숙박업 | 6 밀도 맞춘 비교군 | %,p값,0.007,0.0497,True,True,True
+sector_evidence_checks.csv,2 모든 음식점 격자(빈 곳 포함) | 빵·과자,p값,0.0074,0.0508,True,True,False
+sector_evidence_checks.csv,4 거리 0~300m | 카페,p값,0.0114,0.0759,True,False,False
+survey_validation.csv,행정동 | 지가 대전 대비 변화 2016→2021 | 매출 감소 %,p,0.0119,0.0768,True,False,False
+sector_evidence_checks.csv,4 거리 500~750m | 카페,p값,0.0131,0.0821,True,False,False
+survey_validation.csv,행정동 | 분기 폐업률(2017~25) | 어려움(감소+폐업고려) %,p,0.0147,0.0836,True,False,False
+sector_evidence_checks.csv,0 기존(2005년 그 업종 있던 격자) | 빵·과자,p값,0.0148,0.0836,True,False,False
+line1_permits_effects.csv,업종: 빵·과자 | 무작위 p=0.005,p값,0.015,0.0836,True,False,False
+line1_permits_sector.csv,빵·과자 | 확실 (세 검사 모두 통과),p값,0.015,0.0836,True,False,False
+cafe_saturation_checks.csv,"② 1호선 카페 효과 (비중별) | 2005 카페 비중 높음 (> 7.1%, 지금 정거장 주변과 비슷한 수준)",p,0.0153,0.0836,True,False,False
+sector_evidence_checks.csv,3 음식점 중 비중(%p) | 식사 음식점 | 2005년 처리군 평균 비중 76.8%,p값,0.0184,0.098,True,False,False
+sector_evidence_checks.csv,6 밀도 맞춘 비교군 | 식사 음식점 | 비교군 2005년 음식점 ≥3곳,p값,0.0229,0.119,True,False,False
+sector_evidence_other.csv,숙박업 | 3 전체 점포 중 비중(%p) | %p,p값,0.024,0.1201,True,False,False
+validation_closures_8989_summary.csv,위험 점수 ↔ 8989 폐업률(2025),p,0.0244,0.1201,True,False,False
+survey_validation.csv,행정동 | 분기 폐업률(2017~25) | 매출 감소 %,p,0.0248,0.1201,True,False,False
+survey_validation.csv,행정동 | 원도심(동·중·대덕) | 매출 감소 %,p,0.0261,0.1235,True,False,False
+sector_evidence_other.csv,미용업 | 6 밀도 맞춘 비교군 | %,p값,0.0329,0.1478,True,False,False
+construction_8989_did.csv,"도소매 매출 | 가양1동, 가양2동, 관저1동, 관저2동, 대동, 대사동, 대화동, 대흥동, 도마1동, 도마2동, 도안동, 둔산2동, 둔산3동, 만년동, 문화1동, 법1동, 법2동, 복수동, 부사동, 상대동, 성남동",p값,0.0338,0.1478,True,False,False
+construction_8989_density.csv,V0 기본 (정거장 먼 동 전체) | 도소매 매출,p값,0.0338,0.1478,True,False,False
+tram_meta_estimates.csv,"FLR | Florence T1, IT (Budiakivska 2018) | Budiakivska & Casolaro 2018, Banca d'Italia WP 1161",p_value,0.034,0.1478,True,False,False
+rent_gap_national_check.csv,간극(2013→17) vs 뒤 (임대료 − 자산가치)(2017→26) = 간극이 닫히는가,perm_p,0.0355,0.1495,True,False,False
+seoul_newline_sales_did.csv,점포 수 | %,p값,0.0358,0.1495,True,False,False
+sector_evidence_checks.csv,4 거리 300~500m | 카페,p값,0.038,0.1498,True,False,False
+sector_evidence_checks.csv,4 거리 0~300m | 빵·과자,p값,0.0385,0.1498,True,False,False
+construction_8989_density.csv,V1 밀도 겹치는 범위만 | 도소매 매출,p값,0.0386,0.1498,True,False,False
+sector_evidence_other.csv,세탁업 | 6 밀도 맞춘 비교군 | %,p값,0.0388,0.1498,True,False,False
+sector_evidence_share.csv,1단계(2006) | 카페 비중(음식점 중) | %p,p값,0.0401,0.1498,True,False,False
+sector_evidence_checks.csv,3 음식점 중 비중(%p) | 카페 | 2005년 처리군 평균 비중 5.2%,p값,0.0401,0.1498,True,False,False
+sector_evidence_other.csv,미용업 | 2 빈 격자 포함 | %,p값,0.0418,0.1535,True,False,False
+dong_event_effects.csv,E12 | 대전신세계 Art & Science 개점 | +,placebo_p,0.048,0.1733,True,False,False
+cafe_saturation_checks.csv,② 1호선 카페 효과 (비중별) | 2005 카페 비중 낮음 (0 < 비중 ≤ 7.1%),p,0.0493,0.1746,True,False,False
+tram_meta_estimates.csv,"DGU | Daegu L3 monorail, KR (Ahn 2021) | Ahn & Kim 2021, JAIK 37(5):133-140",p_value,0.05,0.1746,False,False,False
+sector_evidence_checks.csv,4 거리 300~500m | 빵·과자,p값,0.0562,0.1931,False,False,False
+sector_evidence_checks.csv,5b 2단계 가짜 개통연도 2006 | 빵·과자 | 0 근처여야 통과,p값,0.06,0.2029,False,False,False
+panel_event_effects.csv,E12 | 대전신세계 개점(도룡) | A12,placebo_p,0.062,0.2063,False,False,False
+dong_event_effects.csv,E08 | 민간 도시재생(철도관사 매입·개조 기획) 시작 | +,placebo_p,0.063,0.2064,False,False,False
+construction_8989_did.csv,"전체 카드매출 | 가양1동, 가양2동, 관저1동, 관저2동, 대동, 대사동, 대화동, 대흥동, 도마1동, 도마2동, 도안동, 둔산2동, 둔산3동, 만년동, 문화1동, 법1동, 법2동, 복수동, 부사동, 상대동, 성남",p값,0.0671,0.2133,False,False,False
+construction_8989_density.csv,V0 기본 (정거장 먼 동 전체) | 전체 카드매출,p값,0.0671,0.2133,False,False,False
+sector_evidence_checks.csv,2 모든 음식점 격자(빈 곳 포함) | 간편식(분식·패스트푸드·조리판매),p값,0.0693,0.2145,False,False,False
+sector_evidence_checks.csv,4 거리 500~750m | 식사 음식점,p값,0.0695,0.2145,False,False,False
+construction_8989_density.csv,V1 밀도 겹치는 범위만 | 전체 카드매출,p값,0.0717,0.2182,False,False,False
+sector_evidence_other.csv,숙박업 | 1 개통 전 연도 효과 평균(2003~2004) | %,p값,0.0782,0.2305,False,False,False
+dong_event_effects.csv,E09 | 벽화거리 사업 추진 | +,placebo_p,0.079,0.2305,False,False,False
+dong_event_effects.csv,E11 | 현대프리미엄아울렛 대전점 개점(유성구 용산동·관평동 인근) | +,placebo_p,0.079,0.2305,False,False,False
+dong_event_effects.csv,E07 | 소제동 도시환경정비(재개발) 구역 지정 → 장기 표류·빈집 증 | 0,placebo_p,0.082,0.236,False,False,False
+sector_evidence_other.csv,체력단련장업 | 5 2단계 역 재현(2008~) | %,p값,0.0867,0.2462,False,False,False
+dong_scores_validation.csv,growth_score | 2021 실태조사 어려움 응답률(%),p_approx,0.088,0.2466,False,False,False
+dong_scores_validation.csv,risk_score | 2021 실태조사 어려움 응답률(%),p_approx,0.0973,0.2692,False,False,False
+construction_8989_density.csv,V2 밀도 3등분별 월 흐름 통제 | 도소매 매출,p값,0.1088,0.2971,False,False,False
+dong_event_effects.csv,E10 | 리모델링 카페·레스토랑 순차 개점(뉴트로 상권 형성) | +,placebo_p,0.111,0.2993,False,False,False
+sector_evidence_checks.csv,"1 개통 전 연도 효과 평균(2002~2004) | 빵·과자 | 0 근처여야 통과 · 개통 후 연도별 % = 2006:+2, 2007:-2, 2008:+6, 2009:+11, 2010:+18, 2011:+18, 20",p값,0.1223,0.317,False,False,False
+panel_event_effects.csv,E11 | 현대프리미엄아울렛 개점(관평) | A15,placebo_p,0.125,0.317,False,False,False
+panel_event_effects.csv,E10 | 소제동 카페거리 형성 | A03,placebo_p,0.125,0.317,False,False,False
+landprice_area_events.csv,E06 | 충남도청 내포신도시(홍성·예산) 이전 완료(선화동 청사 → 원도심 공동화 | A05,placebo_p,0.125,0.317,False,False,False
+landprice_area_events.csv,E07 | 소제동 도시환경정비(재개발) 구역 지정 → 장기 표류·빈집 증가 | A03,placebo_p,0.125,0.317,False,False,False
+dong_event_effects.csv,E13 | 대전신세계 개점에 따른 둔산(타임월드) 경쟁 상권 영향 | -,placebo_p,0.127,0.3182,False,False,False
+line1_permits_sector.csv,간편식(분식·패스트푸드·조리판매) | 효과 확인 안 됨,p값,0.135,0.3272,False,False,False
+line1_permits_effects.csv,업종: 간편식(분식·패스트푸드·조리판매) | 무작위 p=0.125,p값,0.135,0.3272,False,False,False
+sector_evidence_checks.csv,0 기존(2005년 그 업종 있던 격자) | 간편식(분식·패스트푸드·조리판매),p값,0.1352,0.3272,False,False,False
+sector_evidence_other.csv,미용업 | 0 기본(2005년 그 업종 있던 격자) | %,p값,0.1471,0.352,False,False,False
+sector_evidence_other.csv,노래연습장업 | 1 개통 전 연도 효과 평균(2003~2004) | %,p값,0.1506,0.3564,False,False,False
+construction_8989_density.csv,V2 밀도 3등분별 월 흐름 통제 | 전체 카드매출,p값,0.153,0.3581,False,False,False
+survey_validation.csv,행정동 | 점포 비중 변화 2016→2021 | 폐업·전환 고려 %,p,0.157,0.359,False,False,False
+dong_event_effects.csv,E08 | 민간 도시재생(철도관사 매입·개조 기획) 시작 | +,placebo_p,0.159,0.359,False,False,False
+dong_event_effects.csv,E06 | 충남도청 내포신도시(홍성·예산) 이전 완료(선화동 청사 → 원 | -,placebo_p,0.159,0.359,False,False,False
+sector_evidence_share.csv,2단계(2008) | 빵·과자 비중(음식점 중) | %p,p값,0.1602,0.359,False,False,False
+construction_8989_density.csv,V3 밀도 최근접 짝(가중) | 음식점 매출,p값,0.1618,0.359,False,False,False
+rent_gap_national_check.csv,"간극(2013→17) vs 뒤 임대료 변화(2017→26) | 유의하지 않음 → ④는 '간극 현황'으로만, 예측·위험이라는 말 쓰지 않음",perm_p,0.1636,0.3592,False,False,False
+construction_dose.csv,공사 경과 | 공사 12개월 이상,p,0.1766,0.3838,False,False,False
+sector_evidence_other.csv,미용업 | 5b 2단계 가짜 개통연도 2006 | %,p값,0.1844,0.3938,False,False,False
+sector_evidence_other.csv,세탁업 | 3 전체 점포 중 비중(%p) | %p,p값,0.1849,0.3938,False,False,False
+line1_permits_effects.csv,개업 수 (로그) | 개업 흐름,p값,0.194,0.4091,False,False,False
+survey_validation.csv,행정동 | 점포 비중 변화 2016→2021 | 매출 감소 %,p,0.1993,0.4162,False,False,False
+sector_evidence_checks.csv,4 거리 750~1000m | 식사 음식점,p값,0.2167,0.4481,False,False,False
+dong_event_effects.csv,E09 | 벽화거리 사업 추진 | +,placebo_p,0.222,0.4547,False,False,False
+sector_evidence_other.csv,숙박업 | 0 기본(2005년 그 업종 있던 격자) | %,p값,0.2274,0.4597,False,False,False
+survey_validation.csv,행정동 | 1호선 역 거리 | 어려움(감소+폐업고려) %,p,0.2297,0.4597,False,False,False
+construction_dose.csv,"거리 띠 | 0~150m | '동 평균 손실 확인 안 됨' 유지 (가장 가까운 띠 최대·유의=False, 거리 단조=True, 기간 단조=True)",p,0.2331,0.4597,False,False,False
+dong_scores_validation.csv,growth_score | 8989 카드매출 증감 2025→2026(%),p_approx,0.2331,0.4597,False,False,False
+sector_evidence_checks.csv,4 거리 750~1000m | 카페,p값,0.2353,0.4598,False,False,False
+sector_evidence_checks.csv,6 밀도 맞춘 비교군 | 간편식(분식·패스트푸드·조리판매) | 비교군 2005년 음식점 ≥3곳,p값,0.245,0.4671,False,False,False
+sector_evidence_checks.csv,5b 2단계 가짜 개통연도 2006 | 카페 | 0 근처여야 통과,p값,0.2457,0.4671,False,False,False
+landprice_area_events.csv,E09 | 벽화거리 사업 추진 | A03,placebo_p,0.25,0.4671,False,False,False
+panel_event_effects.csv,E13 | 신세계 개점 → 타임월드 상권 영향 | A07,placebo_p,0.25,0.4671,False,False,False
+landprice_area_events.csv,E08 | 민간 도시재생(철도관사 매입·개조 기획) 시작 | A03,placebo_p,0.25,0.4671,False,False,False
+sector_evidence_checks.csv,3 음식점 중 비중(%p) | 간편식(분식·패스트푸드·조리판매) | 2005년 처리군 평균 비중 4.1%,p값,0.2569,0.4699,False,False,False
+sector_evidence_checks.csv,4 거리 0~300m | 간편식(분식·패스트푸드·조리판매),p값,0.2588,0.4699,False,False,False
+line1_permits_effects.csv,기본: 역 500m vs 1~3km | 2002~2014,p값,0.26,0.4699,False,False,False
+sector_evidence_share.csv,1단계(2006) | 전체 음식점 수 | %,p값,0.2603,0.4699,False,False,False
+sector_evidence_checks.csv,"1 개통 전 연도 효과 평균(2002~2004) | 카페 | 0 근처여야 통과 · 개통 후 연도별 % = 2006:+4, 2007:+9, 2008:+17, 2009:+23, 2010:+27, 2011:+37, 201",p값,0.2756,0.4933,False,False,False
+sector_evidence_other.csv,미용업 | 3 전체 점포 중 비중(%p) | %p,p값,0.285,0.4993,False,False,False
+dong_event_effects.csv,E10 | 리모델링 카페·레스토랑 순차 개점(뉴트로 상권 형성) | +,placebo_p,0.286,0.4993,False,False,False
+dong_event_effects.csv,E12 | 대전신세계 Art & Science 개점 | +,placebo_p,0.286,0.4993,False,False,False
+panel_event_effects.csv,E14 | 백화점 세이 폐업(서대전네거리) | A06,placebo_p,0.312,0.5403,False,False,False
+sector_evidence_checks.csv,4 거리 500~750m | 빵·과자,p값,0.3161,0.543,False,False,False
+sector_evidence_other.csv,노래연습장업 | 5b 2단계 가짜 개통연도 2006 | %,p값,0.3344,0.5698,False,False,False
+line1_permits_effects.csv,처리 반경 300m,p값,0.341,0.5765,False,False,False
+sector_evidence_other.csv,세탁업 | 2 빈 격자 포함 | %,p값,0.3495,0.5862,False,False,False
+construction_trdar_did.csv,"골목상권 카드매출(23업종) | 202401~202608, 공사 전 26개월(중앙값) | 가수원상점가, 관저동 먹거리 골목형상점가, 관저동 먹자골목 골목형상점가, 궁동 골목형상점가, 대전상가, 도마큰시장, 도산로 골",p값,0.3619,0.6022,False,False,False
+survey_validation.csv,행정동 | 1호선 역 거리 | 매출 감소 %,p,0.3669,0.6051,False,False,False
+landprice_area_events.csv,E13 | 대전신세계 개점에 따른 둔산(타임월드) 경쟁 상권 영향 | A07,placebo_p,0.375,0.6051,False,False,False
+landprice_area_events.csv,E10 | 리모델링 카페·레스토랑 순차 개점(뉴트로 상권 형성) | A03,placebo_p,0.375,0.6051,False,False,False
+landprice_area_events.csv,E11 | 현대프리미엄아울렛 대전점 개점(유성구 용산동·관평동 인근) | A15,placebo_p,0.375,0.6051,False,False,False
+sector_evidence_other.csv,숙박업 | 5b 2단계 가짜 개통연도 2006 | %,p값,0.3782,0.6057,False,False,False
+sector_evidence_other.csv,미용업 | 1 개통 전 연도 효과 평균(2003~2004) | %,p값,0.3864,0.6142,False,False,False
+survey_validation.csv,행정동 | 분기 폐업률(2017~25) | 폐업·전환 고려 %,p,0.4031,0.6352,False,False,False
+construction_trdar_did.csv,"소매 매출 | 202401~202608, 공사 전 26개월(중앙값) | 가수원상점가, 관저동 먹거리 골목형상점가, 관저동 먹자골목 골목형상점가, 궁동 골목형상점가, 대전상가, 도마큰시장, 도산로 골목형상점가, 만년동",p값,0.4056,0.6352,False,False,False
+construction_dose.csv,거리 띠 | 150~300m,p,0.4235,0.6584,False,False,False
+validation_closures_8989_summary.csv,성장 점수 ↔ 8989 폐업률(2025),p,0.4401,0.6793,False,False,False
+line1_permits_effects.csv,비교군 1~2km,p값,0.445,0.6798,False,False,False
+sector_evidence_checks.csv,4 거리 750~1000m | 간편식(분식·패스트푸드·조리판매),p값,0.4549,0.6798,False,False,False
+sector_evidence_other.csv,체력단련장업 | 5b 2단계 가짜 개통연도 2006 | %,p값,0.4582,0.6798,False,False,False
+dong_event_effects.csv,E04 | 임시 고속·시외버스터미널 운영 시작(본 공사 기간) | -,placebo_p,0.459,0.6798,False,False,False
+dong_event_effects.csv,E05 | 대전복합터미널 신축 준공·개장 | +,placebo_p,0.459,0.6798,False,False,False
+survey_validation.csv,행정동 | 1호선 역 거리 | 폐업·전환 고려 %,p,0.4596,0.6798,False,False,False
+seoul_newline_sales_did.csv,점포당 매출 | %,p값,0.4746,0.6972,False,False,False
+dong_event_effects.csv,E03 | 대전복합터미널 재개발 착공(기존 건물 철거) | -,placebo_p,0.508,0.7267,False,False,False
+sector_evidence_checks.csv,2 모든 음식점 격자(빈 곳 포함) | 식사 음식점,p값,0.5095,0.7267,False,False,False
+survey_validation.csv,20개 상권(소속 행정동) | 쇠퇴 위험 점수 | 매출 감소 %,p,0.5111,0.7267,False,False,False
+line1_permits_effects.csv,개통 후 4년만 (2006~2009),p값,0.516,0.7267,False,False,False
+sector_evidence_checks.csv,4 거리 0~300m | 식사 음식점,p값,0.5163,0.7267,False,False,False
+construction_dose.csv,공사 경과 | 공사 6~11개월,p,0.5181,0.7267,False,False,False
+sector_evidence_checks.csv,4 거리 500~750m | 간편식(분식·패스트푸드·조리판매),p값,0.5215,0.7267,False,False,False
+sector_evidence_other.csv,체력단련장업 | 3 전체 점포 중 비중(%p) | %p,p값,0.522,0.7267,False,False,False
+seoul_newline_sales_did.csv,커피·음료 매출 비중 | %p,p값,0.527,0.7289,False,False,False
+seoul_newline_sales_did.csv,상권 매출 합 | %,p값,0.5531,0.7551,False,False,False
+line1_permits_sector.csv,주점 | 효과 확인 안 됨,p값,0.559,0.7551,False,False,False
+line1_permits_effects.csv,업종: 주점 | 무작위 p=0.565,p값,0.559,0.7551,False,False,False
+sector_evidence_other.csv,체력단련장업 | 0 기본(2005년 그 업종 있던 격자) | %,p값,0.5601,0.7551,False,False,False
+construction_dose.csv,공사 경과 | 공사 0~5개월,p,0.573,0.7676,False,False,False
+survey_validation.csv,20개 상권(소속 행정동) | 성장 가능 점수 | 어려움(감소+폐업고려) %,p,0.5804,0.7727,False,False,False
+sector_evidence_checks.csv,"1 개통 전 연도 효과 평균(2002~2004) | 간편식(분식·패스트푸드·조리판매) | 0 근처여야 통과 · 개통 후 연도별 % = 2006:+10, 2007:+5, 2008:+6, 2009:+12, 2010:+1",p값,0.5864,0.7753,False,False,False
+sector_evidence_other.csv,세탁업 | 0 기본(2005년 그 업종 있던 격자) | %,p값,0.5897,0.7753,False,False,False
+construction_trdar_did.csv,"전통시장·상점가만 | 가수원상점가, 관저동 먹거리 골목형상점가, 관저동 먹자골목 골목형상점가, 궁동 골목형상점가, 대전상가, 도마큰시장, 도산로 골목형상점가, 만년동 골목형상점가, 문화1동 골목형상점가, 버드내코아 ",p값,0.6112,0.7956,False,False,False
+dong_event_effects.csv,E02 | 도시철도 1호선 2단계 개통(정부청사~반석): 월평·유성온천· | +,placebo_p,0.623,0.7956,False,False,False
+landprice_area_events.csv,E02 | 도시철도 1호선 2단계 개통(정부청사~반석): 월평·유성온천·노은 등 | A10;A14;A16,placebo_p,0.625,0.7956,False,False,False
+sector_evidence_other.csv,숙박업 | 5 2단계 역 재현(2008~) | %,p값,0.6307,0.7956,False,False,False
+sector_evidence_checks.csv,0 기존(2005년 그 업종 있던 격자) | 식사 음식점,p값,0.6328,0.7956,False,False,False
+line1_permits_sector.csv,식사 음식점 | 효과 확인 안 됨,p값,0.633,0.7956,False,False,False
+line1_permits_effects.csv,업종: 식사 음식점 | 무작위 p=0.605,p값,0.633,0.7956,False,False,False
+dong_event_effects.csv,E13 | 대전신세계 개점에 따른 둔산(타임월드) 경쟁 상권 영향 | -,placebo_p,0.635,0.7956,False,False,False
+sector_evidence_other.csv,노래연습장업 | 0 기본(2005년 그 업종 있던 격자) | %,p값,0.6585,0.8186,False,False,False
+line1_permits_effects.csv,가짜 개통연도 2004 (2002~2005) | 0 근처여야 통과,p값,0.661,0.8186,False,False,False
+dong_event_effects.csv,E11 | 현대프리미엄아울렛 대전점 개점(유성구 용산동·관평동 인근) | +,placebo_p,0.667,0.8212,False,False,False
+survey_validation.csv,행정동 | 지가 대전 대비 변화 2016→2021 | 폐업·전환 고려 %,p,0.6833,0.8365,False,False,False
+sector_evidence_checks.csv,4 거리 750~1000m | 빵·과자,p값,0.7251,0.8826,False,False,False
+sector_evidence_other.csv,체력단련장업 | 6 밀도 맞춘 비교군 | %,p값,0.7331,0.8872,False,False,False
+sector_evidence_checks.csv,5 2단계 역 재현 (2008~) | 간편식(분식·패스트푸드·조리판매) | 처리 격자 83,p값,0.7395,0.8899,False,False,False
+sector_evidence_other.csv,세탁업 | 1 개통 전 연도 효과 평균(2003~2004) | %,p값,0.747,0.8926,False,False,False
+sector_evidence_other.csv,노래연습장업 | 3 전체 점포 중 비중(%p) | %p,p값,0.7501,0.8926,False,False,False
+construction_trdar_did.csv,"가짜 공사 시작(12개월 앞당김, 공사 전 자료만) | 0 근처여야 정상 | 가수원상점가, 관저동 먹거리 골목형상점가, 관저동 먹자골목 골목형상점가, 궁동 골목형상점가, 대전상가, 도마큰시장, 도산로 골목형상점가, ",p값,0.7543,0.8926,False,False,False
+survey_validation.csv,20개 상권(소속 행정동) | 쇠퇴 위험 점수 | 어려움(감소+폐업고려) %,p,0.7642,0.8993,False,False,False
+survey_validation.csv,20개 상권(소속 행정동) | 성장 가능 점수 | 매출 감소 %,p,0.7939,0.924,False,False,False
+sector_evidence_other.csv,노래연습장업 | 2 빈 격자 포함 | %,p값,0.795,0.924,False,False,False
+construction_8989_density.csv,V1 밀도 겹치는 범위만 | 음식점 매출,p값,0.7982,0.924,False,False,False
+dong_event_effects.csv,E01 | 도시철도 1호선 1단계 개통(판암~정부청사): 대동·대전역·중 | +,placebo_p,0.803,0.9245,False,False,False
+sector_evidence_checks.csv,4 거리 300~500m | 식사 음식점,p값,0.8193,0.9382,False,False,False
+sector_evidence_checks.csv,"1 개통 전 연도 효과 평균(2002~2004) | 식사 음식점 | 0 근처여야 통과 · 개통 후 연도별 % = 2006:-1, 2007:+0, 2008:-0, 2009:+2, 2010:+3, 2011:+2, 201",p값,0.8334,0.9456,False,False,False
+survey_validation.csv,행정동 | 원도심(동·중·대덕) | 폐업·전환 고려 %,p,0.8533,0.9456,False,False,False
+sector_evidence_checks.csv,4 거리 300~500m | 간편식(분식·패스트푸드·조리판매),p값,0.8642,0.9456,False,False,False
+sector_evidence_checks.csv,5b 2단계 가짜 개통연도 2006 | 간편식(분식·패스트푸드·조리판매) | 0 근처여야 통과,p값,0.8647,0.9456,False,False,False
+sector_evidence_other.csv,체력단련장업 | 1 개통 전 연도 효과 평균(2003~2004) | %,p값,0.8664,0.9456,False,False,False
+construction_trdar_did.csv,"음식점 매출 | 202401~202608, 공사 전 26개월(중앙값) | 가수원상점가, 관저동 먹거리 골목형상점가, 관저동 먹자골목 골목형상점가, 궁동 골목형상점가, 대전상가, 도마큰시장, 도산로 골목형상점가, 만년",p값,0.8699,0.9456,False,False,False
+sector_evidence_checks.csv,3 음식점 중 비중(%p) | 빵·과자 | 2005년 처리군 평균 비중 2.8%,p값,0.8718,0.9456,False,False,False
+sector_evidence_share.csv,1단계(2006) | 빵·과자 비중(음식점 중) | %p,p값,0.8718,0.9456,False,False,False
+line1_permits_sector.csv,편의점 | 효과 확인 안 됨,p값,0.872,0.9456,False,False,False
+line1_permits_effects.csv,업종: 편의점 | 무작위 p=0.895,p값,0.872,0.9456,False,False,False
+landprice_area_events.csv,E01 | 도시철도 1호선 1단계 개통(판암~정부청사): 대동·대전역·중앙로·서대전 | A03;A04;A05;A06;A08;A11,placebo_p,0.875,0.9456,False,False,False
+line1_permits_effects.csv,처리 반경 750m,p값,0.879,0.9456,False,False,False
+dong_event_effects.csv,E14 | 백화점 세이 폐업(서대전네거리) | -,placebo_p,0.905,0.9576,False,False,False
+construction_8989_density.csv,V0 기본 (정거장 먼 동 전체) | 음식점 매출,p값,0.9076,0.9576,False,False,False
+construction_8989_did.csv,"음식점 매출 | 가양1동, 가양2동, 관저1동, 관저2동, 대동, 대사동, 대화동, 대흥동, 도마1동, 도마2동, 도안동, 둔산2동, 둔산3동, 만년동, 문화1동, 법1동, 법2동, 복수동, 부사동, 상대동, 성남동",p값,0.9076,0.9576,False,False,False
+sector_evidence_other.csv,체력단련장업 | 2 빈 격자 포함 | %,p값,0.9081,0.9576,False,False,False
+dong_event_effects.csv,E14 | 백화점 세이 폐업(서대전네거리) | -,placebo_p,0.921,0.9606,False,False,False
+construction_8989_density.csv,V3 밀도 최근접 짝(가중) | 도소매 매출,p값,0.9219,0.9606,False,False,False
+construction_8989_density.csv,V3 밀도 최근접 짝(가중) | 전체 카드매출,p값,0.9252,0.9606,False,False,False
+construction_dose.csv,거리 띠 | 300~500m,p,0.929,0.9606,False,False,False
+sector_evidence_other.csv,노래연습장업 | 6 밀도 맞춘 비교군 | %,p값,0.9441,0.9715,False,False,False
+construction_8989_density.csv,V2 밀도 3등분별 월 흐름 통제 | 음식점 매출,p값,0.9598,0.9829,False,False,False
+sector_evidence_other.csv,노래연습장업 | 5 2단계 역 재현(2008~) | %,p값,0.9824,1.0,False,False,False
+landprice_area_events.csv,E04 | 임시 고속·시외버스터미널 운영 시작(본 공사 기간) | A01,placebo_p,1.0,1.0,False,False,False
+landprice_area_events.csv,E05 | 대전복합터미널 신축 준공·개장 | A01,placebo_p,1.0,1.0,False,False,False
+landprice_area_events.csv,E03 | 대전복합터미널 재개발 착공(기존 건물 철거) | A01,placebo_p,1.0,1.0,False,False,False
+landprice_area_events.csv,E12 | 대전신세계 Art & Science 개점 | A12,placebo_p,1.0,1.0,False,False,False

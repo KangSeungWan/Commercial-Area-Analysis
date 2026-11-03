@@ -3,7 +3,7 @@
 - 상권 정보 묶음(area_context)과 질문 글(build_prompt)을 한곳에서 만들어, 실시간 해설과 저장본이 같은 내용을 근거로 함
 - 저장본: outputs/ai_comments.json (생성 날짜·모델·시나리오 포함). 2026-10-28 기본 해설은 Claude 가 같은 프롬프트를 받아 써서 사람이 검토한 것
   → 실시간 호출이 실패하면 이 기본 해설을 보여 줌 (이용자 추가 질문이 있으면 기본 해설 + '질문 답은 실시간만' 안내)
-- 추가 질문(extra): 이용자가 적은 글을 기존 프롬프트 뒤에 붙여 보냄 → 맞춤 해설 (유료 기능으로 안내, 10-28 결정)
+- 추가 질문(extra): 이용자가 적은 글을 기존 프롬프트 뒤에 붙여 보냄 → 맞춤 해설 (11-03: 유료·프리미엄 안내는 삭제)
 - API 키는 화면·로그에 절대 출력하지 않음
 """
 import json
@@ -227,3 +227,36 @@ def saved_entry(saved, code):
     return {"text": e["text"], "generated_at": e.get("generated_at") or saved.get("generated_at", ""),
             "scenario": e.get("scenario") or saved.get("scenario", ""), "model": e.get("model") or saved.get("model", ""),
             "kind": e.get("kind") or saved.get("kind", "저장본")}
+
+
+# ── 숫자 대조 (B8, 2차 점검): AI 글에 나온 숫자가 보낸 정보(ctx)·지표 설명에 있는지 기계로 확인 ──
+import re as _re
+
+_NUM = _re.compile(r"(?<![A-Za-z0-9])[-−+]?\d[\d,]*(?:\.\d+)?")   # A14 같은 코드 속 숫자는 제외
+
+
+def _nums(text):
+    out = []
+    for m in _NUM.finditer(str(text)):
+        t = m.group().replace(",", "").replace("−", "-").lstrip("+")
+        try:
+            out.append(float(t))
+        except ValueError:
+            pass
+    return out
+
+
+def unverified_numbers(text, ctx_text, prompt_text=""):
+    """AI 글 속 숫자 중 보낸 정보·지표 설명 어디에도 없는 숫자 목록.
+    무시: 10 이하 정수(항목 번호·개수), 2000~2040(연도), 반올림 차이(상대 3% 또는 절대 0.15 안), km↔m 환산."""
+    known = _nums(ctx_text) + _nums(prompt_text)
+    known_abs = [abs(k) for k in known]
+    bad = []
+    for v in _nums(text):
+        a = abs(v)
+        if (a <= 10 and float(a).is_integer()) or (2000 <= a <= 2040 and float(a).is_integer()):
+            continue
+        if any(abs(c - k) <= max(0.15, 0.03 * k) for k in known_abs for c in (a, a * 1000)):   # km ↔ m 환산 허용
+            continue
+        bad.append(v)
+    return sorted(set(bad))
