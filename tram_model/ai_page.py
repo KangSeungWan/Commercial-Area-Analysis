@@ -26,7 +26,8 @@ def render(st, D):
     st.markdown('<h1 class="page-t">AI 상권 해설</h1>', unsafe_allow_html=True)
     st.caption("상권을 고르면 진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 해설을 받습니다. "
                "묻고 싶은 것을 직접 적으면 그 상권에 맞춘 답을 함께 받습니다. "
-               "숫자는 모두 이 앱의 분석 결과에서 나오고, AI는 그것을 설명·해석하는 역할만 합니다.")
+               "숫자는 모두 이 앱의 분석 결과에서 나오고, AI는 그것을 설명·해석하는 역할만 합니다. "
+               "상권 담당자가 상인에게 설명할 때 쓸 수 있는 쉬운 말로 씁니다.")
 
     info, names = D["info"], D["names"]
     codes = list(info.index)

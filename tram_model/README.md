@@ -363,3 +363,17 @@ python tram_model/run_all.py --from train_analyze
 - 기본 해설(`ai_comments.json`, kind "기본 해설"): 2026-10-28 결과 파일·기본 시나리오·기본 가중치 기준 프롬프트를 Claude 가 받아 작성, 팀 검토. 실시간 실패 시 표시. `make_ai_comments.py` 실행 시 Gemini 생성본(kind "Gemini 생성")으로 바뀜
 - 프롬프트 정보 추가(10-28): 절대 쇠퇴 신호, 임대료 부담 신호(점수·원인), 카페·빵집 비중 2026→2034, 관광 시나리오(관광자원형만), A12 점포 지표 왜곡 표시. 형식 6번 = 시가 할 일 · 상인이 할 일
 
+
+## 2차 점검 재분석 (2026-11-03~04) — run_all 맨 뒤(가정 민감도 다음)에 등록
+- 판정 규칙(결과 보기 전 작성): `docs/사전분석계획_2차점검_1103.md`. 위례선 사후 검증 설계: `docs/사후검증설계_위례선_트램.md`
+- `landprice_long_portable.py` → `outputs/landprice_long_1990_2020.csv.gz`(Git 제외): pyarrow 없는 환경용 공시지가 필지×연도 표(D151 CSV만으로 pkl과 같은 값)
+- `analyze_phase2_dev.py` → `phase2_dev_check.csv`·`phase2_dev_es.csv`: 2단계 역 500m에서 개발지 법정동을 빼도 −9.3%, 개통 전 −5.0% → 평행 추세 실패, 기본값 +1.8% 유지
+- `analyze_sales_ratio_ci.py` → `station_sales_ratio_ci.csv`: 매출/땅값 비율 부트스트랩 구간(−0.48~0.79)과 '땅값 차이 − 매출 차이' 구간(0.03~0.41)
+- `analyze_sales_age_control.py` → `station_sales_age_control.csv`: 주민 연령(20~39·60+) 통제 시 점포당 매출 계수 +7.0 → −2.5%
+- `check_rent_gap_national.py` → `rent_gap_national_check.csv`: 전국 53개 상권 간극(2013~17) → 임대료(2017~26) ρ +0.19 p 0.16
+- `analyze_construction_dose.py` → `construction_dose.csv`: 골목상권 거리 띠(0~150/150~300/300~500m)·공사 개월 띠 효과(모두 유의 X)
+- `cafe_baseline.py` → `cafe_baseline.csv`: 최근 3년 추세로 2034 카페 수(트램 없음 2,752 / 있음 3,024)
+- `tests_registry.py` → `tests_registry.csv`·`tests_registry_summary.csv`: 결과 파일의 p값 213개 모음 + BH(FDR) 보정(남는 것 30개)
+- `check_ai_numbers.py` → `ai_number_check.csv`: 기본 해설 20곳의 숫자를 프롬프트 수치와 기계 대조(`ai_comment.unverified_numbers`, 실시간 해설도 같은 함수). Gemini로 다시 만들면 반드시 실행
+- `analyze_seoul_newline_land.py` → `seoul_newline_land_did.csv`·`_es.csv`: 서울 신림선 역 500m 필지 땅값 이중차분(서울 개별공시지가 2019~2024 + 연속지적도 `data/raw/seoul/공시지가/`, Git 제외). 개통 후 +1.1% [−0.6, 2.7] 유의 X
+- 화면: `about_page.py` 카드 5장에 확신 등급·'반대·약화 결과' 칸, 임대료 신호 = 땅값-장사 수익 간극, 상인 시점표. `ai_page.py` 요금표 삭제(프리미엄 없음). `tourism_page.py`·`export_web.py` 관광 %·금액 삭제. 질문 대비 그림 `docs/qa/qa_cafe_not_trend.png`

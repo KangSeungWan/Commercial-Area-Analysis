@@ -1687,7 +1687,7 @@ if PAGE == "map":
         _ab1, _ab2 = st.columns([1, 4])
         _ab1.button("AI 해설 보기", icon=":material/smart_toy:", key="to_ai", on_click=lambda: ss.update(page="ai", ai_pick=sel),
                     help="이 상권의 AI 해설 화면으로 (질문을 적으면 맞춤 해설)")
-        _ab2.caption("이 상권의 진단·전망·업종 점수·임대료 신호를 AI가 풀어 설명합니다. 궁금한 것을 직접 물어볼 수도 있습니다.")
+        _ab2.caption("이 상권의 진단·전망·업종 점수·임대료 신호를 AI가 상인에게 설명하듯 쉬운 말로 풀어 줍니다. 궁금한 것을 직접 물어볼 수도 있습니다.")
 
 # ================================================================ 페이지 1-2: 3D 지도 (넓게)
 elif PAGE == "map3d":

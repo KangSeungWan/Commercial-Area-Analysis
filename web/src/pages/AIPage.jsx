@@ -25,7 +25,7 @@ export default function AIPage() {
     <div className="page">
       <div className="page-h">
         <h1 className="page-t">AI 상권 해설</h1>
-        <p className="page-sub">진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 받은 해설입니다. 숫자는 모두 이 분석의 결과이고, AI는 그것을 설명하는 역할만 합니다.</p>
+        <p className="page-sub">진단·땅값 전망·업종 점수·임대료 신호를 AI에게 보내 받은 해설입니다. 숫자는 모두 이 분석의 결과이고, AI는 그것을 설명하는 역할만 합니다. 상권 담당자가 상인에게 설명할 때 쓸 수 있는 쉬운 말로 씁니다.</p>
       </div>
       <div className="ctl">
         <div className="ctl-g" style={{ minWidth: "min(420px,100%)" }}>
