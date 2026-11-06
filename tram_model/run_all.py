@@ -72,7 +72,7 @@ STEPS = [
     ("build_rent_survey", "부동산원 임대동향(임대료·지수·공실률) 상권 대응 (data/raw/rent_survey 있으면)", None),
     ("build_rent_long", "임대료 장기 흐름(R-ONE 2013~2026) vs 같은 기간 땅값 (data/raw/rent_survey_long 있으면)", None),
     ("check_rent_signal_history", "임대료 부담 신호 ↔ 지난 13년 지역 임대료 흐름 대조 (참고, 지역 6~7곳)", None),
-    ("analyze_station_sensitivity", "정거장 추정 좌표 민감도: 28곳을 0~300m 옮겨 500m 판정·진단 다시 계산 (약 1분)", None),
+    ("analyze_station_sensitivity", "정거장 좌표 민감도: 설계 도면 아닌 32곳을 0~300m 옮겨 500m 판정·진단 다시 계산 (약 1분)", None),
     ("analyze_assumption_sensitivity", "가정 민감도: 1호선 효과 기준별 금액·진단 변화, 임대료 신호 가중치 안정도", None),
     # 2차 점검(11-03) 재분석 — 판정 규칙: tram_model/docs/사전분석계획_2차점검_1103.md
     ("analyze_phase2_dev", "B5 1호선 2단계 음수 원인(개발지 제외) → 기본값 판정", None),

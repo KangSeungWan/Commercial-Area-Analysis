@@ -1,6 +1,6 @@
-"""정거장 추정 좌표 민감도: 좌표가 '추정(기존)'인 정거장 28곳을 무작위로 옮겨 보며 500m 판정·진단이 얼마나 흔들리는지
+"""정거장 추정 좌표 민감도: 설계 도면이 아닌 정거장 32곳(정류장 추정 17 + 2026-11 공식 위치도 대조 보정 15)을 무작위로 옮겨 보며 500m 판정·진단이 얼마나 흔들리는지
 
-입력: data/tram_stations.csv (coord_source '추정(기존)' 28곳 / '설계도면' 17곳은 고정), 상가정보 2026-06 점포 좌표,
+입력: data/tram_stations.csv (coord_source '설계도면' 13곳은 고정, 나머지 32곳을 흔듦), 상가정보 2026-06 점포 좌표,
       outputs/sangkwon_polygons.geojson, outputs/8989/dong_code_map.csv,
       outputs/area_profile.csv · robust_radius.csv (상권 in500, 격자 기준), outputs/dong_map_profile.csv (동 tram500_share)
 방법: 추정 정거장마다 방향 무작위, 거리 0~R m(면적 균등)로 옮김(R = 300m 기본, 150m 변형) × N회(300)
@@ -73,7 +73,7 @@ def summarize(st, S, key):
 
 def main():
     TR = pd.read_csv(C.ROOT / "data" / "tram_stations.csv", encoding="utf-8-sig")
-    TR["approx"] = TR.coord_source.astype(str).str.startswith("추정")
+    TR["approx"] = ~TR.coord_source.astype(str).str.startswith("설계도면")      # 추정(기존) + 2026-11 공식 위치도 대조 보정(±200m) 모두 흔들어 봄
     print(f"정거장 {len(TR)}곳 중 추정 좌표 {int(TR.approx.sum())}곳을 0~{R_MAIN}m 무작위 이동 × {N}회")
     st = load_stores()
     rng = np.random.default_rng(SEED)

@@ -4,6 +4,7 @@ app.py 에서: from about_page import show_about → 사이드바 버튼으로 �
 수치는 outputs 의 결과 파일에서 읽어 자동으로 최신값을 보여 줌 (파일이 없으면 기본 문구).
 """
 import os
+from pathlib import Path
 
 import pandas as pd
 
@@ -25,6 +26,26 @@ def _numbers():
          "dv_l1": "+5.9%", "dv_old": "+5.9%", "dv_tram": "-0.6%", "dv_money": "19", "dv_pre": "14", "dv_n": "7", "dv_names": "-",
          "rh_rho": "", "rh_p": "-", "rh_n": "-", "rh_hi": "-", "rh_lo": "-",
          "reg_n": "-", "reg_p05": "-", "reg_exp": "-", "reg_q": "-"}
+    n["stn_note"] = "-"
+    try:                                                                  # 정거장 좌표 출처 구성 + 좌표 민감도 결과
+        import pandas as _pd
+        ts = _pd.read_csv(Path(__file__).parent / "data" / "tram_stations.csv")
+        cs = ts.coord_source.astype(str)
+        n_d, n_o = int(cs.str.startswith("설계도면").sum()), int(cs.str.startswith("공식").sum())
+        n_e = len(ts) - n_d - n_o
+        ss = _read("station_coord_sensitivity.csv")
+        txt = (f"{len(ts)}곳 중 {n_d}곳은 설계 도면, {n_o}곳은 대전트램 누리집의 공식 정거장 위치도·노선도와 대조해 보정(2026-11, 오차 약 ±200m), "
+               f"{n_e}곳은 정류장 위치로 추정. 설계 도면이 아닌 {n_o + n_e}곳을 0~300m 무작위로 300번 옮겨 다시 계산 → ")
+        if ss is not None and len(ss):
+            ar, dg = ss[ss.level == "상권"], ss[ss.level == "행정동"]
+            top = ar.sort_values("p_flip", ascending=False).iloc[0]
+            sen = dg[dg.sensitive == True]
+            txt += (f"핵심 상권 {len(ar)}곳의 진단은 {'모두 그대로' if not ar.sensitive.any() else '일부 바뀜'}"
+                    f"(가장 흔들리는 {top['name']}도 {(1 - top.p_flip) * 100:.0f}% 유지), 행정동은 {len(sen)}곳("
+                    + ", ".join(x.split()[-1] for x in sen["name"]) + ")이 10% 넘게 바뀜 → 지도에 ⚑ 표시. 정보공개청구로 확정 좌표를 받으면 다시 계산")
+        n["stn_note"] = txt
+    except Exception:
+        pass
     tr_ = _read("tests_registry_summary.csv")
     if tr_ is not None and len(tr_):
         r = tr_.iloc[0]
@@ -148,7 +169,7 @@ DATA = [
      "점포 수·개폐업·업종 구성, 격자 피처"),
     ("개별공시지가", "국토교통부·국가공간정보포털", "1990 ~ 2026, 연", "필지 31만 (지목 '대' 14만)",
      "지가 지수, 1호선 효과, 예측"),
-    ("트램 2호선 정거장", "설계도면(2공구 노선 교점) + 정거장 위치 자료", "2030 개통 예정", "45개 (도면 보정 17)",
+    ("트램 2호선 정거장", "대전광역시 대전트램 누리집 정거장 위치도·노선도(2026-11 대조) + 설계도면 + 랜드마크 버스정류장", "2030 개통 예정", "45개 (2026-11 위치도 대조로 15곳 보정)",
      "500m 영향권, 상권 가치(땅값) 기준 트램 효과"),
     ("도시철도 1호선 역", "역명 버스정류장 좌표 평균", "2006·2007 개통", "22개", "철도 개통 효과(자연 실험)"),
     ("버스정류장", "국토교통부 전국 버스정류장", "2025-10", "대전 BIS", "버스 밀도(상권 가치(땅값) 기준 트램 효과 조절)"),
@@ -255,7 +276,7 @@ def other_sectors_line():
 def _story(n):
     """트램이 바꾸는 것 / 잘 안 바꾸는 것 — 근거 4줄 (땅값·업종·매출·임대). 결과 파일에서 수치를 읽음."""
     v = dict(cafe="+24.8% [8.0, 44.2]", cafe_pp="+1.4%p", cafe_pp2="+27.5%", dens="+18.7%", stores="+4.7% [−3.3, 13.3]",
-             bake_pp="+0.1%p", add="+272곳 (88~484)", pp="+0.3%p", land32="+32%", sales7="+7%", sales_ci="", ratio="0.24",
+             bake_pp="+0.1%p", add="+276곳 (89~376)", pp="+0.3%p", land32="+32%", sales7="+7%", sales_ci="", ratio="0.24",
              rent_hi="6곳", rent_rb="", idx="−1%", vac="14%")
     c = _read("sector_evidence_checks.csv")
     if c is not None:
@@ -305,6 +326,7 @@ def _story(n):
         g = cd.set_index("결과")
         if "전체 카드매출" in g.index:
             a_, b_ = g.loc["전체 카드매출"], g.loc["도소매 매출"] if "도소매 매출" in g.index else None
+            v["constr_avg"] = f"{a_['효과_퍼센트']:+.1f}%".replace("-", "−")
             v["constr"] = (f"공사 구간 {int(a_['처리_동'])}개 동의 공사 중 카드매출 {a_['효과_퍼센트']:+.1f}% [{a_['하한']:.1f}, {a_['상한']:.1f}]"
                            + (f", 도소매 {b_['효과_퍼센트']:+.1f}%" if b_ is not None else "") + f" (비교 {int(a_['비교_동'])}개 동)")
     cdn = _read("construction_8989_density.csv")                       # B4: 상업 밀도 맞춘 비교군
@@ -315,7 +337,7 @@ def _story(n):
             m = m.iloc[0]
             v["constr_dens"] = (f"상업 밀도(점포/㎢)가 비슷한 동끼리 비교하면 {m['효과_퍼센트']:+.1f}% [{m['하한']:.1f}, {m['상한']:.1f}]"
                                 + (f", 밀도 3등분별 흐름을 빼면 {m2.iloc[0]['효과_퍼센트']:+.1f}%" if len(m2) else "")
-                                + " (모두 유의하지 않음) → 동 평균 −1.4%의 일부는 공사가 아니라 '도심 상업 동 vs 외곽 주거 동'의 원래 흐름 차이일 수 있음")
+                                + f" (모두 유의하지 않음) → 동 평균 {v.get('constr_avg', '')}의 일부는 공사가 아니라 '도심 상업 동 vs 외곽 주거 동'의 원래 흐름 차이일 수 있음")
     ct = _read("construction_trdar_did.csv")
     if ct is not None and len(ct):
         g = ct.set_index("결과")
@@ -383,9 +405,11 @@ def _story(n):
     cdo = _read("construction_dose.csv")
     if cdo is not None and len(cdo):
         d_ = cdo[cdo.kind == "거리 띠"]; e_ = cdo[cdo.kind == "공사 경과"]
-        v["constr_dose"] = ("공사 구간 정거장에 가까울수록(" + " · ".join(f"{b} {x:+.1f}%" for b, x in zip(d_.band, d_.effect_pct))
-                            + "), 공사가 길어질수록(" + " · ".join(f"{b.replace('공사 ', '')} {x:+.1f}%" for b, x in zip(e_.band, e_.effect_pct))
-                            + ") 매출 감소가 커지는 모양 — 다만 어느 띠도 유의하지 않음(골목상권, 11/18 재수집 뒤 다시)")
+        v["constr_dose"] = ("공사 구간 정거장 거리별(" + " · ".join(f"{b} {x:+.1f}%" for b, x in zip(d_.band, d_.effect_pct))
+                            + "), 공사 경과별(" + " · ".join(f"{b.replace('공사 ', '')} {x:+.1f}%" for b, x in zip(e_.band, e_.effect_pct))
+                            + (") 매출 감소가 커지는 모양" if "기간 단조=True" in str(cdo.verdict.iloc[0]) else
+                               ") — 가까울수록 감소가 조금 커 보이나 공사 기간과는 일정한 방향이 없음")
+                            + ". 어느 띠도 유의하지 않음(골목상권, 11/18 재수집 뒤 다시)")
     cb = _read("cafe_baseline.csv")
     if cb is not None and len(cb):
         r = cb[(cb.baseline.str.startswith("최근 3년")) & (cb.scenario == "base") & (cb.year == 2034)].iloc[0]
@@ -420,7 +444,7 @@ def _story(n):
          + (v.get("rent_stab") or "") + " "
          "국내 사례: 성수동은 카페 비중 증가(2005→2014 2.5→7.3%)와 공시지가 상승 뒤 수년 지나 임대료 급등(2022~23 연무장길 1년 +33%)"),
         ("⑤ 공사 기간(개통 전)", "부담", "확인 안 됨", "8989 월별 카드매출 이중차분(공사 구간 동 vs 정거장 먼 동, 주민 수 통제) + 해외 보상 사례",
-         "① 동 평균 손실은 확인 안 됨 ② " + v.get("constr_dose", "공사 기간이 길수록 커지는 모양(확정 아님)") + " ③ 공사 펜스 바로 앞 가게는 해외 사례에서 −30~50%(시드니). "
+         "① 동 평균 손실은 확인 안 됨 ② " + v.get("constr_dose", "거리·기간별 차이는 확정 아님") + " ③ 공사 펜스 바로 앞 가게는 해외 사례에서 −30~50%(시드니). "
          "보상 사례: 시드니 경전철 69곳 A$6.95M, 에든버러 상인 지원 £2.4M, 시애틀 레이니어 지원 업체 85% 생존 · "
          "국내: 광주 도시철도 2호선 1단계 공사 구간 23개 행정동 점포 약 2.57만 곳에 119억 원 패키지(상생카드 10% 추가 환급, 특례보증 업체당 최대 5천만 원, 인건비·컨설팅, 2025-12 발표)",
          (v.get("constr", "") + (f". {v['constr_trdar']}" if v.get("constr_trdar") else "") + (f". {v['constr_dens']}" if v.get("constr_dens") else "")),
@@ -436,8 +460,7 @@ LIMITS = [
     "**상권 가치(땅값) 기준 트램 효과**: 매출 변화가 아니라 땅값으로 추정한 값(대전 1호선 역세권은 땅값 +32% 차이, 점포당 카드매출 +7% 차이로 유의하지 않음 → 트램은 매출보다 상권 가치·업종 구성을 바꿈). 지하철(1호선) 효과를 지상 트램에 빌려 씀 → 과대 가능, 범위(낮음~높음)로 제시",
     "**금액 환산**: 공시지가 총액 × 효과 % 라서 효과 %의 불확실성(기본 구간 {base_ci})을 그대로 가짐. 도로·하천 등 공공 시설 땅 제외",
     "**1호선 효과의 불확실성**: 1단계 +5.8%(구간 0~12.8%), 2단계 −8.3%(개통 전부터 하락 추세 — 개발지 법정동을 빼도 −9.3%, 개통 전 −5.0%라 개발 때문이 아님, phase2_dev_check.csv), 트램 발표(2019) 뒤 정거장 주변 땅값 −1% 안팎. 결과를 보기 전에 정한 규칙(docs/사전분석계획_2차점검_1103.md)대로 기본값 +1.8%는 유지",
-    "**정거장 좌표**: 45곳 중 17곳은 설계 도면, 28곳은 정류장 위치로 추정한 값. 추정 28곳을 0~300m 무작위로 300번 옮겨 다시 계산 → "
-    "핵심 상권 20곳의 진단은 모두 그대로(가장 흔들리는 송촌–법동–중리도 94% 유지), 행정동은 6곳(가양1·2동, 용두동, 중리동, 태평1동, 법2동)이 10% 넘게 바뀜 → 지도에 ⚑ 표시",
+    "**정거장 좌표**: {stn_note}",
     "**자료 단절**: 상가정보 수집 기준이 2023-03·2024-12·2026-06 에 바뀜 → 대전 내 비중·구간 분리로 보정",
     "**공시지가**: 시장 거래 기반 R-ONE 지가지수와 비교하면 대전 13년 상승률 {lc_gongsi} vs {lc_rone}, 현실화율 정책기(2019~22) {lc_pol_g} vs {lc_pol_r} → 상승률은 크게 부풀려지지 않음. 금액(조·억 원)은 시세보다 낮은 공시지가 기준",
     "**유동인구**: 8989 유동인구(SK텔레콤 통신 자료)는 82개 동이 모두 −9% 안팎으로 함께 줄어 동 사이 차이(변별력)가 없어 분석에 쓰지 않음. 재단 확인(2026-10-27): 2024·2025 집계 방식 변경은 없음, 11월 자료 교체로 수치가 달라질 수 있음",
