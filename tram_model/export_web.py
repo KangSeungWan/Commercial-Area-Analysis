@@ -224,10 +224,10 @@ def main():
         a_ = lp[lp.code == "ALL"].set_index("year").idx
         city["land_5y_pct"] = float((a_.iloc[-1] / a_.loc[a_.index.max() - 5] - 1) * 100)
 
-    save("meta.json", dict(open_year=2030, scen=TS, route=paths, stations=stn, sales_ratio=sales_ratio, money_all=money_all, city=city,
+    save("meta.json", dict(open_year=2030, scen=TS, route=paths, stations=stn, money_all=money_all, city=city,
                            line1=records(l1, ["station_no", "name", "lat", "lon", "phase"]) if l1 is not None else [],
                            sources=dict(area="outputs/area_profile.csv", tram="outputs/tram_scenarios.csv",
-                                        s8989="대전신용보증재단 '대전 소상공인 상권분석 서비스'(8989.daejeon.go.kr) 상권 정보 — 신한카드 결제를 카드사 점유 비율로 보정한 추정매출 (2026-10 재단 활용 허가, 재배포 금지)")))
+                                        s8989="자료 출처: 대전광역시·대전신용보증재단, 「대전 소상공인 상권분석 서비스」(https://8989.daejeon.go.kr) — 신한카드 결제를 카드사 점유 비율로 보정한 추정매출(2026-10 활용 허가, 재배포 금지). ※ 상권분석 서비스의 일부 통계를 활용하여 충남대학교 학생 연구팀이 자체 분석·가공한 결과이며, 대전광역시 또는 대전신용보증재단의 공식 분석이나 전망은 아님")))
     save("areas.json", areas)
     save("dongs.json", dongs)
 

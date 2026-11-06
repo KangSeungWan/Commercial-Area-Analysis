@@ -158,7 +158,7 @@ function Story({ D, st, dong, rows }) {
       <span>① <b>상권 가치</b>(땅값)는 오르는 방향 — 크기는 불확실(정거장 500m 기본 {eff}, 95% 구간 0 포함)</span>{ar}
       <span>② <b>업종</b>은 카페 쪽으로 — 가장 확실한 변화{cafe != null && ` (2034 대전 카페 트램 없을 때보다 +${Math.round(cafe)}곳)`}</span>{ar}
       <span>③ <b>점포당 매출</b>이 땅값만큼 오른 증거는 없음</span>{ar}
-      <span>④ 반등 기회 {reb.length}곳 중 <b>{nhi}곳은 땅값-장사 수익 간극</b>이 큼 — 지켜볼 곳</span>{ar}
+      <span>④ 반등 기회 {reb.length}곳 중 <b>{nhi}곳은 땅값-매출 간극</b>이 큼 — 지켜볼 곳</span>{ar}
       <span>⑤ 시: 공사 중 매출 기록·지원 → 개통 초 빈 점포·업종 전환 지원 → 임대료가 실제로 오르기 시작하면 상인 보호 착수 · 상인: 내 계약의 갱신 시점·갱신요구권 확인</span>
     </div>
   );
@@ -291,7 +291,7 @@ function AreaPanel({ D, a, v, st }) {
       </div>
       <WhyBox title="진단 근거 · 20개 상권 안 순위" q={v.quadrant} quadAfter={a.quadrant_after} i5={a.in500} r={a} extraFoot={a.sens ? foot : null} />
       <div className="mgrid">
-        <div className="mgroup">트램 개통 뒤 (상권 가치 → 업종 → 임대료)</div>
+        <div className="mgroup">트램 개통 뒤 추정 (1호선 과거 분석을 빌린 시나리오, 실제 변화 아님)</div>
         <Metric l="상권 가치 효과" h={TRAM_DEF} v={st.tramAfter ? pct(v.tram_sel) : "없음"}
           d={st.tramAfter ? `${v.money > 0 ? `500m 안 땅값 +${eok(v.money)} · ` : ""}낮음 ${pct(a.tram_effect_low)} ~ 높음 ${pct(a.tram_effect_high)}` : `건설 후 ${pct(v.tram)} (${sl})`} />
         {compMetric(v, st, sl)}
@@ -376,7 +376,7 @@ function DongPanel({ D, d, v, st }) {
       </div>
       <WhyBox title="진단 근거 · 82개 동 안 순위" q={v.quadrant} quadAfter={d.quadrant_after} i5={d.tram500_share} r={d} extraFoot={(d.sens || d.dev) ? foot : null} />
       <div className="mgrid">
-        <div className="mgroup">트램 개통 뒤</div>
+        <div className="mgroup">트램 개통 뒤 추정 (실제 변화 아님)</div>
         <Metric l="상권 가치 효과" h={TRAM_DEF} v={st.tramAfter ? pct(v.tram_sel) : "없음"}
           d={st.tramAfter ? `${v.money > 0 ? `500m 안 땅값 +${eok(v.money)} · ` : ""}낮음 ${pct(d.tram_effect_low)} ~ 높음 ${pct(d.tram_effect_high)}` : `건설 후 ${pct(v.tram)} (${sl})`} />
         {compMetric(v, st, sl)}

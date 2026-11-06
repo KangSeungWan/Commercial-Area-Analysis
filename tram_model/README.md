@@ -311,7 +311,7 @@ python tram_model/run_all.py --from train_analyze
 | 19 | `analyze_seoul_newline_sales.py` | 서울 신림선(2022) 역 500m 상권(처리 15) vs 1~3km(비교 165) 점포당 매출·점포 수·카페 비중 이중차분, 가짜 개통·사건연구. 입력 `data/raw/seoul/`(추정매출·점포 CSV 2021~2023, 영역 shapefile .dbf, 역사마스터). 결과: 점포당 매출 −4.0% 유의 아님, 점포 수 +7.7% p 0.04 | `seoul_newline_sales_did/es.csv` |
 
 | 20 | `analyze_cafe_saturation.py` | 대전 카페 포화 점검(인허가 2002~2025 순증·폐업률·카페 비중) + 2005년 카페 비중별 1호선 카페 효과 + 지금 정거장 격자 외삽 범위. 결과: 2023~25 연 −4% 순감소, 비중 높던 격자 +17.4%[3.1, 33.7] vs 낮던 격자 +28.4% → `build_composition` 이 '높음'을 33.7%로 낮춤 | `cafe_saturation_city/checks.csv` |
-| 21 | `check_rent_signal_history.py` | 임대료 부담 신호(상권) ↔ 같은 지역 R-ONE 임대가격지수 13년 변화. 결과: ρ −0.81(p 0.08, 6곳) — 신호 높은 곳일수록 임대료가 더 내림 → 신호 = 땅값과 장사 수익의 간극 | `rent_signal_history.csv` |
+| 21 | `check_rent_signal_history.py` | 임대료 부담 신호(상권) ↔ 같은 지역 R-ONE 임대가격지수 13년 변화. 결과: ρ −0.81(p 0.08, 6곳) — 신호 높은 곳일수록 임대료가 더 내림 → 신호 = 땅값과 매출의 간극 | `rent_signal_history.csv` |
 | 22 | `analyze_development_trend.py` | 트램 없어도 오르는 곳: '대' 필지 수 2010→2026 1.5배 이상(새 택지)·확정 개발 사업·트램 확정 전 5년 대전 대비 +10% 이상인 동 표시, 개발지를 뺀 1호선 효과·트램 확정 효과, 트램 금액 중 개발지 몫. 결과: 개발지 7곳(트램 금액의 19%), 1호선 효과 개발지 빼도 +5.9% | `development_trend_dong/checks.csv` |
 
 | 23 | `analyze_construction_trdar.py` | 공사 기간 점검을 골목상권 144곳 × 월(2024-01~2026-08)로: 처리 = 공사 구간 정거장 300m 안 30곳, 비교 = 트램 1km 밖 46곳, 같은 값 묶음 1곳만. 결과: −2.9%[−8.9, 3.5] p 0.36, 소매 −3.1%, 가짜 공사 시작 +1.1%(통과), 사건연구 공사 뒤 점점 커짐(17개월 −12%) | `construction_trdar_did/es.csv` |
@@ -376,4 +376,4 @@ python tram_model/run_all.py --from train_analyze
 - `tests_registry.py` → `tests_registry.csv`·`tests_registry_summary.csv`: 결과 파일의 p값 213개 모음 + BH(FDR) 보정(남는 것 30개)
 - `check_ai_numbers.py` → `ai_number_check.csv`: 기본 해설 20곳의 숫자를 프롬프트 수치와 기계 대조(`ai_comment.unverified_numbers`, 실시간 해설도 같은 함수). Gemini로 다시 만들면 반드시 실행
 - `analyze_seoul_newline_land.py` → `seoul_newline_land_did.csv`·`_es.csv`: 서울 신림선 역 500m 필지 땅값 이중차분(서울 개별공시지가 2019~2024 + 연속지적도 `data/raw/seoul/공시지가/`, Git 제외). 개통 후 +1.1% [−0.6, 2.7] 유의 X
-- 화면: `about_page.py` 카드 5장에 확신 등급·'반대·약화 결과' 칸, 임대료 신호 = 땅값-장사 수익 간극, 상인 시점표. `ai_page.py` 요금표 삭제(프리미엄 없음). `tourism_page.py`·`export_web.py` 관광 %·금액 삭제. 질문 대비 그림 `docs/qa/qa_cafe_not_trend.png`
+- 화면: `about_page.py` 카드 5장에 확신 등급·'반대·약화 결과' 칸, 임대료 신호 = 땅값-매출 간극, 상인 시점표. `ai_page.py` 요금표 삭제(프리미엄 없음). `tourism_page.py`·`export_web.py` 관광 %·금액 삭제. 질문 대비 그림 `docs/qa/qa_cafe_not_trend.png`
