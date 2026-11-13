@@ -162,12 +162,12 @@ if (EMBED) $("app").classList.add("embed");
 if (OPT.full) $("app").classList.add("full");                // 앱의 '3D 지도' 화면: 넓은 화면 구성, 건설 전/후·시나리오는 앱 위쪽 조작을 따름
 $("c-goto").hidden = !OPT.full;
 $("c-goto").addEventListener("click", () => { if (S.sel) emit({goto: S.sel, t: Date.now()}); });
-const QK = {"성장 지속": "--q-grow", "트램 반등 기회": "--q-rebound", "쇠퇴 우려": "--q-decline", "정체·안정": "--q-stable"};
+const QK = {"먼저 지원": "--q-decline", "기존 지원 연계": "--q-rebound", "변화 관찰": "--q-grow", "정기 점검": "--q-stable", "비교 지역": "--q-stable"};   // 정책 진단 4칸(2026-11-12), 색은 UI 개편 때 다시
 const Y0 = D.years[0], Y1 = D.years[D.years.length - 1], OPEN = D.open_year;
 const MAXH = 2600, FLOOR = 40;                       // 가장 높은 기둥 2.6km, 값이 0이어도 바닥 40m는 보이게
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const short = (n) => n.split("(")[0];
-const quad = (a) => (S.tram === "before" && a.qb ? a.qb : a.quadrant);   // 건설 전에는 반등 기회 → 다른 진단 (app.py 와 같은 규칙)
+const quad = (a) => (S.tram === "before" && a.qb ? a.qb : a.quadrant);   // 건설 전에는 업종 변화 없음 → 기존 지원 연계·정기 점검 (policy_quadrant.py)
 let dirty = true, last = 0;
 const S = {tram: OPT.tram || "after", metric: OPT.metric || "land", scen: OPT.scen || "base", yf: Y0, T: 0, playing: false, rotate: false, sel: null, hover: null};
 
@@ -366,7 +366,7 @@ function select(code, fly) {
   const a = D.areas.find(x => x.code === code), card = $("card");
   if (!a) { card.hidden = true; return; }
   const qa = quad(a), q = getComputedStyle(document.documentElement).getPropertyValue(QK[qa]).trim();
-  const fg = qa === "트램 반등 기회" || qa === "정체·안정" ? "#0a1d08" : "#ffffff";
+  const fg = qa === "기존 지원 연계" || qa === "정기 점검" || qa === "비교 지역" ? "#0a1d08" : "#ffffff";
   $("c-name").textContent = short(a.name);
   $("c-meta").innerHTML = `<span class="badge" style="background:${q};color:${fg}">${qa}</span><span>${a.code} · ${a.gu}${a.type_name ? " · " + a.type_name : ""}</span>`;
   const f = a.fc, last = f ? f.none.length - 1 : 0;
@@ -403,7 +403,7 @@ function sync() {
     : S.metric === "comp" ? "대전 1호선 역 주변 카페 인허가 근거(지하철)로 계산했습니다. 개통 뒤 해마다 커지며, 범위는 시나리오로 보세요."
     : S.metric === "rent" ? "금액이 아닌 위험 순위입니다(땅값-매출 격차·폐업률·업종 교체). 지금은 공실이 많고 임대료가 내려가는 중입니다."
     : S.metric === "tram" ? "트램 효과는 땅값 기준 추정치이고 95% 구간이 0을 포함합니다. 높이 차이는 작게 읽어 주세요."
-    : "트램 운행 모습은 연출이며 실제 배차와 다릅니다. 정거장 일부 좌표는 공개 도면 기준 추정값입니다.";
+    : "트램 운행 모습은 연출이며 실제 배차와 다릅니다. 정거장 좌표는 대전트램 누리집 공식 위치도와 대조한 값입니다(일부 추정, 오차 약 ±200m).";
   if (S.sel) select(S.sel);
   dirty = true;
 }

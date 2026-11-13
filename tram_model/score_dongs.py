@@ -4,7 +4,8 @@
 출력: outputs/dong_scores.csv, dong_scores_sensitivity.csv, dong_scores_validation.csv, dong_scores.png
 지표·규칙은 상권과 같음(82개 안 백분위). 다른 점
 - 트램 지표 = 정거장 500m 안 점포 비율 × 기본 시나리오 수준(%) (상권은 scenario_tram_uplift 평균)
-- '트램 반등 기회' 조건 = 동 점포의 절반 이상이 500m 안 (IN500_MIN 0.5, 상권과 같음) → 해당 동 적음. 0.3 변형을 안정도에 포함
+- 정책 진단 4칸(2026-11-12 변경, docs/사전분석계획_분류변경_1112.md · policy_quadrant.py): 대상 = 점포 10% 이상이 정거장 500m 안,
+  지금 위험(50점 + 절대 쇠퇴 신호) × 업종 변화(카페·빵 비중 %p, 대상 동 안 가운데값). 예전 4분류는 quadrant_old 로 보존
 - 점포 200개 미만 동은 진단 뒤에 '(점포 적음)' 표시
 - 외부 검증: 8989 카드매출 증감(2025→2026)·실태조사 어려움 응답률과 점수의 스피어만 상관
 """
@@ -48,21 +49,28 @@ def main():
     def classify(risk, grow, in500, rcut=50, gcut=50, imin=IN500_MIN):
         hi_r, hi_g, tram = risk >= rcut, grow >= gcut, in500 >= imin
         return pd.Series(np.select([hi_r & tram, hi_r & ~tram, ~hi_r & hi_g], ["트램 반등 기회", "쇠퇴 우려", "성장 지속"], "정체·안정"), index=risk.index)
-    X["quadrant"] = classify(X.risk_score, X.growth_score, X.in500)
+    X["quadrant_old"] = classify(X.risk_score, X.growth_score, X.in500)   # 예전 4분류(비교용 보존)
     alts = [classify(R.drop(columns=k).mean(axis=1), X.growth_score, X.in500) for k in R.columns]
     alts += [classify(X.risk_score, G.drop(columns=k).mean(axis=1), X.in500) for k in G.columns]
     for c in (45, 55):
         alts += [classify(X.risk_score, X.growth_score, X.in500, rcut=c), classify(X.risk_score, X.growth_score, X.in500, gcut=c)]
     alts += [classify(X.risk_score, X.growth_score, X.in500, imin=m) for m in (0.3, 0.7)]
     A = pd.concat(alts, axis=1)
-    X["quadrant_stability"] = A.eq(X.quadrant, axis=0).mean(axis=1).round(2)
-    X["quadrant_alt"] = [", ".join(sorted(set(row) - {q})) for q, row in zip(X.quadrant, A.values)]
-    X["quadrant_uncertain"] = X.quadrant_stability < STABLE_MIN
+    X["quadrant_old_stability"] = A.eq(X.quadrant_old, axis=0).mean(axis=1).round(2)
     X["risk_drivers"] = R.apply(lambda r: ", ".join(LABEL[k] for k in r.dropna().sort_values(ascending=False).index[:2]), axis=1)
     X["growth_drivers"] = G.apply(lambda r: ", ".join(LABEL[k] for k in r.dropna().sort_values(ascending=False).index[:2]), axis=1)
     X["note"] = ["점포 지표 제외(신세계 입점 왜곡)" if c in ARTIFACT else ("점포 적음(200개 미만), 참고" if s else "") for c, s in zip(X.index, X.small)]
     import absolute_decline as AD                                   # B9 절대 쇠퇴 신호
     X = AD.add(X, AD.city_close_rate(T))
+    import policy_quadrant as PQ                                    # 정책 진단 4칸 (B2G)
+    X["policy_target"] = X.tram500_share.fillna(0) >= PQ.DONG_TARGET_MIN
+    CH = PQ.load_change("행정동").reindex(X.index)
+    X["change_pp"], X["change_pp_low"], X["change_pp_high"] = CH["base"], CH.get("low"), CH.get("high")
+    q, stab, alt, unc, med = PQ.stability(R, X.abs_decline, CH, X.policy_target)
+    X["quadrant"], X["quadrant_stability"], X["quadrant_alt"], X["quadrant_uncertain"] = q, stab, alt, unc
+    X["change_median"] = med
+    X["risk_high"] = PQ.risk_high(X.risk_score, X.abs_decline)
+    X["quadrant_without_tram"] = PQ.without_tram(X.risk_score, X.abs_decline, X.policy_target)
     sens = [{"score": nm, "drop": LABEL[k], "spearman": round(P.drop(columns=k).mean(axis=1).rank().corr(X[col].rank()), 3)}
             for nm, P, col in (("쇠퇴 위험", R, "risk_score"), ("성장 가능", G, "growth_score")) for k in P.columns]
     S = pd.DataFrame(sens)
@@ -79,8 +87,9 @@ def main():
     V.to_csv(C.OUT_DIR / "dong_scores_validation.csv", index=False, encoding="utf-8-sig")
     pd.set_option("display.width", 200)
     print(X.sort_values("risk_score", ascending=False)[["name", "type_name", "n_stores", "risk_score", "growth_score", "quadrant", "in500", "sales_yoy"]].head(15).round(2).to_string())
-    print("\n네 칸 분류 수:", X.quadrant.value_counts().to_dict())
-    print("트램 반등 기회:", ", ".join(X[X.quadrant == "트램 반등 기회"].dong))
+    print("\n정책 진단 4칸 수 (업종 변화 가운데값 %.3f%%p):" % X.change_median.iloc[0], X.quadrant.value_counts().to_dict())
+    print("먼저 지원:", ", ".join(X[X.quadrant == "먼저 지원"].dong))
+    print("예전 4분류 수:", X.quadrant_old.value_counts().to_dict())
     print("불확실(안정도<0.8):", int(X.quadrant_uncertain.sum()), "개")
     print("[절대 쇠퇴 신호]", X.abs_decline.value_counts().to_dict(), "· 위험 50 이상 중 신호 있음",
           int(((X.risk_score >= 50) & X.abs_decline.isin(["있음", "강함"])).sum()), "/", int((X.risk_score >= 50).sum()))
@@ -99,7 +108,7 @@ def main():
         fig, ax = plt.subplots(figsize=(10, 8))
         for k, g in X.groupby("cluster"):
             ax.scatter(g.risk_score, g.growth_score, s=60, label=f"{k}. {g.type_name.iloc[0]}")
-        for c, r in X[X.quadrant == "트램 반등 기회"].iterrows():
+        for c, r in X[X.quadrant == "먼저 지원"].iterrows():
             ax.scatter(r.risk_score, r.growth_score, s=180, facecolors="none", edgecolors="C3", lw=1.5); ax.annotate(r.dong, (r.risk_score, r.growth_score), fontsize=8, xytext=(4, 3), textcoords="offset points")
         ax.axvline(50, c="gray", ls=":"); ax.axhline(50, c="gray", ls=":"); ax.set_xlim(0, 100); ax.set_ylim(0, 100)
         ax.set_xlabel("상대 쇠퇴 위험 (82개 동 안 순위)"); ax.set_ylabel("상대 성장 가능"); ax.legend(fontsize=8)

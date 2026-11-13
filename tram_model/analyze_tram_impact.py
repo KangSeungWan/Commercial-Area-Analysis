@@ -3,7 +3,7 @@
 같은 효과(낮음·기본·높음 %, tram_effect.py)를 바꾸지 않고 '보여 주는 단위'만 바꿈.
   1) 금액   : 정거장 500m 안 필지 공시지가 총액(2026) × 효과 % → 땅값 증가액(억 원)
   2) 거리   : 대전 1호선 역에서 100m 띠별 효과 → 효과가 정거장 바로 앞에 몰리는지
-  3) 경로   : 트램 반등 기회 상권의 '트램 없을 때 vs 있을 때' 땅값 지수 + 그 차이의 금액
+  3) 경로   : 업종 변화 큰 상권(먼저 지원·변화 관찰)의 '트램 없을 때 vs 있을 때' 땅값 지수 + 그 차이의 금액
 
 입력
 - data/raw/공시지가/ 의 최신 개별공시지가 shp(+dbf) : 필지 면적(폴리곤) + 2026 공시지가
@@ -14,7 +14,7 @@
 - tram_impact_money.csv        : 대전 전체 / 상권별 정거장 500m 안 공시지가 총액과 증가액(낮음·기본·높음)
 - tram_impact_station.csv      : 정거장 45개별 같은 표
 - tram_distance_bands.csv      : 1호선 역 거리 띠별 효과(%, 95% 구간) + 트램 시나리오에 옮긴 띠별 효과
-- tram_with_without.csv        : 반등 기회 상권 × 연도 지수(트램 없음/낮음/기본/높음) + 차이 금액(억 원)
+- tram_with_without.csv        : 업종 변화 큰 상권 × 연도 지수(트램 없음/낮음/기본/높음) + 차이 금액(억 원)
 - tram_impact_money.png, tram_distance_bands.png, tram_with_without.png
 
 주의 (발표 문구에 그대로 쓸 것)
@@ -185,7 +185,8 @@ def distance_bands(G, L):
 def with_without(G):
     F = pd.read_csv(C.OUT_DIR / "forecast_land.csv", encoding="utf-8-sig")
     Sc = pd.read_csv(C.OUT_DIR / "area_scores.csv", encoding="utf-8-sig")
-    codes = list(Sc[Sc.quadrant == "트램 반등 기회"].code)
+    import policy_quadrant as PQ
+    codes = list(Sc[Sc.quadrant.isin(PQ.CHANGE_BIG)].code)
     val = G[~G.jimok.isin(PUBLIC_JIMOK)].groupby("area").value.sum()      # 상권 전체 공시지가 총액(2026)
     F = F[F.code.isin(codes)].copy()
     F["area_value_eok"] = F.code.map(val) / EOK
@@ -277,7 +278,7 @@ def fig_paths(F, H, codes, plt, open_year):
     axes[0].set_ylabel("공시지가 지수 (2026 = 100)")
     axes[-1].legend(frameon=False, fontsize=8, loc="lower right")
     tot = F[F.year == F.year.max()]
-    fig.suptitle(f"트램 반등 기회 5곳: 트램이 있으면 {int(F.year.max())}년 땅값이 합계 {tot.gap_base_eok.sum():,.0f}억 원 더 높음 "
+    fig.suptitle(f"업종 변화 큰 {len(codes)}곳: 트램이 있으면 {int(F.year.max())}년 땅값이 합계 {tot.gap_base_eok.sum():,.0f}억 원 더 높음 "
                  f"(높음 {tot.gap_high_eok.sum():,.0f}억) · 점선 = {open_year} 개통", x=0.01, ha="left", fontsize=11, color=INK)
     fig.tight_layout(); fig.savefig(C.OUT_DIR / "tram_with_without.png", dpi=150); plt.close(fig)
 

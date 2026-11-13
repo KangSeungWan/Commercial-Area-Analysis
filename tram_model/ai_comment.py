@@ -3,7 +3,7 @@
 - 상권 정보 묶음(area_context)과 질문 글(build_prompt)을 한곳에서 만들어, 실시간 해설과 저장본이 같은 내용을 근거로 함
 - 저장본: outputs/ai_comments.json (생성 날짜·모델·시나리오 포함). 2026-10-28 기본 해설은 Claude 가 같은 프롬프트를 받아 써서 사람이 검토한 것
   → 실시간 호출이 실패하면 이 기본 해설을 보여 줌 (이용자 추가 질문이 있으면 기본 해설 + '질문 답은 실시간만' 안내)
-- 추가 질문(extra): 이용자가 적은 글을 기존 프롬프트 뒤에 붙여 보냄 → 맞춤 해설 (유료 기능으로 안내, 10-28 결정)
+- 추가 질문(extra): 이용자가 적은 글을 기존 프롬프트 뒤에 붙여 보냄 → 맞춤 해설 (11-03: 유료·프리미엄 안내는 삭제)
 - API 키는 화면·로그에 절대 출력하지 않음
 """
 import json
@@ -89,7 +89,8 @@ def area_context(code, info, fc=None, IS=None, weights=None, ind_area=None, even
     g = lambda k, nd=1: (None if k not in r or pd.isna(r[k]) else (round(float(r[k]), nd) if not isinstance(r[k], str) else r[k]))
     ctx = {"상권": f"{code} {r['name']} ({r.gu}, {r.type})",
            "유형(K-means)": g("type_name"), "진단": g("quadrant"),
-           "진단 안정도(15가지 변형 중 같은 진단 비율)": g("quadrant_stability", 2),
+           "진단 안정도(10가지 변형 중 같은 진단 비율)": g("quadrant_stability", 2),
+           "업종 변화(2034 카페·빵 비중 증가 %p)": g("change_pp", 2), "업종 변화 가운데값(%p)": g("change_median", 2),
            "상대 쇠퇴 위험 점수(0~100, 20개 상권 중 순위 기반)": g("risk_score", 0), "위험 주요 원인": g("risk_drivers"),
            "상대 성장 가능 점수(0~100)": g("growth_score", 0), "성장 주요 근거": g("growth_drivers"),
            "점포 수(2026-06)": g("n_stores", 0), "주요 업종": g("top3_mid"),
@@ -123,13 +124,13 @@ def area_context(code, info, fc=None, IS=None, weights=None, ind_area=None, even
         if len(rp):
             x = rp.iloc[0]
             drv = x.rent_drivers if isinstance(x.rent_drivers, str) and x.rent_drivers else "뚜렷한 원인 없음"
-            ctx["임대료 부담 신호(개통 뒤 나중의 위험, 상대 순위·금액 아님)"] = (
+            ctx["땅값-매출 간극(임대료 부담 신호, 지켜볼 곳 표시, 상대 순위·금액 아님)"] = (
                 f"{x.rent_pressure}" + (f" (점수 {x.rent_pressure_score:.0f}, 원인: {drv})" if x.rent_pressure != "해당 없음" else ""))
     if comp is not None:
         cp = comp[(comp.level == "상권") & (comp.key == code) & (comp.scenario == scen_key)]
         if len(cp):
             y = cp.year.max(); x = cp[cp.year == y].iloc[0]
-            ctx[f"업종 변화: 음식점 중 카페·빵집 비중 2026→{y}(트램 {scen_key} 시나리오)"] = (
+            ctx[f"업종 변화: 전체 점포 중 카페·빵집 비중 2026→{y}(트램 {scen_key} 시나리오)"] = (
                 f"{x.cafe_bakery_share_now * 100:.1f}% → {x.cafe_bakery_share * 100:.1f}% (+{x.cafe_bakery_pp:.1f}%p, 카페·빵집 약 {x.cafe_bakery_add:.0f}곳 상대 증가. "
                 "대전 1호선 인허가 근거, 식사 음식점 몫은 그만큼 줄어듦)")
     if tour is not None:
@@ -164,10 +165,10 @@ def build_prompt(ctx_text, scen_text, scen_help, extra=None):
 
 [지표 설명]
 - 점수: 20개 상권 안 상대 순위(0~100). 절대적 쇠퇴 판정이 아님. '절대 쇠퇴 신호'가 '없음'이면 "다른 상권보다 덜 좋을 뿐 대전 전체 기준으로 쇠퇴 중은 아님"이라고 말할 것
-- 진단: 상대 쇠퇴 위험 50점 이상이면서 상권 점포 절반 이상이 트램 정거장 500m 안이면 '트램 반등 기회', 아니면 '쇠퇴 우려', 위험 50 미만이면 '성장 지속'/'정체·안정'. 진단 안정도가 0.8 미만이면 '불확실'이라고 꼭 말할 것
+- 진단(정책 진단 4칸, 시·구 담당자가 할 일): 트램 근처만 분류. 지금 위험 높음 = 상대 쇠퇴 위험 50점 이상 + 절대 쇠퇴 신호 있음, 업종 변화 큼 = 2034 카페·빵 비중 증가가 대상 안 가운데값 이상 → '먼저 지원'(위험↑·변화↑) / '기존 지원 연계'(위험↑·변화↓) / '변화 관찰'(위험↓·변화↑) / '정기 점검'(위험↓·변화↓), 노선 밖은 '비교 지역'. 매출·투자 전망이 아니라 정책 우선순위임. '기회'·'반등'이라는 말은 쓰지 말 것. 진단 안정도가 0.8 미만이면 '불확실'이라고 꼭 말할 것
 - 트램 효과: {TRAM_DEF}. 시나리오 근거: {' / '.join(scen_help)}. 지하철 효과를 지상 트램에 빌려 쓴 것이라 과대일 수 있음. 선택된 시나리오: {scen_text}
-- 핵심 메시지: 트램은 가게 매출보다 상권의 가치(땅값)와 업종 구성(카페 쪽으로)을 바꾸고, 그 결과 임대료 부담이 나중의 위험. '반등 기회'는 땅값이 오를 곳이라는 뜻이며 가게 생존은 임대료 신호와 같이 봐야 함
-- 임대료 부담 신호: 땅값-매출 격차·폐업률·업종 교체를 조합한 상대 순위(측정값 아님). '높음'이면 개통 뒤 몇 년 지나 임대료가 오를 수 있는 곳
+- 핵심 메시지: 대전 1호선에서 실제로 확실히 달라진 것은 업종 구성(카페)이고, 땅값은 오르는 방향이지만 크기는 불확실, 가게당 매출이 땅값만큼 오른 증거는 없음. 트램 2호선 수치는 모두 1호선 과거 결과를 빌린 추정(시나리오)이며 실제로 일어난 변화가 아님을 지킬 것. 진단 칸은 정책 우선순위일 뿐 가게 생존·매출을 뜻하지 않음
+- 땅값-매출 간극(임대료 부담 신호): 땅값-매출 격차·폐업률·업종 교체를 조합한 상대 순위(측정값 아님). 임대료 상승을 예측하지 못함(전국 검사) → '높음'은 '지켜볼 곳'이라는 뜻일 뿐. 매출(카드 추정)과 땅값의 비교이며 이익·영업수익성을 판단한 것이 아니므로 '수익이 낮다'처럼 쓰지 말 것
 - 업종 점수: 성장·규모·특화도·생존·땅값(+건설 후 트램 효과)을 업종 안 20개 상권 순위로 합친 100점 점수
 - 공시지가 예측: 상권별 ARIMA + 트램 효과, 80% 범위가 넓어 비교용
 - 매출 금액은 위치별 실측이 없어 사용하지 않음. 공사 기간(2025~2028) 매출 손실은 동 평균으로는 확인되지 않았고 펜스 앞 가게는 해외에서 −30~50%
@@ -177,10 +178,10 @@ def build_prompt(ctx_text, scen_text, scen_help, extra=None):
 1. 한 줄 요약 (현재 상태: 성장/정체/쇠퇴, 절대 신호 여부)
 2. 근거 수치 3개
 3. 트램 개통 뒤: 상권 가치(땅값)와 업종 구성이 어떻게 바뀌나
-4. 위험 요인: 임대료 부담 신호·공사 기간·그 밖의 위험
+4. 위험 요인: 땅값-매출 간극·공사 기간·그 밖의 위험
 5. 유리한 업종 2개와 조심할 업종 1개 (업종 점수·업종 비율 변화 근거)
 6. 시가 할 일 1개 · 상인이 할 일 1개
-추정치는 '추정'이라고 표시하고, 위 정보에 없는 사실은 지어내지 마."""
+추정치는 '추정'이라고 표시하고, 위 정보에 없는 사실은 지어내지 마. 임대차 계약 방식(장기 계약 등)을 권하지 말고 계약 갱신 시점 확인 같은 정보 제공으로만 쓰고, 행정동별 카드매출 수치는 쓰지 마."""
     if extra and str(extra).strip():
         base += f"""
 
@@ -227,3 +228,36 @@ def saved_entry(saved, code):
     return {"text": e["text"], "generated_at": e.get("generated_at") or saved.get("generated_at", ""),
             "scenario": e.get("scenario") or saved.get("scenario", ""), "model": e.get("model") or saved.get("model", ""),
             "kind": e.get("kind") or saved.get("kind", "저장본")}
+
+
+# ── 숫자 대조 (B8, 2차 점검): AI 글에 나온 숫자가 보낸 정보(ctx)·지표 설명에 있는지 기계로 확인 ──
+import re as _re
+
+_NUM = _re.compile(r"(?<![A-Za-z0-9])[-−+]?\d[\d,]*(?:\.\d+)?")   # A14 같은 코드 속 숫자는 제외
+
+
+def _nums(text):
+    out = []
+    for m in _NUM.finditer(str(text)):
+        t = m.group().replace(",", "").replace("−", "-").lstrip("+")
+        try:
+            out.append(float(t))
+        except ValueError:
+            pass
+    return out
+
+
+def unverified_numbers(text, ctx_text, prompt_text=""):
+    """AI 글 속 숫자 중 보낸 정보·지표 설명 어디에도 없는 숫자 목록.
+    무시: 10 이하 정수(항목 번호·개수), 2000~2040(연도), 반올림 차이(상대 3% 또는 절대 0.15 안), km↔m 환산."""
+    known = _nums(ctx_text) + _nums(prompt_text)
+    known_abs = [abs(k) for k in known]
+    bad = []
+    for v in _nums(text):
+        a = abs(v)
+        if (a <= 10 and float(a).is_integer()) or (2000 <= a <= 2040 and float(a).is_integer()):
+            continue
+        if any(abs(c - k) <= max(0.15, 0.03 * k) for k in known_abs for c in (a, a * 1000)):   # km ↔ m 환산 허용
+            continue
+        bad.append(v)
+    return sorted(set(bad))

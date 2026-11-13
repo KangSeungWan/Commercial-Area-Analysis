@@ -23,11 +23,14 @@ export default function AboutPage() {
       </div>
       <Tabs value={tab} onChange={k => go("/about", { tab: k })} tabs={TABS} />
       {tab === "story" && <section>
-        <p className="lead" style={{ marginBottom: 6 }}><b>트램은 가게의 매출보다 상권의 가치와 업종 구성을 바꿉니다.</b> 그 결과 생기는 위험이 임대료 부담입니다.</p>
+        <p className="lead" style={{ marginBottom: 6 }}><b>1호선 주변에서 확실히 달라진 것은 카페였습니다.</b> 땅값은 오르는 방향이지만 크기는 불확실하고, 가게당 매출이 땅값만큼 따라 오른 증거는 없었습니다. 임대료 상승과 공사 피해는 아직 확인되지 않았습니다.</p>
+        <p className="small muted">확신 등급 — 확실: p&lt;0.01이고 두 가지 이상 검사를 통과, 다중 검정 보정 뒤에도 남음 · 방향만: 방향은 같지만 크기의 95% 구간이 0을 포함 · 확인 안 됨: 유의하지 않거나 과거 자료와 맞지 않음. 반대·약화 결과는 늘 같은 자리에 둠.</p>
         {B.story.map(s => (
           <article className="card-story" key={s.what}>
-            <div><h3>{s.what}</h3><span className="vd">{s.verdict}</span></div>
-            <dl><dt>어떻게</dt><dd><MD inline text={s.how} /></dd><dt>결과</dt><dd><MD inline text={s.result} /></dd><dt>한계</dt><dd className="muted"><MD inline text={s.limit} /></dd></dl>
+            <div><h3>{s.what}</h3><span className="vd">{s.verdict}</span>{s.grade && <span className="vd">확신 등급: {s.grade}</span>}</div>
+            <dl><dt>어떻게</dt><dd><MD inline text={s.how} /></dd><dt>결과</dt><dd><MD inline text={s.result} /></dd>
+              {s.counter && <><dt>반대·약화 결과</dt><dd><MD inline text={s.counter} /></dd></>}
+              <dt>한계</dt><dd className="muted"><MD inline text={s.limit} /></dd></dl>
           </article>
         ))}
       </section>}

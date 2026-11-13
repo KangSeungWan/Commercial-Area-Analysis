@@ -148,7 +148,8 @@ try:
     ax[1].scatter(S.bad_pct, S.sales_yoy_pct, c=S.old_town, cmap="coolwarm"); ax[1].set_xlabel("실태조사 어려움 응답률 2021 (%)"); ax[1].set_ylabel("카드매출 증감 (%)"); ax[1].axhline(0, c="gray", lw=.5)
     plt.tight_layout(); plt.savefig(O8 / "dong_sales_validation.png", dpi=150); plt.close()
     fig, ax = plt.subplots(figsize=(10, 6)); Rp = R.sort_values("sales_yoy_pct")
-    colors = Rp.quadrant.map({"트램 반등 기회": "#2a6f97", "쇠퇴 우려": "#c0392b", "성장 지속": "#2e8b57", "정체·안정": "#888"}).fillna("#888")
+    import policy_quadrant as PQ
+    colors = Rp.quadrant.map(PQ.HEX).fillna("#888")
     ax.barh(Rp.name, Rp.sales_yoy_pct, color=colors); ax.axvline(0, c="gray", lw=.5); ax.set_xlabel("카드매출 증감 2025→2026 1~8월 (%) — 행정동 실측을 점포 비율로 배분")
     plt.tight_layout(); plt.savefig(O8 / "area_sales_yoy.png", dpi=150); plt.close(); print("그림 저장")
 except ImportError:

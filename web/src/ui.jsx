@@ -80,7 +80,7 @@ export function Controls({ meta, unit = false }) {
 export function QBadge({ q }) {
   if (!q) return null;
   // 글자 대비 4.5:1 이상이 되도록 배지 바탕만 조금 진하게 (지도 색은 그대로)
-  const bg = { "성장 지속": "#1e7d4a" }[q] || QHEX[q] || "#999";
+  const bg = QHEX[q] || "#999";
   return <span className="badge" style={{ background: bg, color: QTXT[q] || "#fff" }}>{q}</span>;
 }
 
@@ -116,7 +116,7 @@ export function Legend({ items }) {
 }
 
 /** 땅값 전망: 실제(검정) + 추세(회색 점선) + 80% 띠 + 시나리오(남색) */
-export function ForecastChart({ hist, fc, scen, after, openYear = 2030 }) {
+export function ForecastChart({ hist, fc, scen, after, openYear = 2030, showShare = true }) {
   if (!hist?.length || !fc?.length) return <p className="muted small">이 곳의 땅값 전망 결과가 없습니다.</p>;
   const h = hist.filter(d => d[0] >= 2015);
   const b = hist[hist.length - 1][1] / 100;
@@ -144,7 +144,7 @@ export function ForecastChart({ hist, fc, scen, after, openYear = 2030 }) {
         <line x1={x(openYear)} x2={x(openYear)} y1={M.t} y2={H - M.b} stroke="var(--route)" strokeDasharray="2 2" />
         <text x={x(openYear) + 4} y={M.t + 10} fontSize="12" fill="var(--route)">트램 개통</text>
         <text x={M.l} y={M.t - 1} fontSize="12" fill="var(--sage-gray)">지수 (2015=100)</text>
-        {share != null && <text x={x(end.y)} y={y(end.tram) - 8} fontSize="12.5" fontWeight="600" textAnchor="end" fill="var(--tram-ink)">트램 몫 {share >= 0 ? "+" : ""}{share.toFixed(1)}% ({end.y})</text>}
+        {showShare && share != null && <text x={x(end.y)} y={y(end.tram) - 8} fontSize="12.5" fontWeight="600" textAnchor="end" fill="var(--tram-ink)">트램 몫 {share >= 0 ? "+" : ""}{share.toFixed(1)}% ({end.y})</text>}
       </svg>
     </div>
   );

@@ -26,7 +26,8 @@ OUT, DATA = HERE / "outputs", HERE / "data"
 COMP_DIR = HERE / "map3d_component"                    # Streamlit 부품 폴더 (index.html = 화면 원본)
 TEMPLATE = COMP_DIR / "index.html"
 OPEN_YEAR = 2030                                       # app.py 와 같음
-QUAD = ["성장 지속", "트램 반등 기회", "쇠퇴 우려", "정체·안정"]
+import policy_quadrant as PQ
+QUAD = list(PQ.ALL)                                    # 정책 진단 4칸 + 비교 지역 (2026-11-12)
 
 
 def _csv(p):
@@ -59,10 +60,9 @@ def _simplify_geojson(gj, step=2):
 
 
 def _quad_before(r):
-    """트램이 없을 때의 진단: '반등 기회'만 정거장 없이 다시 분류 (app.py · score_areas.py 와 같은 규칙)."""
-    if r.quadrant != "트램 반등 기회":
-        return r.quadrant if r.quadrant in QUAD else "정체·안정"
-    return "쇠퇴 우려" if r.risk_score >= 50 else "성장 지속" if r.growth_score >= 50 else "정체·안정"
+    """트램이 없을 때의 진단: 업종 변화가 없으므로 위험 높음 → 기존 지원 연계, 낮음 → 정기 점검 (policy_quadrant.py)"""
+    q = getattr(r, "quadrant_without_tram", None)
+    return q if q in QUAD else PQ.OUTSIDE
 
 
 def make_data():
@@ -91,7 +91,7 @@ def make_data():
         if f is None:
             continue
         p = f["properties"]
-        a = dict(code=r.code, name=r.name, gu=r.gu, quadrant=r.quadrant if r.quadrant in QUAD else "정체·안정",
+        a = dict(code=r.code, name=r.name, gu=r.gu, quadrant=r.quadrant if r.quadrant in QUAD else PQ.OUTSIDE,
                  type_name=getattr(r, "type_name", ""), poly=_ring(f["geometry"]),
                  center=[_r(p.get("center_lon")), _r(p.get("center_lat"))],
                  n_stores=int(r.n_stores), risk=_r(r.risk_score, 1), growth=_r(r.growth_score, 1),

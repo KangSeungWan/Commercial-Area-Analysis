@@ -10,11 +10,11 @@
   트램 기본 효과(%, ↑), 개업률(↑), 점포 비중 최근 3년(↑)
   (예전의 '2034 지가 예측(트램 기본)'은 트램 효과를 두 번 세서 뺌)
 ※ 두 점수 모두 20개 상권 안 '상대' 순위 → 절대 수준이 아님 (앱에서 '상대 쇠퇴 위험'으로 표기)
-네 칸 분류 (위험 50점 기준)
-  위험 ≥ 50 : 상권 점포의 절반 이상이 정거장 500m 안(IN500_MIN)이면 '트램 반등 기회', 아니면 '쇠퇴 우려'
-  위험 < 50 : 성장 ≥ 50 이면 '성장 지속', 아니면 '정체·안정'
-진단 안정도: 지표 하나 빼기(9) · 위험/성장 기준 45·55(4) · 정거장 반경 400·600m(2) = 15가지로 다시 분류해
-  같은 진단이 나온 비율. 80% 미만이면 '불확실'
+정책 진단 4칸 (2026-11-12 변경, 규칙: docs/사전분석계획_분류변경_1112.md · 계산: policy_quadrant.py)
+  대상 = 트램 근접 상권(나머지 '비교 지역'). 지금 위험(50점 이상 + 절대 쇠퇴 신호) × 업종 변화(카페·빵 비중 %p, 가운데값)
+  → 먼저 지원 · 기존 지원 연계 · 변화 관찰 · 정기 점검. 진단 안정도 10가지 변형, 80% 미만 '불확실'
+  성장 점수는 카드 참고값으로만 남김(분류에 안 씀)
+예전 4분류(성장 지속·트램 반등 기회·쇠퇴 우려·정체·안정)는 quadrant_old 로 보존
 도룡동은 점포 지표가 신세계 입점 등록으로 왜곡 → 점포 지표 빼고 나머지로 계산
 가중치는 모두 같음. 지표 하나씩 빼도 순위가 유지되는지(스피어만 상관) 함께 출력
 """
@@ -77,8 +77,8 @@ def main():
         return pd.Series(np.select([hi_r & tram, hi_r & ~tram, ~hi_r & hi_g],
                                    ["트램 반등 기회", "쇠퇴 우려", "성장 지속"], "정체·안정"), index=risk.index)
 
-    X["quadrant"] = classify(X.risk_score, X.growth_score, X.in500)
-    # 진단 안정도: 15가지 변형에서 같은 진단이 나온 비율
+    X["quadrant_old"] = classify(X.risk_score, X.growth_score, X.in500)   # 예전 4분류(비교용 보존)
+    # (예전 15가지 변형 안정도 — 예전 분류 기준, quadrant_old_stability 로 보존)
     alts = []
     for k in R.columns:
         alts.append(classify(R.drop(columns=k).mean(axis=1), X.growth_score, X.in500))
@@ -90,9 +90,7 @@ def main():
     for v in in_alt.values():
         alts.append(classify(X.risk_score, X.growth_score, v))
     A = pd.concat(alts, axis=1)
-    X["quadrant_stability"] = A.eq(X.quadrant, axis=0).mean(axis=1).round(2)
-    X["quadrant_alt"] = [", ".join(sorted(set(row) - {q})) for q, row in zip(X.quadrant, A.values)]
-    X["quadrant_uncertain"] = X.quadrant_stability < STABLE_MIN
+    X["quadrant_old_stability"] = A.eq(X.quadrant_old, axis=0).mean(axis=1).round(2)
     # 주요 원인 (위험 점수에 가장 크게 기여한 지표 2개)
     X["risk_drivers"] = R.apply(lambda r: ", ".join(LABEL[k] for k in r.dropna().sort_values(ascending=False).index[:2]),
                                 axis=1)
@@ -103,6 +101,19 @@ def main():
     import absolute_decline as AD
     _dt = pd.read_csv(C.OUT_DIR / "dong_types.csv", encoding="utf-8-sig")
     X = AD.add(X, AD.city_close_rate(_dt))
+
+    # 정책 진단 4칸 (B2G) — policy_quadrant.py
+    import policy_quadrant as PQ
+    sk = pd.read_csv(C.OUT_DIR / "sangkwon_summary.csv", encoding="utf-8-sig").set_index("code")
+    X["tram_group"] = sk.tram_group.reindex(X.index)
+    X["policy_target"] = X.tram_group.eq("트램 근접")
+    CH = PQ.load_change("상권").reindex(X.index)
+    X["change_pp"], X["change_pp_low"], X["change_pp_high"] = CH["base"], CH.get("low"), CH.get("high")
+    q, stab, alt, unc, med = PQ.stability(R, X.abs_decline, CH, X.policy_target)
+    X["quadrant"], X["quadrant_stability"], X["quadrant_alt"], X["quadrant_uncertain"] = q, stab, alt, unc
+    X["change_median"] = med
+    X["risk_high"] = PQ.risk_high(X.risk_score, X.abs_decline)
+    X["quadrant_without_tram"] = PQ.without_tram(X.risk_score, X.abs_decline, X.policy_target)
 
     # 가중치 민감도: 지표 하나씩 뺐을 때 순위 상관
     sens = []
@@ -120,7 +131,8 @@ def main():
     print(show.to_string())
     print("\n[가중치 민감도] 지표 하나 뺐을 때 순위 상관 최소:",
           S.groupby("score").spearman.min().to_dict())
-    print("\n네 칸 분류:", X.groupby("quadrant").name.apply(lambda v: ", ".join(v)).to_dict())
+    print("\n정책 진단 4칸 (업종 변화 가운데값 %.3f%%p):" % X.change_median.iloc[0], X.groupby("quadrant").name.apply(lambda v: ", ".join(v)).to_dict())
+    print("예전 4분류:", X.groupby("quadrant_old").name.apply(lambda v: ", ".join(v)).to_dict())
     print(f"\n[절대 쇠퇴 신호] 대전 폐업률 {X.city_close_rate.iloc[0]:.3f} 기준:",
           X.groupby("abs_decline").name.apply(lambda v: ", ".join(v)).to_dict())
     print("  위험 50점 이상인데 신호 없음:", ", ".join(X[(X.risk_score >= 50) & (X.abs_decline == "없음")].name) or "-")
@@ -134,13 +146,13 @@ def main():
             ax.annotate(r["name"].split("(")[0], (r.risk_score, r.growth_score), fontsize=8, xytext=(4, 3),
                         textcoords="offset points")
     ax.axvline(50, c="gray", ls=":"); ax.axhline(50, c="gray", ls=":")
-    for (x, y, t) in [(20, 95, "성장 지속"), (75, 95, "위험 높음: 절반 이상 500m 안이면 '반등 기회'"), (20, 5, "정체·안정")]:
+    for (x, y, t) in [(20, 95, "(성장 점수는 참고)"), (75, 95, "위험 높음 = 50점 이상 + 절대 쇠퇴 신호"), (20, 5, "")]:
         ax.text(x, y, t, fontsize=10, color="gray", ha="center")
-    for code, r in X[X.quadrant == "트램 반등 기회"].iterrows():
+    for code, r in X[X.quadrant == "먼저 지원"].iterrows():
         ax.scatter(r.risk_score, r.growth_score, s=260, facecolors="none", edgecolors="C3", lw=1.5)
     ax.set_xlim(0, 100); ax.set_ylim(0, 100)
     ax.set_xlabel("상대 쇠퇴 위험 점수 (20개 상권 안 순위) →"); ax.set_ylabel("상대 성장 가능 점수 →")
-    ax.set_title("20개 상권 상대 쇠퇴 위험 × 상대 성장 가능 (빨간 원 = 트램 반등 기회)")
+    ax.set_title("20개 상권 상대 쇠퇴 위험 × 상대 성장 가능 (빨간 원 = 먼저 지원)")
     ax.legend(fontsize=8, loc="center left")
     plt.tight_layout(); plt.savefig(C.OUT_DIR / "area_scores.png", dpi=130)
     print("→ outputs/area_scores.csv, area_scores_sensitivity.csv, area_scores.png")

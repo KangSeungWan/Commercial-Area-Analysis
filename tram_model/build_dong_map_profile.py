@@ -24,7 +24,7 @@ def main():
     D = prof[["dong_id", "name", "si", "dong", "nearest_tram", "nearest_tram_m", "n_stores", "tram500_share", "top3", "land_price", "land_chg_5y_pct", "land_chg_10y_pct", "areas"]].copy()
     D = D.merge(T[["dong_id", "cluster", "type_name", "stability", "land_rel_g10", "land_recent", "store_g", "store_recent", "close_rate", "open_rate", "food_ratio", "retail_ratio", "branch_share", "small"]].rename(columns={"stability": "type_stability"}), on="dong_id", how="left")
     D = D.merge(S[["dong_id", "risk_score", "growth_score", "quadrant", "quadrant_stability", "quadrant_alt", "quadrant_uncertain", "risk_drivers", "growth_drivers", "tram_gain", "fc_base", "fc_tram", "note", "survey_bad_pct"]
-                  + [c for c in ("abs_decline", "abs_decline_n", "abs_decline_why", "city_close_rate") if c in S.columns]].rename(columns={"tram_gain": "tram_gain_score", "note": "score_note"}), on="dong_id", how="left")
+                  + [c for c in ("abs_decline", "abs_decline_n", "abs_decline_why", "city_close_rate", "policy_target", "risk_high", "change_pp", "change_pp_low", "change_pp_high", "change_median", "quadrant_without_tram", "quadrant_old") if c in S.columns]].rename(columns={"tram_gain": "tram_gain_score", "note": "score_note"}), on="dong_id", how="left")
     end = FL.year.max()
     fl = FL[FL.year == end].set_index("code"); fs = FS[FS.year == end].set_index("code")
     D["land_2034_base"], D["land_2034_lo80"], D["land_2034_hi80"], D["land_2034_tram"] = [D.dong_id.map(fl[c]) for c in ("base_path", "lo80", "hi80", "tram_base")]
@@ -53,7 +53,7 @@ def main():
     D.to_csv(OUT / "dong_map_profile.csv", index=False, encoding="utf-8-sig")
 
     gj = json.load(open(OUT / "dong_polygons.geojson", encoding="utf-8"))
-    keep = ["dong_id", "name", "si", "dong", "type_name", "cluster", "risk_score", "growth_score", "quadrant", "quadrant_uncertain", "tram_effect", "tram500_share", "tram_group",
+    keep = ["dong_id", "name", "si", "dong", "type_name", "cluster", "risk_score", "growth_score", "quadrant", "quadrant_uncertain", "policy_target", "change_pp", "quadrant_old", "tram_effect", "tram500_share", "tram_group",
             "nearest_tram", "nearest_tram_m", "n_stores", "small", "land_rel_idx", "land_chg_5y_pct", "land_2034_base", "land_2034_tram", "money_gain_base_eok", "money_value_500_eok", "s89_sales_yoy_pct", "s89_sales_per_store_2026", "s89_market_caveat", "areas"]
     Di = D.set_index("dong_id")
     for ft in gj["features"]:

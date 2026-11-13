@@ -29,10 +29,10 @@ export default function Cover() {
   useEffect(() => {
     if (!data || !el.current || !window.gsap) return;
     const { meta, areas } = data;
-    const reb = areas.filter(a => a.quadrant_after === "트램 반등 기회");
+    const reb = areas.filter(a => a.policy_target);
     const ca = meta.city.cafe_add || {};
     const stats = {
-      rebound: reb.length, rb_rent: reb.filter(a => a.rent?.grade === "높음").length,
+      rebound: reb.length, rb_rent: reb.filter(a => a.quadrant_after === "먼저 지원").length,
       base: pct(meta.scen.base.effect_pct), low: pct(meta.scen.low.effect_pct), high: pct(meta.scen.high.effect_pct),
       cafe_add: ca.base != null ? `+${Math.round(ca.base)}` : "-", cafe_rng: ca.low != null ? `${Math.round(ca.low)}~${Math.round(ca.high)}곳` : "-",
       n_scores: 120,

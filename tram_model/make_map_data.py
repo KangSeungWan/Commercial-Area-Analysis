@@ -105,7 +105,7 @@ def area_profile(map_df):
     if sf.exists():                                        # score_areas.py 결과 (쇠퇴 위험·성장 가능)
         _sc = pd.read_csv(sf, encoding="utf-8-sig")
         _cols = ["code", "risk_score", "growth_score", "quadrant", "risk_drivers", "growth_drivers"] + \
-            [c for c in ("quadrant_stability", "quadrant_alt", "quadrant_uncertain", "in500", "abs_decline", "abs_decline_n", "abs_decline_why", "city_close_rate") if c in _sc.columns]
+            [c for c in ("quadrant_stability", "quadrant_alt", "quadrant_uncertain", "in500", "abs_decline", "abs_decline_n", "abs_decline_why", "city_close_rate", "policy_target", "risk_high", "change_pp", "change_pp_low", "change_pp_high", "change_median", "quadrant_without_tram", "quadrant_old") if c in _sc.columns]
         P = P.merge(_sc[_cols], on="code", how="left")
     vf = OUT / "survey_area.csv"
     if vf.exists():                                        # analyze_survey_sales.py (소속 행정동 2021 실태조사)

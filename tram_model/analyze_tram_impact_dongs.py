@@ -63,7 +63,7 @@ def main():
     M.to_csv(OUT / "dong_tram_money.csv", index=False, encoding="utf-8-sig")
     print(f"500m 안 총액 합계 {M.value_500_eok.sum():,.0f}억 원, 기본 증가액 합계 {M.gain_base_eok.sum():,.0f}억 (낮음 {M.gain_low_eok.sum():,.0f} ~ 높음 {M.gain_high_eok.sum():,.0f})")
     print(M.head(12)[["name", "quadrant", "value_total_eok", "value_500_eok", "share_500_value", "gain_base_eok", "gap2034_base_eok"]].to_string(index=False))
-    print("반등 기회 동 합계(기본):", round(M[M.quadrant == "트램 반등 기회"].gain_base_eok.sum()), "억,  2034 차이 합계:", round(M[M.quadrant == "트램 반등 기회"].gap2034_base_eok.sum()), "억")
+    print("먼저 지원 동 합계(기본):", round(M[M.quadrant == "먼저 지원"].gain_base_eok.sum()), "억,  2034 차이 합계:", round(M[M.quadrant == "먼저 지원"].gap2034_base_eok.sum()), "억")
 
 
 if __name__ == "__main__":

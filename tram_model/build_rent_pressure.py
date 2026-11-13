@@ -65,8 +65,8 @@ def main():
         x = R[R.level == lvl]
         print(f"\n[{lvl}] 등급:", x.rent_pressure.value_counts().to_dict())
         print(x.sort_values("rent_pressure_score", ascending=False).head(8)[["name", "quadrant", "tram_effect", "gap_pct", "indep_share", "close_rate", "cafe_bakery_pp", "rent_pressure_score", "rent_pressure", "rent_drivers"]].round(3).to_string(index=False))
-        reb = x[x.quadrant == "트램 반등 기회"]
-        print("반등 기회:", ", ".join(f"{n}({p})" for n, p in zip(reb.name, reb.rent_pressure)))
+        reb = x[x.quadrant.isin(["먼저 지원", "변화 관찰"])]
+        print("업종 변화 큰 곳(먼저 지원·변화 관찰):", ", ".join(f"{n}({p})" for n, p in zip(reb.name, reb.rent_pressure)))
 
 
 if __name__ == "__main__":

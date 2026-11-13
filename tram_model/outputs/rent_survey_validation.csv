@@ -1,25 +1,25 @@
 ﻿survey,against,spearman,n
 중대형 공실률(최근 4분기),risk_score,0.335,10
-중대형 공실률(최근 4분기),growth_score,0.321,10
+중대형 공실률(최근 4분기),growth_score,0.098,10
 중대형 공실률(최근 4분기),land_chg_22_26,-0.482,10
 중대형 공실률(최근 4분기),sales_yoy_dong,-0.341,10
-중대형 공실률(최근 4분기),sales_chg2y_trdar,0.515,8
-중대형 공실률(최근 4분기),rent_pressure_score,,4
+중대형 공실률(최근 4분기),sales_chg2y_trdar,0.611,8
+중대형 공실률(최근 4분기),rent_pressure_score,0.812,6
 1층 공실률(최근 4분기),risk_score,-0.689,10
-1층 공실률(최근 4분기),growth_score,0.517,10
+1층 공실률(최근 4분기),growth_score,0.439,10
 1층 공실률(최근 4분기),land_chg_22_26,0.518,10
 1층 공실률(최근 4분기),sales_yoy_dong,0.061,10
-1층 공실률(최근 4분기),sales_chg2y_trdar,-0.228,8
-1층 공실률(최근 4분기),rent_pressure_score,,4
+1층 공실률(최근 4분기),sales_chg2y_trdar,-0.156,8
+1층 공실률(최근 4분기),rent_pressure_score,-0.116,6
 중대형 임대가격지수 변화 2022→2026,risk_score,-0.361,9
-중대형 임대가격지수 변화 2022→2026,growth_score,0.527,9
+중대형 임대가격지수 변화 2022→2026,growth_score,0.395,9
 중대형 임대가격지수 변화 2022→2026,land_chg_22_26,0.101,9
 중대형 임대가격지수 변화 2022→2026,sales_yoy_dong,-0.034,9
-중대형 임대가격지수 변화 2022→2026,sales_chg2y_trdar,-0.595,7
-중대형 임대가격지수 변화 2022→2026,rent_pressure_score,,4
+중대형 임대가격지수 변화 2022→2026,sales_chg2y_trdar,-0.45,7
+중대형 임대가격지수 변화 2022→2026,rent_pressure_score,0.348,6
 중대형 임대료 2026Q2,risk_score,-0.068,10
-중대형 임대료 2026Q2,growth_score,0.256,10
+중대형 임대료 2026Q2,growth_score,0.591,10
 중대형 임대료 2026Q2,land_chg_22_26,0.16,10
 중대형 임대료 2026Q2,sales_yoy_dong,0.092,10
-중대형 임대료 2026Q2,sales_chg2y_trdar,-0.268,8
-중대형 임대료 2026Q2,rent_pressure_score,,4
+중대형 임대료 2026Q2,sales_chg2y_trdar,-0.293,8
+중대형 임대료 2026Q2,rent_pressure_score,-0.58,6

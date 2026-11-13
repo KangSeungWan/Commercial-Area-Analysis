@@ -113,7 +113,12 @@ python tram_model/run_all.py --from train_analyze
 ## E. 쇠퇴 위험 · 성장 가능 점수 (score_areas.py)
 - 위험: 점포 비중 10년·최근 3년(↓), 폐업률(↑), 지가 대전 대비 10년·최근 4년(↓), 2034 지가 예측(트램 없음, ↓) 의 백분위 평균
 - 성장: 2034 지가 예측(트램 기본), 트램 기본 효과, 개업률, 점포 비중 최근 3년 의 백분위 평균
-- 진단: 위험 ≥ 50 이고 트램 효과 ≥ 3p → 트램 반등 기회 / 아니면 쇠퇴 우려, 위험 < 50 → 성장 지속(성장 ≥ 50)·정체·안정
+- 진단(2026-11-12 변경, `policy_quadrant.py`, 규칙 `docs/사전분석계획_분류변경_1112.md`): 트램 근처 상권(동은 점포 10% 이상이 500m 안)만 4칸, 나머지는 '비교 지역'
+  - 가로 = 지금 위험 높음: 위험 ≥ 50 **그리고** 절대 쇠퇴 신호 '있음'·'강함'
+  - 세로 = 업종 변화 큼: 2034 기본 시나리오 카페·빵집 비중(전체 점포 중) 변화 %p ≥ 트램 근처 중앙값(상권 0.865, 동 0.51)
+  - 먼저 지원(위험↑·변화↑) · 기존 지원 연계(위험↑·변화↓) · 변화 관찰(위험↓·변화↑) · 정기 점검(위험↓·변화↓)
+  - 안정도 = 위험 지표 6개 하나씩 빼기 + 위험선 45·55 + 낮음·높음 시나리오 = 10가지 중 같은 칸 비율(0.8 미만 '불확실')
+  - 예전 4분류(트램 반등 기회·쇠퇴 우려·성장 지속·정체·안정)는 `quadrant_old`·`quadrant_old_stability` 열로 비교용 보존
 - 출력: area_scores.csv, area_scores_sensitivity.csv, area_scores.png → area_profile.csv → app.py (색칠 기준·상세·예측 그래프)
 
 ## 보강 분석 (2026-10-11)
@@ -182,7 +187,7 @@ python tram_model/run_all.py --from train_analyze
 - 표기: 트램 효과 = "개통 초기 1~4년, 정거장 500m 안 땅값 기준 추정 효과(%)". 매출 변화가 아님
 - `score_areas.py`
   - 트램 지표 = 앱과 같은 % 하나 (scenario_tram_uplift 상권 평균)
-  - '트램 반등 기회' 기준 = 상대 위험 50↑ 이면서 상권 점포 절반 이상이 정거장 500m 안
+  - (11/12 분류 변경 전 규칙) '트램 반등 기회' 기준 = 상대 위험 50↑ 이면서 상권 점포 절반 이상이 정거장 500m 안
   - 성장 점수에서 '2034 지가 예측(트램 기본)' 제거 (트램 이중 계산)
   - 진단 안정도: 지표 빼기 9 · 위험/성장 기준 45·55 · 반경 400/600m = 15가지 변형 중 같은 진단 비율 (`quadrant_stability`), 0.8 미만 `quadrant_uncertain`
 - 앱: 시나리오 이름·설명을 `tram_scenarios.csv` 에서 읽음, 점수 이름 '상대 쇠퇴 위험'·'상대 성장 가능', 진단 '불확실' 배지·안정도
@@ -214,7 +219,7 @@ python tram_model/run_all.py --from train_analyze
 - 주소에 `?view=map` 또는 `?area=A04` 가 있으면 커버 없이 바로 지도 (공유 링크용)
 - 디자인: 리넨 바탕·숲색 글자·세이지 언덕(adaline.ai 분위기 참고), 제목만 세리프(Newsreader·Noto Serif KR), 본문 Pretendard
 - 그림: 실제 정거장 좌표로 그린 트램 2호선 노선을 언덕 풍경 위에 겹친 원본 SVG (외부 이미지 없음)
-- 수치(반등 기회 수, 시나리오 효과, 업종 점수 수)는 결과 파일에서 읽음
+- 수치(진단 칸별 수, 시나리오 효과, 업종 점수 수)는 결과 파일에서 읽음
 
 ## 화면 3개로 분리 (v28)
 - 사이드바 '화면': 지도 · 업종 점수 · 20개 상권 비교 (+ 처음 화면으로). 고른 상권·트램 전후·업종은 화면을 옮겨도 유지
@@ -235,7 +240,7 @@ python tram_model/run_all.py --from train_analyze
 | 스크립트 | 하는 일 | 출력 |
 |---|---|---|
 | analyze_tram_meta.py | 해외 트램·경전철 개통 전후 비교 10곳 랜덤효과 메타분석 (`data/literature_tram_meta.csv`), 대전 값은 `landprice_effects.csv` 에서 읽음 | tram_meta_estimates.csv, tram_meta_summary.csv, tram_meta_forest.png |
-| analyze_tram_impact.py | ① 정거장 500m 안 필지 2026 공시지가 총액 × 효과 % → 증가액(억 원) ② 1호선 역 거리 띠(100m 단위)별 효과 ③ 반등 기회 5곳 트램 없을 때/있을 때 경로와 차이 금액 | parcel_value.csv.gz(필지 면적·가격, 있으면 재사용), tram_impact_money.csv/.png, tram_impact_station.csv, tram_distance_bands.csv/.png, tram_with_without.csv/.png |
+| analyze_tram_impact.py | ① 정거장 500m 안 필지 2026 공시지가 총액 × 효과 % → 증가액(억 원) ② 1호선 역 거리 띠(100m 단위)별 효과 ③ 업종 변화 큰 칸(먼저 지원·변화 관찰) 트램 없을 때/있을 때 경로와 차이 금액 (11/12 전에는 '반등 기회 5곳') | parcel_value.csv.gz(필지 면적·가격, 있으면 재사용), tram_impact_money.csv/.png, tram_impact_station.csv, tram_distance_bands.csv/.png, tram_with_without.csv/.png |
 
 - 필지 면적: 최신 개별공시지가 shp 의 폴리곤 면적(EPSG:5186, ㎡). dbf 의 A13 면적은 3%만 있어 쓰지 않음(있는 곳은 폴리곤과 상관 0.998)
 - 가격: 같은 dbf 의 2026 공시가(A9), 없으면 1·2년 전 값(A16·A17)
@@ -268,7 +273,7 @@ python tram_model/run_all.py --from train_analyze
 
 ## 3D 지도 (B안) — `map3d.py` + `map3d_component/` (2026-10-18)
 - **본 앱**: 지도 화면 머리줄의 `평면 | 3D` 로 바꿈. 3D 에서 기둥·정거장을 누르면 오른쪽 상권 진단·아래 정거장 영향권이 바뀜 (평면 지도와 같은 선택 상태)
-  - 앱 위쪽 '건설 전/후'·'시나리오'가 3D 에도 그대로 적용, 건설 전에는 '트램 반등 기회'를 정거장 없이 다시 분류한 진단 색(앱과 같은 규칙)
+  - 앱 위쪽 '건설 전/후'·'시나리오'가 3D 에도 그대로 적용, 건설 전에는 정거장 없이 다시 분류한 진단 색(앱과 같은 규칙, 11/12 뒤에는 `quadrant_without_tram`)
   - '지도에 칠할 것'이 땅값 전망·트램 효과이면 기둥 높이도 같은 지표로 맞춤. 나머지는 3D 안에서 고름
   - 구현: Streamlit 부품 v1(`components.declare_component`, 폴더 `map3d_component/index.html`). 클릭 → `{"area"|"station", "t"}` 값 → `ss.map3d` 로 받아 선택 상권 변경
   - 3D 를 못 열면(라이브러리 로드 실패 등) 경고 후 평면 지도로 대신 보여 줌
@@ -295,7 +300,7 @@ python tram_model/run_all.py --from train_analyze
 | 1-1 | `check_other_sectors.py` | 비음식 8업종(미용·세탁·숙박·노래연습장·체력단련·약국·의원·안경) 인허가로 같은 점검. 입력 `data/raw/permits_other/*_대전광역시.csv` (file.localdata.go.kr 대전 파일) | `sector_evidence_other(_summary/_es).csv` |
 | 2 | `build_8989_tables.py` | 8989 원본(json) → 행정동·상권 표 | `8989/*.csv`, `dong_panel_8989.csv`, `dong_code_map.csv` |
 | 3 | `analyze_8989.py` | 행정동 매출 요약, 진단 외부 검증, 상권 배분 | `area_sales_summary.csv` |
-| 4 | `analyze_station_sales.py` | 1호선 역세권 땅값 vs 점포당 매출 (+32% vs +7%, 0.24배) | `station_sales_premium.csv`, `station_sales_dong.csv` |
+| 4 | `analyze_station_sales.py` | 1호선 역세권 땅값 vs 점포당 매출 (+32% vs +7%, 0.24배 — 비율 구간 −0.48~0.79라 한 점으로 쓰지 않음, `station_sales_ratio_ci.csv`) | `station_sales_premium.csv`, `station_sales_dong.csv` |
 | 5 | `analyze_8989_trdar.py` | 골목상권 144곳 증감(금액은 격자 합이라 증감·비중만) | `trdar_summary.csv`, `area_trdar_match.csv` |
 | 6 | `parse_8989_reports.py` | 월간 상권동향 PDF → 표 | `report_*.csv` |
 | 7~10 | `build_dong_year_panel.py` → `cluster_dongs.py` → `forecast_dongs.py` → `score_dongs.py` | 행정동 82 패널·유형·예측·진단 (82개 안 백분위) | `dong_year_panel.csv`, `dong_*` |
@@ -307,11 +312,11 @@ python tram_model/run_all.py --from train_analyze
 | 15-1 | `build_rent_long.py` | R-ONE 임대가격지수(시계열) vs 같은 기간 상권 땅값(대전 +47% vs −4.8%), 전국 상권 자본수익률 → 임대료 전가(ρ 0.72), 공시지가 vs R-ONE 지가지수 | `rent_long_vs_land.csv`, `rent_capital_passthrough.csv`, `landprice_vs_rone.csv` |
 | 16 | `analyze_station_sensitivity.py` | 정거장 추정 좌표 28곳을 0~300m 무작위로 300번 옮겨 500m 안 점포 비율·진단 다시 계산 → 상권 20곳 모두 안정, 행정동 6곳 민감(앱 ⚑) | `station_coord_sensitivity.csv` |
 | 17 | `validate_closures_8989.py` | 8989 폐업률(2025) ↔ 82개 동 위험 점수(ρ +0.24, p 0.02) | `validation_closures_8989*.csv` |
-| 18 | `analyze_construction_8989.py` | 공사 구간 동 vs 정거장 먼 동 월별 카드매출 이중차분(−1.4%, 도소매 −2.3%). 입력 `data/construction_sections.csv` | `construction_8989_did/es.csv` |
+| 18 | `analyze_construction_8989.py` | 공사 구간 동 vs 정거장 먼 동 월별 카드매출 이중차분(−1.2%, 도소매 −1.8%, 모두 유의하지 않음 — 11/6 좌표 보정 뒤 값). 입력 `data/construction_sections.csv` | `construction_8989_did/es.csv` |
 | 19 | `analyze_seoul_newline_sales.py` | 서울 신림선(2022) 역 500m 상권(처리 15) vs 1~3km(비교 165) 점포당 매출·점포 수·카페 비중 이중차분, 가짜 개통·사건연구. 입력 `data/raw/seoul/`(추정매출·점포 CSV 2021~2023, 영역 shapefile .dbf, 역사마스터). 결과: 점포당 매출 −4.0% 유의 아님, 점포 수 +7.7% p 0.04 | `seoul_newline_sales_did/es.csv` |
 
 | 20 | `analyze_cafe_saturation.py` | 대전 카페 포화 점검(인허가 2002~2025 순증·폐업률·카페 비중) + 2005년 카페 비중별 1호선 카페 효과 + 지금 정거장 격자 외삽 범위. 결과: 2023~25 연 −4% 순감소, 비중 높던 격자 +17.4%[3.1, 33.7] vs 낮던 격자 +28.4% → `build_composition` 이 '높음'을 33.7%로 낮춤 | `cafe_saturation_city/checks.csv` |
-| 21 | `check_rent_signal_history.py` | 임대료 부담 신호(상권) ↔ 같은 지역 R-ONE 임대가격지수 13년 변화. 결과: ρ −0.81(p 0.08, 6곳) — 신호 높은 곳일수록 임대료가 더 내림 → 신호 = 땅값과 장사 수익의 간극 | `rent_signal_history.csv` |
+| 21 | `check_rent_signal_history.py` | 임대료 부담 신호(상권) ↔ 같은 지역 R-ONE 임대가격지수 13년 변화. 결과: ρ −0.81(p 0.08, 6곳) — 신호 높은 곳일수록 임대료가 더 내림 → 신호 = 땅값과 매출의 간극 | `rent_signal_history.csv` |
 | 22 | `analyze_development_trend.py` | 트램 없어도 오르는 곳: '대' 필지 수 2010→2026 1.5배 이상(새 택지)·확정 개발 사업·트램 확정 전 5년 대전 대비 +10% 이상인 동 표시, 개발지를 뺀 1호선 효과·트램 확정 효과, 트램 금액 중 개발지 몫. 결과: 개발지 7곳(트램 금액의 19%), 1호선 효과 개발지 빼도 +5.9% | `development_trend_dong/checks.csv` |
 
 | 23 | `analyze_construction_trdar.py` | 공사 기간 점검을 골목상권 144곳 × 월(2024-01~2026-08)로: 처리 = 공사 구간 정거장 300m 안 30곳, 비교 = 트램 1km 밖 46곳, 같은 값 묶음 1곳만. 결과: −2.9%[−8.9, 3.5] p 0.36, 소매 −3.1%, 가짜 공사 시작 +1.1%(통과), 사건연구 공사 뒤 점점 커짐(17개월 −12%) | `construction_trdar_did/es.csv` |
@@ -363,3 +368,17 @@ python tram_model/run_all.py --from train_analyze
 - 기본 해설(`ai_comments.json`, kind "기본 해설"): 2026-10-28 결과 파일·기본 시나리오·기본 가중치 기준 프롬프트를 Claude 가 받아 작성, 팀 검토. 실시간 실패 시 표시. `make_ai_comments.py` 실행 시 Gemini 생성본(kind "Gemini 생성")으로 바뀜
 - 프롬프트 정보 추가(10-28): 절대 쇠퇴 신호, 임대료 부담 신호(점수·원인), 카페·빵집 비중 2026→2034, 관광 시나리오(관광자원형만), A12 점포 지표 왜곡 표시. 형식 6번 = 시가 할 일 · 상인이 할 일
 
+
+## 2차 점검 재분석 (2026-11-03~04) — run_all 맨 뒤(가정 민감도 다음)에 등록
+- 판정 규칙(결과 보기 전 작성): `docs/사전분석계획_2차점검_1103.md`. 위례선 사후 검증 설계: `docs/사후검증설계_위례선_트램.md`
+- `landprice_long_portable.py` → `outputs/landprice_long_1990_2020.csv.gz`(Git 제외): pyarrow 없는 환경용 공시지가 필지×연도 표(D151 CSV만으로 pkl과 같은 값)
+- `analyze_phase2_dev.py` → `phase2_dev_check.csv`·`phase2_dev_es.csv`: 2단계 역 500m에서 개발지 법정동을 빼도 −9.3%, 개통 전 −5.0% → 평행 추세 실패, 기본값 +1.8% 유지
+- `analyze_sales_ratio_ci.py` → `station_sales_ratio_ci.csv`: 매출/땅값 비율 부트스트랩 구간(−0.48~0.79)과 '땅값 차이 − 매출 차이' 구간(0.03~0.41)
+- `analyze_sales_age_control.py` → `station_sales_age_control.csv`: 주민 연령(20~39·60+) 통제 시 점포당 매출 계수 +7.0 → −2.5%
+- `check_rent_gap_national.py` → `rent_gap_national_check.csv`: 전국 53개 상권 간극(2013~17) → 임대료(2017~26) ρ +0.19 p 0.16
+- `analyze_construction_dose.py` → `construction_dose.csv`: 골목상권 거리 띠(0~150/150~300/300~500m)·공사 개월 띠 효과(모두 유의 X)
+- `cafe_baseline.py` → `cafe_baseline.csv`: 최근 3년 추세로 2034 카페 수(트램 없음 2,752 / 있음 3,024)
+- `tests_registry.py` → `tests_registry.csv`·`tests_registry_summary.csv`: 결과 파일의 p값 213개 모음 + BH(FDR) 보정(남는 것 30개)
+- `check_ai_numbers.py` → `ai_number_check.csv`: 기본 해설 20곳의 숫자를 프롬프트 수치와 기계 대조(`ai_comment.unverified_numbers`, 실시간 해설도 같은 함수). Gemini로 다시 만들면 반드시 실행
+- `analyze_seoul_newline_land.py` → `seoul_newline_land_did.csv`·`_es.csv`: 서울 신림선 역 500m 필지 땅값 이중차분(서울 개별공시지가 2019~2024 + 연속지적도 `data/raw/seoul/공시지가/`, Git 제외). 개통 후 +1.1% [−0.6, 2.7] 유의 X
+- 화면: `about_page.py` 카드 5장에 확신 등급·'반대·약화 결과' 칸, 임대료 신호 = 땅값-매출 간극, 상인 시점표. `ai_page.py` 요금표 삭제(프리미엄 없음). `tourism_page.py`·`export_web.py` 관광 %·금액 삭제. 질문 대비 그림 `docs/qa/qa_cafe_not_trend.png`
