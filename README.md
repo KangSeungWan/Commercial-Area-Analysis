@@ -60,14 +60,15 @@
 ## 정책 진단 4칸 — 담당자가 할 일로 나눈 지도
 
 ```mermaid
+%%{init: {"themeVariables": {"quadrant1Fill": "#c83232", "quadrant2Fill": "#2a6f97", "quadrant3Fill": "#6ea078", "quadrant4Fill": "#eb8214", "quadrant1TextFill": "#ffffff", "quadrant2TextFill": "#ffffff", "quadrant3TextFill": "#ffffff", "quadrant4TextFill": "#ffffff", "quadrantInternalBorderStrokeFill": "#ffffff", "quadrantExternalBorderStrokeFill": "#ffffff"}}}%%
 quadrantChart
     title 지금 위험 x 트램이 바꿀 업종 변화
     x-axis 지금 위험 낮음 --> 지금 위험 높음
     y-axis 업종 변화 작음 --> 업종 변화 큼
-    quadrant-1 먼저 지원
-    quadrant-2 변화 관찰
-    quadrant-3 정기 점검
-    quadrant-4 기존 지원 연계
+    quadrant-1 먼저 지원 · 상권 1 · 동 5
+    quadrant-2 변화 관찰 · 상권 5 · 동 17
+    quadrant-3 정기 점검 · 상권 3 · 동 19
+    quadrant-4 기존 지원 연계 · 상권 3 · 동 3
 ```
 
 | 칸 | 뜻 | 담당자가 할 일 | 상권 (트램 근처 12) | 행정동 (트램 근처 44) |
@@ -90,27 +91,15 @@ quadrantChart
 
 ```mermaid
 flowchart LR
-  subgraph D["① 데이터 (공공 자료 + 기관 협조)"]
-    D1["공시지가 필지<br/>1990~2026"]
-    D2["상가정보 42분기<br/>인허가 11개 업종"]
-    D3["재단 8989 카드매출<br/>(비율·증감만)"]
-    D4["정거장 45 · 수요예측<br/>(정보공개 청구)"]
-  end
-  subgraph M["② 분석 모델"]
-    M1["인과 추정<br/>이중차분 · 사건연구"]
-    M2["예측<br/>ARIMA + 트램 시나리오"]
-    M3["진단<br/>정책 진단 4칸"]
-  end
-  subgraph V["③ 검증"]
-    V1["가짜 검정 · 강건성 변형<br/>다중 검정 보정(BH)"]
-    V2["좌표 흔들기 300회<br/>10가지 조건 변형"]
-  end
-  subgraph O["④ 서비스"]
-    O1["공개 웹<br/>React + deck.gl"]
-    O2["Streamlit 앱<br/>pydeck · 3D"]
-    O3["AI 해설<br/>Gemini + 숫자 자동 대조"]
-  end
+  D["<b>① 데이터</b><br/>공시지가 필지 1990~2026<br/>상가정보 42분기<br/>인허가 11개 업종<br/>재단 8989 카드매출<br/>(비율·증감만)<br/>정거장 45 · 수요예측"]
+  M["<b>② 분석 모델</b><br/>이중차분 · 사건연구<br/>ARIMA 예측<br/>정책 진단 4칸"]
+  V["<b>③ 검증</b><br/>가짜 검정 · 강건성 변형<br/>다중 검정 보정(BH)<br/>좌표 흔들기 300회<br/>10가지 조건 변형"]
+  O["<b>④ 서비스</b><br/>공개 웹 · React<br/>Streamlit 앱 · 3D<br/>AI 해설 + 숫자 대조"]
   D --> M --> V --> O
+  style D fill:#f3f4f6,stroke:#8a8f98
+  style M fill:#e8f3ec,stroke:#1f6f4a
+  style V fill:#fff4e5,stroke:#d9822b
+  style O fill:#e7f0f6,stroke:#2a6f97
 ```
 
 `tram_model/run_all.py` 한 번으로 50여 단계 분석 전체를 다시 돌릴 수 있습니다(원본 자료 필요). 수치는 결과 파일에서 화면으로 자동 반영되므로, 다시 돌리면 웹·앱 숫자가 함께 바뀝니다.
@@ -123,30 +112,26 @@ flowchart LR
 | 땅값이 어떻게 갈까? | **ARIMA** + 트램 효과 시나리오(낮음·기본·높음) | 기계학습(GBM)·최근 추세·작년값과 1년 앞 오차로 비교 | 백테스트(과거 시점에서 실제로 예측해 보고 맞혀 봄) | 오차 최소 4.3% |
 | 어디부터 지원하나? | **정책 진단 4칸**(위험 점수 + 절대 쇠퇴 신호 × 업종 변화) | 담당자가 할 일로 바로 이어지게. 이름에 '기회·쇠퇴'를 쓰지 않음 | 10가지 조건 변형 안정도, 정거장 좌표 300회 흔들기 | 상권 1·3·5·3 |
 | 비슷한 상권끼리 묶으면? | **K-means**(k=4) | 정답 라벨이 없는 상권 유형 설명용(진단에는 쓰지 않음) | 부트스트랩 300회 평균 일치도(ARI) | ARI 약 0.48 |
-| 상인에게 어떻게 설명하나? | **생성형 AI**(Gemini, 저장 해설은 Claude) | 결론은 통계가 만들고 AI는 쉬운 말로 바꾸기만 | 글 속 숫자를 결과와 기계로 대조 | 기본 해설 20곳 어긋난 숫자 0개 |
+| 상인에게 어떻게 설명하나? | **생성형 AI**(Gemini, 저장 해설은 Claude) | 결론은 통계가 만들고 AI는 쉬운 말로 바꾸기만 | 글 속 숫자를 결과 파일과 자동 대조 | 기본 해설 20곳 어긋난 숫자 0개 |
 
 ![1년 앞 땅값 예측 오차 비교: ARIMA 4.3%, 최근 추세 4.4%, 작년값 5.1%, GBM 6.5%](docs/img/fig_backtest.png)
 
 자료가 상권 20곳·1호선 역 22곳 규모라 딥러닝은 과적합 위험이 크고, 질문 자체가 '맞히기'보다 '원인 가리기'여서 인과 추정 방법을 중심에 두었습니다.
 
-### 생성형 AI가 숫자를 지어내지 못하게
+### 생성형 AI 해설은 숫자를 자동으로 대조합니다
+결론은 통계 모델이 만들고, 생성형 AI는 그 결과를 상인·담당자가 읽기 쉬운 말로 바꾸기만 합니다. 프롬프트에는 결과 숫자만 넣고, AI가 쓴 글 속 숫자는 결과 파일과 기계로 대조합니다.
 
 ```mermaid
-sequenceDiagram
-  participant R as 분석 결과 파일
-  participant P as 프롬프트
-  participant G as Gemini
-  participant C as 숫자 대조기
-  participant U as 화면
-  R->>P: 상권별 결과 숫자만 넣음<br/>(지어내지 말 것·추정 표시·계약 권유 금지)
-  P->>G: 쉬운 말 해설 요청
-  G->>C: 해설 글
-  C->>C: 글 속 숫자 ↔ 보낸 숫자 대조
-  alt 근거 없는 숫자 0개
-    C->>U: 해설 표시 ('AI가 쓴 참고 글')
-  else 근거 없는 숫자 발견
-    C->>U: 경고와 함께 미리 검증한 기본 해설 표시
-  end
+flowchart LR
+  A["분석 결과 파일<br/>상권별 숫자"] --> B["Gemini<br/>쉬운 말 해설 작성"]
+  B --> C{"숫자 자동 대조<br/>해설 속 숫자가<br/>결과 파일에 있나?"}
+  C -- "모두 있음" --> D["해설 표시<br/>'AI가 쓴 참고 글' 표기"]
+  C -- "없는 숫자 발견" --> E["경고 표시 +<br/>미리 검증한 기본 해설<br/>함께 표시"]
+  style A fill:#f3f4f6,stroke:#8a8f98
+  style B fill:#f3f4f6,stroke:#8a8f98
+  style C fill:#fff4e5,stroke:#d9822b
+  style D fill:#e8f3ec,stroke:#1f6f4a
+  style E fill:#fdecec,stroke:#c83232
 ```
 
 ## 검증과 신뢰 — 결과 전에 규칙을 정하고, 지적을 받으면 다시 검증
