@@ -1,0 +1,449 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>대전 트램 3D 상권 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@300&display=swap">
+<style>
+/* 레이아웃: 지도가 화면 전체, 조작판·연도 시계·범례·상권 카드가 네 모서리에 뜸 (폰에서는 위아래로 쌓임)
+   색·글꼴은 프로젝트 DESIGN.md 토큰을 그대로 씀 */
+:root{
+  --linen:#f8f9f5; --bone:#eff2e8; --mist:#e1e6df; --paper:#ffffff;
+  --ink:#0a1d08; --moss:#2a332a; --sage:#4a6d47; --sage-gray:#6b7860;
+  --route:#23272e; --tram:#2c3fa8; --clock-bg:#0a1d08; --clock-fg:#f8f9f5;
+  --ground:#eef1e9; --ground-line:#d3dacd; --label-bg:rgba(255,255,255,.92);
+  --q-grow:#228b54; --q-rebound:#eb8214; --q-decline:#c83232; --q-stable:#8c8c8c;
+  --f-display:"Newsreader","Noto Serif KR",Georgia,serif;
+  --f-body:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --shadow:0 1px 2px rgba(10,29,8,.06),0 6px 18px rgba(10,29,8,.08);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --linen:#111611; --bone:#1a211a; --mist:#2b342b; --paper:#161c16;
+  --ink:#eef2ea; --moss:#c9d2c4; --sage:#9cc196; --sage-gray:#97a38d;
+  --route:#e8ebe4; --tram:#8ea2ff; --clock-bg:#eef2ea; --clock-fg:#0f140f;
+  --ground:#1b221b; --ground-line:#2f3a2f; --label-bg:rgba(22,28,22,.9);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --linen:#111611; --bone:#1a211a; --mist:#2b342b; --paper:#161c16;
+  --ink:#eef2ea; --moss:#c9d2c4; --sage:#9cc196; --sage-gray:#97a38d;
+  --route:#e8ebe4; --tram:#8ea2ff; --clock-bg:#eef2ea; --clock-fg:#0f140f;
+  --ground:#1b221b; --ground-line:#2f3a2f; --label-bg:rgba(22,28,22,.9);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35); color-scheme:dark}
+html,body{height:100%}
+body{margin:0;background:var(--linen);color:var(--moss);font-family:var(--f-body);font-size:14px;word-break:keep-all}
+#app{position:relative;height:100%;min-height:560px;overflow:hidden;background:var(--linen)}
+#map{position:absolute;inset:0}
+.float{position:absolute;background:var(--paper);border:1px solid var(--mist);border-radius:12px;box-shadow:var(--shadow)}
+.panel{top:14px;left:max(14px,env(safe-area-inset-left,0px));width:300px;padding:14px 16px 12px;display:grid;gap:11px}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fold{font:inherit;font-size:12px;border:none;background:none;color:var(--sage);cursor:pointer;padding:2px 4px;border-radius:6px}
+.fold:hover{background:var(--bone)}
+.panel.min .opt{display:none}
+.eyebrow{margin:0;font-size:11.5px;letter-spacing:.06em;color:var(--sage);font-weight:700}
+h1{margin:0;font-family:var(--f-display);font-weight:300;font-size:26px;line-height:1.15;letter-spacing:-.02em;color:var(--ink);text-wrap:balance}
+.row{display:grid;gap:5px}
+.lab{font-size:12px;color:var(--sage-gray);font-weight:500}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button,.btn{font:inherit;font-size:13px;border:1px solid var(--mist);background:var(--bone);color:var(--moss);
+  border-radius:999px;padding:5px 11px;cursor:pointer;line-height:1.2}
+.seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--linen);font-weight:500}
+.seg.big button{font-size:14px;padding:7px 16px;font-weight:500}
+.seg button:hover:not([aria-pressed="true"]),.btn:hover{border-color:var(--sage)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--tram);outline-offset:2px}
+.yearrow{display:flex;align-items:center;gap:8px}
+.play{width:34px;height:34px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--linen);border:none;cursor:pointer;flex:none}
+.play svg{width:14px;height:14px;fill:currentColor}
+input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
+.ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--sage-gray);font-variant-numeric:tabular-nums;padding:0 2px 0 42px}
+.ticks b{color:var(--tram);font-weight:700}
+.note{font-size:11.5px;color:var(--sage-gray);line-height:1.45;margin:0}
+.clock{top:14px;right:max(14px,env(safe-area-inset-right,0px));background:var(--clock-bg);color:var(--clock-fg);border:none;border-radius:6px;padding:9px 14px 8px;min-width:132px}
+.clock .y{font-family:var(--f-display);font-size:40px;line-height:1;font-weight:400;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.clock .s{font-size:12px;opacity:.82;margin-top:4px}
+.legend{left:max(14px,env(safe-area-inset-left,0px));bottom:14px;padding:10px 14px;display:grid;gap:6px;max-width:300px}
+.qs{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--moss)}
+.qs i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.hgt{font-size:12.5px;color:var(--moss);line-height:1.45}.hgt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.sym{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--sage-gray);align-items:center}
+.sym .ln{display:inline-block;width:20px;height:3px;background:var(--route);border-radius:2px;margin-right:5px;vertical-align:middle}
+.sym .st{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--paper);border:2px solid var(--route);margin-right:5px;vertical-align:-1px}
+.sym .tr{display:inline-block;width:20px;height:4px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--tram));margin-right:5px;vertical-align:middle}
+.card{right:max(14px,env(safe-area-inset-right,0px));bottom:14px;width:290px;padding:13px 16px 12px}
+.card h2{margin:0 26px 2px 0;font-family:var(--f-display);font-weight:300;font-size:24px;line-height:1.15;letter-spacing:-.02em;color:var(--ink)}
+.card .meta{font-size:12px;color:var(--sage-gray);margin-bottom:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv span{color:var(--sage-gray)}.kv b{color:var(--ink);text-align:right;font-weight:500;font-variant-numeric:tabular-nums}
+.x{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:var(--sage-gray);font-size:18px;cursor:pointer}
+.x:hover{background:var(--bone)}
+.hint{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:96px;font-size:11.5px;color:var(--sage-gray);text-align:right;line-height:1.4;pointer-events:none}
+.err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--moss)}
+@media (max-width:700px){
+  #app{min-height:720px}
+  .panel{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:10px;width:auto;padding:10px 12px;gap:8px}
+  h1{font-size:20px;padding-right:118px}
+  .clock{top:10px;right:max(10px,env(safe-area-inset-right,0px));min-width:0;padding:6px 10px}
+  .clock .y{font-size:28px}
+  .legend{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:10px;max-width:none}
+  .card{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));width:auto;bottom:10px;z-index:3}
+  .hint{display:none}
+}
+/* 앱 지도 칸 안(약 560×600)에 들어갈 때: 건설 전/후·시나리오는 앱 위쪽 조작으로, 제목·카드 숨김 */
+#app.embed{min-height:0}
+#app.embed .eyebrow,#app.embed h1,#app.embed .hint,#app.embed #row-tram,#app.embed #row-scen,#app.embed .note,#app.embed .card{display:none}
+#app.embed .panel{top:10px;left:10px;right:auto;width:232px;padding:10px 12px;gap:8px}
+#app.embed .clock{top:10px;right:10px;min-width:0;padding:6px 10px}
+#app.embed .clock .y{font-size:26px}
+#app.embed .legend{left:10px;right:auto;bottom:10px;max-width:250px;padding:8px 11px}
+#app.embed .seg button{font-size:12.5px;padding:4px 9px}
+#app.full #row-tram,#app.full #row-scen{display:none}
+.goto{margin-top:10px;width:100%;font:inherit;font-size:13px;font-weight:500;border:none;border-radius:8px;padding:8px 10px;
+  background:var(--ink);color:var(--linen);cursor:pointer}
+.goto:hover{opacity:.9}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div id="app">
+  <div id="map" role="img" aria-label="대전 20개 상권과 트램 2호선 노선을 높이로 표현한 3D 지도"></div>
+
+  <section class="float panel" aria-label="지도 조작">
+    <div class="phead"><p class="eyebrow">대전 트램 2호선 · 3D 시제품</p><button class="fold" id="fold" aria-expanded="true">조작 접기</button></div>
+    <h1>트램이 지날 길 위의 스무 상권</h1>
+    <div class="row" id="row-tram"><span class="lab" id="l-tram">트램 2호선</span>
+      <div class="seg big" id="seg-tram" role="group" aria-labelledby="l-tram">
+        <button id="t-before" data-v="before">건설 전</button><button id="t-after" data-v="after">건설 후</button></div></div>
+    <div class="row opt"><span class="lab" id="l-metric">기둥 높이</span>
+      <div class="seg" id="seg-metric" role="group" aria-labelledby="l-metric">
+        <button id="m-land" data-v="land">땅값 전망</button><button id="m-tram" data-v="tram">상권 가치 효과</button>
+        <button id="m-comp" data-v="comp">업종 변화(카페)</button><button id="m-rent" data-v="rent">임대료 신호</button>
+        <button id="m-stores" data-v="stores">점포 수</button><button id="m-risk" data-v="risk">쇠퇴 위험</button></div></div>
+    <div class="row opt" id="row-scen"><span class="lab" id="l-scen">트램 효과 시나리오</span>
+      <div class="seg" id="seg-scen" role="group" aria-labelledby="l-scen">
+        <button id="s-low" data-v="low">낮음</button><button id="s-base" data-v="base">기본</button><button id="s-high" data-v="high">높음</button></div></div>
+    <div class="row"><span class="lab" id="l-year">연도</span>
+      <div class="yearrow">
+        <button class="play" id="play" aria-label="2026년부터 재생"><svg viewBox="0 0 14 14"><path id="play-ico" d="M3 1.5v11l9-5.5z"/></svg></button>
+        <input type="range" id="year" aria-labelledby="l-year" step="0.05">
+      </div>
+      <div class="ticks" id="ticks"></div></div>
+    <div class="row opt"><span class="lab" id="l-view">보는 곳</span>
+      <div class="seg" id="seg-view" role="group" aria-labelledby="l-view"></div></div>
+    <p class="note opt" id="note"></p>
+  </section>
+
+  <div class="float clock" aria-live="polite"><div class="y" id="clock-y">2026</div><div class="s" id="clock-s"></div></div>
+  <p class="hint">끌기: 이동 · 오른쪽 버튼(또는 Ctrl)+끌기: 기울이기·돌리기<br>상권 기둥을 누르면 자세히</p>
+
+  <section class="float legend" aria-label="범례">
+    <div class="qs" id="qs"></div>
+    <div class="hgt" id="hgt"></div>
+    <div class="sym"><span><span class="ln"></span>트램 노선</span><span><span class="st"></span>정거장</span><span id="sym-tr"><span class="tr"></span>운행 (연출)</span></div>
+  </section>
+
+  <section class="float card" id="card" hidden aria-live="polite">
+    <button class="x" id="card-x" aria-label="닫기">×</button>
+    <h2 id="c-name"></h2><div class="meta" id="c-meta"></div><div class="kv" id="c-kv"></div>
+    <button class="goto" id="c-goto" hidden>이 상권 진단 보기 →</button>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
+<script>
+(function () {
+const INLINE = /*__DATA__*/null;                     // 단독 HTML: 데이터가 여기 박힘 / Streamlit 부품: null → 앱이 보내 줌
+const $ = (id) => document.getElementById(id);
+
+function boot(D, OPT) {
+if (!window.deck) {
+  $("map").innerHTML = '<div class="err">3D 지도 라이브러리(deck.gl)를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로 고치세요.</div>';
+  return null;
+}
+const EMBED = !!OPT.embed, emit = OPT.emit || (() => {});
+if (EMBED) $("app").classList.add("embed");
+if (OPT.full) $("app").classList.add("full");                // 앱의 '3D 지도' 화면: 넓은 화면 구성, 건설 전/후·시나리오는 앱 위쪽 조작을 따름
+$("c-goto").hidden = !OPT.full;
+$("c-goto").addEventListener("click", () => { if (S.sel) emit({goto: S.sel, t: Date.now()}); });
+const QK = {"성장 지속": "--q-grow", "트램 반등 기회": "--q-rebound", "쇠퇴 우려": "--q-decline", "정체·안정": "--q-stable"};
+const Y0 = D.years[0], Y1 = D.years[D.years.length - 1], OPEN = D.open_year;
+const MAXH = 2600, FLOOR = 40;                       // 가장 높은 기둥 2.6km, 값이 0이어도 바닥 40m는 보이게
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const short = (n) => n.split("(")[0];
+const quad = (a) => (S.tram === "before" && a.qb ? a.qb : a.quadrant);   // 건설 전에는 반등 기회 → 다른 진단 (app.py 와 같은 규칙)
+let dirty = true, last = 0;
+const S = {tram: OPT.tram || "after", metric: OPT.metric || "land", scen: OPT.scen || "base", yf: Y0, T: 0, playing: false, rotate: false, sel: null, hover: null};
+
+// ── 색 (CSS 토큰 → deck.gl RGB) ──
+let C = {};
+function rgb(v, a = 255) {
+  v = getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  if (v.startsWith("rgba")) { const m = v.match(/[\d.]+/g).map(Number); return [m[0], m[1], m[2], Math.round(m[3] * 255)]; }
+  const h = v.replace("#", ""); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), a];
+}
+function readColors() {
+  C = {ground: rgb("--ground"), line: rgb("--ground-line"), route: rgb("--route"), tram: rgb("--tram"), paper: rgb("--paper"),
+       ink: rgb("--ink"), label: rgb("--label-bg"), sage: rgb("--sage-gray"), q: {}};
+  for (const k in QK) C.q[k] = rgb(QK[k]);
+  document.getElementById("qs").innerHTML = Object.keys(QK).map(k =>
+    `<span><i style="background:var(${QK[k]})"></i>${k}</span>`).join("");
+}
+
+// ── 값 계산 ──
+function at(arr, yf) {
+  const x = Math.min(Math.max(yf - Y0, 0), arr.length - 1), i = Math.floor(x), f = x - i;
+  return i + 1 < arr.length ? arr[i] + (arr[i + 1] - arr[i]) * f : arr[i];
+}
+const fcKey = () => (S.tram === "after" ? S.scen : "none");
+function value(a) {
+  if (S.metric === "land") return a.fc ? at(a.fc[fcKey()], S.yf) : 100;
+  if (S.metric === "tram") return S.tram === "after" && a.fc ? (at(a.fc[S.scen], S.yf) / at(a.fc.none, S.yf) - 1) * 100 : 0;
+  if (S.metric === "comp") return S.tram === "after" && a.comp ? at(a.comp[S.scen], S.yf) : 0;
+  if (S.metric === "rent") return S.tram === "after" && a.rent && a.rent.score != null ? a.rent.score : 0;
+  if (S.metric === "stores") return a.n_stores;
+  return a.risk;
+}
+// 높이 눈금은 지표마다 고정 (연도·시나리오를 바꿔도 같은 자 → 높이 비교가 정직)
+const SC = (() => {
+  let land = 100, tram = 0.01, comp = 0.01;
+  for (const a of D.areas) if (a.comp) for (const k of ["low", "base", "high"]) comp = Math.max(comp, ...a.comp[k]);
+  for (const a of D.areas) if (a.fc) for (const k of ["none", "low", "base", "high"]) a.fc[k].forEach((v, i) => {
+    land = Math.max(land, v); tram = Math.max(tram, (v / a.fc.none[i] - 1) * 100); });
+  return {land: [80, land], tram: [0, tram], comp: [0, comp], rent: [0, 100], stores: [0, Math.max(...D.areas.map(a => a.n_stores))], risk: [0, 100]};
+})();
+function height(a) { const [lo, hi] = SC[S.metric]; return FLOOR + Math.max(0, (value(a) - lo) / (hi - lo)) * MAXH; }
+const fmt = {land: v => v.toFixed(1), tram: v => (v >= 0 ? "+" : "") + v.toFixed(2) + "%", comp: v => "+" + v.toFixed(1) + "%p", rent: v => v.toFixed(0) + "점", stores: v => Math.round(v).toLocaleString() + "개", risk: v => v.toFixed(0) + "점"};
+const DESC = {land: "땅값 지수 (2026년 = 100, 바닥 = 80)", tram: "트램이 있을 때와 없을 때의 땅값 차이",
+              comp: "음식점 중 카페·빵집 비중 증가 (%p, 트램 개통 후)", rent: "임대료 부담 신호 점수 (0~100, 상대 순위, 트램 건설 후)",
+              stores: "상권 안 점포 수 (현재)", risk: "쇠퇴 위험 점수 (0~100)"};
+
+// ── 트램 운행 (연출: 순환선 양방향 각 10대, 지선 2대) ──
+const lat0 = D.views["전체"].center[1], KX = Math.cos(lat0 * Math.PI / 180) * 111320, KY = 110940;
+function measure(p) { const c = [0]; for (let i = 1; i < p.length; i++) c.push(c[i - 1] + Math.hypot((p[i][0] - p[i - 1][0]) * KX, (p[i][1] - p[i - 1][1]) * KY)); return c; }
+const P_LOOP = 70;                                   // 순환선 한 바퀴 70초 (화면용 속도)
+const lines = [];
+{
+  const loop = D.route[0], L = measure(loop);
+  const rev = loop.slice().reverse(), Lr = measure(rev);
+  lines.push({path: loop, cum: L, P: P_LOOP, n: 10, off: 0});
+  lines.push({path: rev, cum: Lr, P: P_LOOP, n: 10, off: P_LOOP / 20});
+  if (D.route[1]) {
+    const b = D.route[1], bb = b.concat(b.slice(0, -1).reverse()), Lb = measure(bb);
+    lines.push({path: bb, cum: Lb, P: P_LOOP * Lb[Lb.length - 1] / L[L.length - 1], n: 2, off: 0});
+  }
+}
+for (const ln of lines) {                            // TripsLayer 용: 경로를 두 번 이어 붙여 끊김 없이 순환
+  const Ltot = ln.cum[ln.cum.length - 1];
+  ln.trips = Array.from({length: ln.n}, (_, i) => {
+    const o = ln.off + i * ln.P / ln.n, path = [], ts = [];
+    for (let k = 0; k < 2; k++) ln.path.forEach((pt, j) => { path.push(pt); ts.push(o + k * ln.P + ln.cum[j] / Ltot * ln.P); });
+    return {path, ts, o};
+  });
+}
+function posAt(ln, s) {
+  const c = ln.cum; let lo = 0, hi = c.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= s) lo = m; else hi = m; }
+  const f = (s - c[lo]) / ((c[hi] - c[lo]) || 1), a = ln.path[lo], b = ln.path[hi];
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+}
+const running = () => S.tram === "after" && S.yf >= OPEN;
+
+// ── 레이어 ──
+const dash = new deck.PathStyleExtension({dash: true});
+function layers() {
+  const out = [], built = running();
+  out.push(new deck.PolygonLayer({id: "ground", data: D.ground, getPolygon: d => d, filled: true, stroked: true,
+    getFillColor: C.ground, getLineColor: C.line, lineWidthMinPixels: 0.8, updateTriggers: {getFillColor: C.ground, getLineColor: C.line}}));
+  if (D.buildings) out.push(new deck.PolygonLayer({id: "buildings", data: D.buildings, getPolygon: d => d.p, extruded: true,
+    getElevation: d => d.h, getFillColor: [...C.sage.slice(0, 3), 150], material: {ambient: .6, diffuse: .5}}));
+  const rc = built ? C.route : [...C.sage.slice(0, 3), 200];
+  out.push(new deck.PathLayer({id: "route-case", data: D.route, getPath: d => d, getColor: C.paper, widthMinPixels: built ? 7 : 5,
+    capRounded: true, jointRounded: true, updateTriggers: {getColor: C.paper}}));
+  out.push(new deck.PathLayer({id: "route", data: D.route, getPath: d => d, getColor: rc, widthMinPixels: built ? 3.5 : 2.5,
+    capRounded: true, jointRounded: true, extensions: built ? [] : [dash], getDashArray: [4, 3], dashJustified: true,
+    updateTriggers: {getColor: rc}}));
+  out.push(new deck.PolygonLayer({id: "areas", data: D.areas, getPolygon: d => d.poly, extruded: true,
+    pickable: true, autoHighlight: true, highlightColor: [255, 255, 255, 70],
+    getElevation: height, getFillColor: d => { const c = C.q[quad(d)]; return [c[0], c[1], c[2], S.sel && S.sel !== d.code ? 120 : 235]; },
+    material: {ambient: .55, diffuse: .65, shininess: 24, specularColor: [60, 64, 70]},
+    transitions: S.playing ? {} : {getElevation: {duration: 700}},
+    updateTriggers: {getElevation: [S.metric, S.tram, S.scen, S.yf], getFillColor: [S.sel, C.q, S.tram]}}));
+  if (built) {
+    const tc = C.tram;
+    for (const [i, ln] of lines.entries()) out.push(new deck.TripsLayer({id: "trips" + i, data: ln.trips, getPath: d => d.path,
+      getTimestamps: d => d.ts, getColor: tc, widthMinPixels: 5, capRounded: true, jointRounded: true, fadeTrail: true,
+      trailLength: ln.P * 0.05, currentTime: (S.T % ln.P) + ln.P}));
+    const heads = [];
+    for (const ln of lines) { const Lt = ln.cum[ln.cum.length - 1];
+      for (const t of ln.trips) heads.push(posAt(ln, ((((S.T - t.o) / ln.P) % 1 + 1) % 1) * Lt)); }
+    out.push(new deck.ScatterplotLayer({id: "trams", data: heads, getPosition: d => d, getRadius: 70, radiusMinPixels: 4, radiusMaxPixels: 9,
+      getFillColor: C.paper, getLineColor: tc, stroked: true, lineWidthMinPixels: 2.5}));
+  }
+  out.push(new deck.ScatterplotLayer({id: "stations", data: D.stations, getPosition: d => [d.lon, d.lat], getRadius: 48,
+    radiusMinPixels: 2.5, radiusMaxPixels: 7, getFillColor: C.paper, getLineColor: rc, stroked: true, lineWidthMinPixels: 1.6,
+    pickable: true, updateTriggers: {getLineColor: rc}}));
+  // 이름표: 지금 높이 상위 5곳 + 선택·마우스 올린 상권
+  const top = D.areas.slice().sort((a, b) => value(b) - value(a)).slice(0, 5).map(a => a.code);
+  const cand = D.areas.filter(a => top.includes(a.code) || a.code === S.sel || a.code === S.hover)
+    .sort((a, b) => (b.code === S.sel || b.code === S.hover) - (a.code === S.sel || a.code === S.hover) || value(b) - value(a));
+  let vp = null; try { vp = deckgl && deckgl.isInitialized ? deckgl.getViewports()[0] : null; } catch (e) { vp = null; }
+  const boxes = [], lab = [];
+  for (const a of cand) {                              // 화면에서 겹치는 이름표는 뒤 순위를 뺌
+    if (!vp) { lab.push(a); continue; }
+    const [x, y] = vp.project([a.center[0], a.center[1], height(a) + 30]), w = short(a.name).length * 13 + 14, h = 22;
+    const b = [x - w / 2, y - 10 - h, x + w / 2, y - 10];
+    if (boxes.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) continue;
+    boxes.push(b); lab.push(a);
+  }
+  out.push(new deck.TextLayer({id: "labels", data: lab, getPosition: d => [d.center[0], d.center[1], height(d) + 30],
+    getText: d => short(d.name), getSize: 13, getColor: C.ink, fontFamily: '"Noto Sans KR","Apple SD Gothic Neo",sans-serif',
+    fontWeight: 500, characterSet: "auto", background: true, getBackgroundColor: C.label, backgroundPadding: [6, 3, 6, 3],
+    getPixelOffset: [0, -10], getTextAnchor: "middle", getAlignmentBaseline: "bottom",
+    updateTriggers: {getPosition: [S.metric, S.tram, S.scen, S.yf], getColor: C.ink, getBackgroundColor: C.label}}));
+  return out;
+}
+
+// ── 지도 ──
+const lighting = new deck.LightingEffect({
+  ambient: new deck.AmbientLight({color: [255, 255, 255], intensity: 1.0}),
+  key: new deck.DirectionalLight({color: [255, 255, 255], intensity: 0.9, direction: [-3, -9, -6]}),
+  fill: new deck.DirectionalLight({color: [255, 255, 255], intensity: 0.45, direction: [4, 6, -3]})});
+const vsOf = (v) => ({longitude: v.center[0], latitude: v.center[1], zoom: v.zoom - (EMBED ? 0.55 : 0), pitch: v.pitch, bearing: v.bearing,
+                      minZoom: 9.5, maxZoom: 16.5, maxPitch: 72});
+let curVS = vsOf(D.views["전체"]), flyUntil = 0;
+let deckgl = null;
+deckgl = new deck.Deck({
+  parent: $("map"), initialViewState: curVS, controller: {inertia: 250}, effects: [lighting],
+  onViewStateChange: ({viewState}) => { curVS = viewState; dirty = true; },
+  onDragStart: () => setRotate(false),
+  getTooltip: ({object, layer}) => {
+    if (!object || !layer) return null;
+    const st = {background: "var(--paper)", color: "var(--moss)", border: "1px solid var(--mist)", borderRadius: "8px",
+                padding: "7px 10px", fontSize: "12.5px", fontFamily: "var(--f-body)", boxShadow: "var(--shadow)"};
+    if (layer.id === "areas") return {style: st, html: `<b style="color:var(--ink);font-size:13.5px">${short(object.name)}</b><br>`
+      + `${quad(object)} · ${DESC[S.metric].split(" (")[0]} <b style="color:var(--ink)">${fmt[S.metric](value(object))}</b>`};
+    if (layer.id === "stations") return {style: st, html: `<b style="color:var(--ink)">${object.no}번 ${object.name}</b><br>500m 안 점포 ${object.n.toLocaleString()}개`};
+    return null;
+  },
+  onHover: ({object, layer}) => { const h = object && layer && layer.id === "areas" ? object.code : null; if (h !== S.hover) { S.hover = h; dirty = true; } },
+  onClick: ({object, layer}) => {
+    if (object && layer && layer.id === "areas") { select(object.code, true); emit({area: object.code, t: Date.now()}); }
+    else if (object && layer && layer.id === "stations") emit({station: object.no, t: Date.now()});
+    else if (!object && !EMBED) select(null);
+  },
+});
+function flyTo(v) {
+  flyUntil = performance.now() + 1700;
+  deckgl.setProps({initialViewState: {...vsOf(v), transitionDuration: reduce ? 0 : 1600, transitionInterpolator: new deck.FlyToInterpolator()}});
+}
+
+// ── 조작 ──
+function seg(id, key, after) {
+  const el = $(id);
+  el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S[key] = b.dataset.v; after && after(); sync(); });
+}
+seg("seg-tram", "tram"); seg("seg-metric", "metric"); seg("seg-scen", "scen");
+$("seg-scen").querySelectorAll("button").forEach(b => { if (D.scen_label[b.dataset.v]) b.textContent = D.scen_label[b.dataset.v]; });
+const yr = $("year"); yr.min = Y0; yr.max = Y1; yr.value = Y0;
+$("ticks").innerHTML = D.years.map(y => y === OPEN ? `<b>${y}</b>` : (y % 2 === 0 ? `<span>${y}</span>` : "<span></span>")).join("");
+yr.addEventListener("input", () => { S.yf = +yr.value; S.playing = false; sync(); });
+$("play").addEventListener("click", () => { if (S.playing) S.playing = false; else { if (S.yf >= Y1) S.yf = Y0; S.playing = true; } sync(); });
+const VIEWS = Object.keys(D.views);
+$("seg-view").innerHTML = VIEWS.map((k, i) => `<button id="v-${i}" data-v="${k}">${k}</button>`).join("")
+  + `<button id="v-rot" data-rot="1">천천히 돌리기</button>`;
+let curView = "전체";
+$("seg-view").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.rot) { setRotate(!S.rotate); return; }
+  curView = b.dataset.v; select(null); flyTo(D.views[curView]); sync();
+});
+function setRotate(on) { S.rotate = on && !reduce; $("v-rot").setAttribute("aria-pressed", S.rotate); }
+$("card-x").addEventListener("click", () => select(null));
+const panel = document.querySelector(".panel");
+function fold(min) { panel.classList.toggle("min", min); $("fold").textContent = min ? "조작 펼치기" : "조작 접기"; $("fold").setAttribute("aria-expanded", !min); }
+$("fold").addEventListener("click", () => fold(!panel.classList.contains("min")));
+fold(!EMBED && (innerWidth < 900 || innerHeight < 640));
+
+function select(code, fly) {
+  S.sel = code; dirty = true;
+  const a = D.areas.find(x => x.code === code), card = $("card");
+  if (!a) { card.hidden = true; return; }
+  const qa = quad(a), q = getComputedStyle(document.documentElement).getPropertyValue(QK[qa]).trim();
+  const fg = qa === "트램 반등 기회" || qa === "정체·안정" ? "#0a1d08" : "#ffffff";
+  $("c-name").textContent = short(a.name);
+  $("c-meta").innerHTML = `<span class="badge" style="background:${q};color:${fg}">${qa}</span><span>${a.code} · ${a.gu}${a.type_name ? " · " + a.type_name : ""}</span>`;
+  const f = a.fc, last = f ? f.none.length - 1 : 0;
+  $("c-kv").innerHTML = [
+    f && ["땅값 지수 2034 (트램 없음)", f.none[last].toFixed(1)],
+    f && [`땅값 지수 2034 (트램 ${D.scen_label[S.scen].split(" ")[0]})`, f[S.scen][last].toFixed(1)],
+    ["상권 가치(땅값) 효과", `${a.eff.low.toFixed(1)} ~ ${a.eff.high.toFixed(1)}% (기본 ${a.eff.base.toFixed(1)}%)`],
+    a.comp && ["업종 변화 2034 (카페·빵 비중)", S.tram === "after" ? fmt.comp(a.comp[S.scen][a.comp[S.scen].length - 1]) : "건설 전 0"],
+    a.rent && ["임대료 부담 신호", S.tram === "after" ? a.rent.grade + (a.rent.drivers ? ` · ${a.rent.drivers}` : "") : "건설 전 해당 없음"],
+    ["점포 수", a.n_stores.toLocaleString() + "개"], ["쇠퇴 위험 · 성장 가능", `${a.risk.toFixed(0)} · ${a.growth.toFixed(0)}점`],
+    a.nearest && ["가까운 정거장", a.nearest]].filter(Boolean).map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
+  card.hidden = EMBED;
+  if (fly) flyTo({center: a.center, zoom: 12.9, pitch: 55, bearing: curVS.bearing || -20});
+}
+
+function sync() {
+  for (const [id, key] of [["seg-tram", "tram"], ["seg-metric", "metric"], ["seg-scen", "scen"]])
+    $(id).querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === S[key]));
+  $("seg-view").querySelectorAll("button[data-v]").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === curView));
+  $("row-scen").hidden = !(S.tram === "after" && (S.metric === "land" || S.metric === "tram" || S.metric === "comp"));
+  yr.value = S.yf;
+  $("play-ico").setAttribute("d", S.playing ? "M3 1.5h3v11H3zM8 1.5h3v11H8z" : "M3 1.5v11l9-5.5z");
+  $("play").setAttribute("aria-label", S.playing ? "멈춤" : "2026년부터 재생");
+  const y = Math.floor(S.yf + 1e-6);
+  $("clock-y").textContent = y;
+  $("clock-s").textContent = S.tram === "before" ? "트램 없이 흘러갈 때" : y < OPEN ? `공사 중 · 개통까지 ${OPEN - y}년` : `트램 개통 ${y - OPEN + 1}년 차`;
+  $("sym-tr").hidden = !running();
+  const mx = Math.max(...D.areas.map(value)), top = D.areas.find(a => value(a) === mx);
+  const mn = Math.min(...D.areas.map(value));
+  $("hgt").innerHTML = `기둥 높이 = ${DESC[S.metric]}<br>` + (mx - mn < 1e-6 ? `지금은 모든 상권이 <b>${fmt[S.metric](mx)}</b>로 같습니다`
+    : `지금 가장 높은 곳: <b>${short(top.name)} ${fmt[S.metric](mx)}</b>`);
+  $("note").textContent = (S.metric === "tram" || S.metric === "comp" || S.metric === "rent") && S.tram === "before"
+      ? "트램이 생겨야 생기는 변화라 건설 전에는 기둥이 모두 바닥 높이입니다. ‘건설 후’를 눌러 보세요."
+    : S.metric === "comp" ? "대전 1호선 역 주변 카페 인허가 근거(지하철)로 계산했습니다. 개통 뒤 해마다 커지며, 범위는 시나리오로 보세요."
+    : S.metric === "rent" ? "금액이 아닌 위험 순위입니다(땅값-매출 격차·폐업률·업종 교체). 지금은 공실이 많고 임대료가 내려가는 중입니다."
+    : S.metric === "tram" ? "트램 효과는 땅값 기준 추정치이고 95% 구간이 0을 포함합니다. 높이 차이는 작게 읽어 주세요."
+    : "트램 운행 모습은 연출이며 실제 배차와 다릅니다. 정거장 일부 좌표는 공개 도면 기준 추정값입니다.";
+  if (S.sel) select(S.sel);
+  dirty = true;
+}
+
+// ── 그리기 반복 ──
+last = performance.now();
+function tick(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (S.playing) { S.yf = Math.min(S.yf + dt / 2, Y1); if (S.yf >= Y1) { S.playing = false; } sync(); }
+  if (running() && !reduce) { S.T += dt; dirty = true; }
+  if (S.rotate && now > flyUntil) { deckgl.setProps({initialViewState: {...curVS, bearing: (curVS.bearing || 0) + dt * 4, transitionDuration: 0}}); }
+  if (dirty) { dirty = false; try { deckgl.setProps({layers: layers()}); } catch (e) { console.error(e); } }
+  requestAnimationFrame(tick);
+}
+readColors();
+const reTheme = () => { readColors(); dirty = true; if (S.sel) select(S.sel); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reTheme);
+new MutationObserver(reTheme).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+setRotate(false); if (OPT.sel) select(OPT.sel, false); sync(); requestAnimationFrame(tick);
+let prev = {...OPT};
+return {set(o) {                                     // 앱에서 바뀐 값만 반영 (3D 안에서 고른 기둥 높이·연도는 유지)
+  for (const k of ["tram", "scen", "metric"]) if (o[k] && o[k] !== prev[k]) S[k] = o[k];
+  if (o.sel !== prev.sel && (o.sel || null) !== S.sel) select(o.sel || null, !!o.sel);   // 3D 안에서 누른 상권이면 이미 이동함
+  prev = {...o}; sync();
+}};
+}
+
+if (INLINE) { boot(INLINE, {}); return; }
+// ── Streamlit 부품 통신 (components.declare_component 규약: 준비 → render 받기 → 값 보내기) ──
+const send = (type, extra) => parent.postMessage(Object.assign({isStreamlitMessage: true, type}, extra), "*");
+let api = null;
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || m.type !== "streamlit:render") return;
+  const a = m.args || {};
+  send("streamlit:setFrameHeight", {height: a.height || 600});
+  if (!api) api = boot(a.data, Object.assign({embed: a.mode !== "full", full: a.mode === "full", emit: (v) => send("streamlit:setComponentValue", {value: v, dataType: "json"})}, a.state || {}));
+  else api.set(a.state || {});
+});
+send("streamlit:componentReady", {apiVersion: 1});
+})();
+</script>
+</body></html>

@@ -1,0 +1,44 @@
+param_id,paper,use,outcome,segment,value,unit,se_or_t,lag_or_period,page_table,note
+P2_DID_price_base,Lan et al. 2025 (UK LRT),prior,ln(house price),500m buffer vs control,0.0444,log-point,t=3.69,effect signif. only years +6..+9 after opening,p.12 Table 3 (2),DID with controls; R2 .941 N 9934
+P2_DID_price_noctrl,Lan et al. 2025 (UK LRT),prior_high,ln(house price),500m buffer vs control,0.0829,log-point,t=6.68,,p.12 Table 3 (1),upper bound
+P2_DID_price_psm,Lan et al. 2025 (UK LRT),prior,ln(house price),500m buffer vs control,0.0505,log-point,t=4.19,,p.15 Table 4 (3),PSM-DID
+P2_POI_eatdrink,Lan et al. 2025 (UK LRT),prior,ln(# eat/drink POI),500m buffer,0.1063,log-point,t=4.36,,p.18 Table 6 (1),maps to 업종 I2 음식
+P2_POI_retail,Lan et al. 2025 (UK LRT),prior,ln(# retail POI),500m buffer,0.0923,log-point,t=4.48,,p.18 Table 6 (2),maps to G2 소매
+P2_POI_homeofficeleisure,Lan et al. 2025 (UK LRT),prior,ln(# household/office/leisure POI),500m buffer,0.0256,log-point,t=0.92 (ns),,p.18 Table 6 (3),maps to R1/S2/N1/M1/P1/Q1/I1 (ns)
+P2_POI_property,Lan et al. 2025 (UK LRT),prior,ln(# property services POI),500m buffer,0.1079,log-point,t=3.91,,p.18 Table 6 (4),maps to L1 부동산
+P2_mod_bus_high,Lan et al. 2025 (UK LRT),moderator,ln(house price),high bus-stop density (>mean),0.1193,log-point,t=5.07,,p.21 Table 9 (1),strongest moderator
+P2_mod_bus_low,Lan et al. 2025 (UK LRT),moderator,ln(house price),low bus-stop density,0.0089,log-point,t=0.74 (ns),,p.21 Table 9 (2),
+P2_mod_income_low,Lan et al. 2025 (UK LRT),moderator,ln(house price),lower-income areas,0.0608,log-point,t=3.41,,p.20 Table 8 (2),
+P2_mod_income_high,Lan et al. 2025 (UK LRT),moderator,ln(house price),higher-income areas,0.0128,log-point,ns,,p.20 Table 8 (1),
+P2_lag_start_yr,Lan et al. 2025 (UK LRT),timing,event study,,6,years after opening,,significant t=+6..+9,p.12-13 Fig 3,pre-trend ~0
+P2_buffer_m,Lan et al. 2025 (UK LRT),feature,treatment buffer,,500,m,,,p.8,also P5 (6-min walk)
+P3_rent_riders,김용래 외 2016,benchmark,rent (won/m2),30 Seoul-area stations,0.043,won/m2 per daily rider,SE .021 p=.049,2015-12,p.62 Table 8,elasticity at means ~0.19 (derived); R2 .417
+P3_sales_riders,김용래 외 2016,benchmark,monthly restaurant sales (unit unstated),30 stations,0.109,per daily rider,SE .038 p=.009,2015-12,p.62 Table 9,elasticity at means ~0.32 (derived); R2 .448
+P3_sales_apt,김용래 외 2016,benchmark,monthly restaurant sales,30 stations,0.528,per apt household,SE .265 p=.057,,p.62 Table 9,
+P3_rent_mediation,김용래 외 2016,structure,rent as mediator of sales,,0,,all Sobel |Z|<1.96,,p.63 Table 10,rent does NOT mediate -> keep rent as covariate not mediator
+P3_primary_m,김용래 외 2016,feature,primary trade area radius,,500,m,,,p.57,60-70% of customers
+P3_secondary_m,김용래 외 2016,feature,secondary trade area radius,,1000,m,,,p.57,14-25% of customers
+P4_sales_transit_all,정은애·성현곤 2018,benchmark,ln weekday sales <- transit ridership factor,Seoul blocks all,0.157,log-log (B); std .083,z=9.72,2015-10,p.96 Table 3,
+P4_sales_transit_res,정은애·성현곤 2018,benchmark,ln weekday sales <- transit,residential blocks,0.091,log-log (B); std .056,z=5.09,,p.96 Table 3,
+P4_sales_transit_com,정은애·성현곤 2018,benchmark,ln weekday sales <- transit,commercial blocks,0.040,log-log (B); std .028,z=1.28 (ns),,p.96 Table 3,no effect in commercial cores
+P4_sales_emp_all,정은애·성현곤 2018,benchmark,ln sales <- employment/firms factor,all,0.114,log-log (B); std .117,z=11.52,,p.96 Table 3,maps to n_stores
+P4_sales_pop_all,정은애·성현곤 2018,benchmark,ln sales <- population factor (incl. floating pop),all,-0.067,log-log (B); std -.064,z=-6.39,,p.96 Table 3,residential +0.032
+P4_mediated_share_all,정은애·성현곤 2018,structure,share of effect via transit,all,0.092,share,,,p.97,residential ~0.055; commercial ns
+P4_bus_catch_m,정은애·성현곤 2018,feature,bus stop catchment,,300,m,,,p.91,
+P4_rail_catch_m,정은애·성현곤 2018,feature,rail station catchment,,500,m,,,p.91,
+P6_visit_core,Kakutani & Hiramatsu 2025 (Kobe),scenario,visitors % change (LRT),core zone,0.049,share,simulation,,p.11 Table 4,Sannomiya
+P6_visit_secondary,Kakutani & Hiramatsu 2025 (Kobe),scenario,visitors % change (LRT),secondary zone,0.081,share,simulation,,p.11 Table 4,Motomachi
+P6_visit_periphery,Kakutani & Hiramatsu 2025 (Kobe),scenario,visitors % change (LRT),peripheral zone,0.150,share,simulation,,p.11 Table 4,Harborland
+P6_spend_core,Kakutani & Hiramatsu 2025 (Kobe),scenario,spending % change (LRT),core zone,0.007,share,simulation,,p.15 Table 5,
+P6_spend_periphery,Kakutani & Hiramatsu 2025 (Kobe),scenario,spending % change (LRT),peripheral zone,0.236,share,simulation,,p.15 Table 5,upper bound
+P6_spend_total,Kakutani & Hiramatsu 2025 (Kobe),scenario,spending % change (LRT),whole district,0.035,share,simulation,,p.15 Table 5,
+P6_walk_kmh,Kakutani & Hiramatsu 2025 (Kobe),feature,walking speed,,4.8,km/h,,,p.6,
+P6_lrt_kmh,Kakutani & Hiramatsu 2025 (Kobe),feature,LRT operating speed,,15,km/h,,,p.6,headway 5 min; stop spacing ~500m
+P7_floor_total,양충헌·김진국 2020,scenario,total floor area change (tram vs BAU),Suwon,0.0002,share,simulation,2018-2030 within +-0.015%,p.1109 Table 3,net-zero: relocation not creation
+P7_vkt,양충헌·김진국 2020,scenario,VKT change,Suwon,-0.0059,share,simulation,2030,p.1109 Table 3,
+P7_relocation,양충헌·김진국 2020,structure,land-use relocation,,,,,,p.1107-1108 Fig 7-8,retail -> terminal/transfer stops; office/service -> corridor; housing outward
+P1_speed_hanbat,이경미·김명수 2017,scenario,car speed on corridor (km/h),한밭대로 tram-only lane,5.5,km/h,VISSIM,current 13.3,p.557-558,with signal optimisation 14.1
+P1_speed_gyebaek,이경미·김명수 2017,scenario,car speed on corridor (km/h),계백로 tram-only lane,3.2,km/h,VISSIM,current 7.5,p.557-558,with signal optimisation 7.7
+P5_features,Reyes-Schade et al. 2025 (Barcelona),feature,space syntax integration/choice,500m station catchment,,,,,p.7 p.13,no effect sizes; use closeness/betweenness of street network as features
+DJ_line1_land_500m,대전 도시철도 1호선 1단계 (본 분석: analyze_landprice.py),prior,ln(개별공시지가),"역 500m 필지 vs 1~3km 필지, 2005 → 2007~2010",0.0564,log,95% CI 0.00~0.12 (법정동 군집 부트스트랩),개통 1~4년,outputs/landprice_effects.csv,대전 실측. 지가 효과를 매출 효과 대용으로 사용(트램 시나리오 기본값). analyze_landprice.py 를 다시 돌리면 그 값을 우선 사용
+DJ_line1_land_trendadj,대전 1호선 1단계 추세 보정+매칭 (본 분석: analyze_line1_trend.py),prior_high,ln(개별공시지가),"역 500m vs 1~3km, 매칭+2000~05 추세 보정",0.0889,log,95% CI +1.7~+17.9%,개통 1~4년,outputs/line1_trend_adjusted.csv,가짜 개통연도 검정 통과. 트램 시나리오 높음(지가)에 사용

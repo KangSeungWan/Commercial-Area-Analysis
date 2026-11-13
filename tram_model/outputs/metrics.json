@@ -1,0 +1,20 @@
+{
+  "target_synthetic": true,
+  "target_diag_r2": 0.9985,
+  "target_diag": "log(sales) 의 99.8% 를 'n_same_type × 구·업종·월 상수' 하나로 설명 → 합성 타깃(점포수 비례배분). 성능 지표는 의미 없음, 파이프라인 검증용으로만 사용.",
+  "ml_all_features": {
+    "features": 23,
+    "n": 19760,
+    "r2_log": 0.9747015790316407,
+    "mae_log": 0.18908562442791527,
+    "mape_level": 0.10894936141946628
+  },
+  "ml_without_leaky": {
+    "features": 21,
+    "n": 19760,
+    "r2_log": 0.8631158783713854,
+    "mae_log": 0.5857333997257674,
+    "mape_level": 0.4373735134624011
+  },
+  "open_year": 2030
+}

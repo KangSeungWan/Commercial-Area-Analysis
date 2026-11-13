@@ -1,0 +1,16 @@
+﻿event_id,date,date_precision,area_codes,event_type,direction,description,status
+E01,2006-03-16,day,A03;A04;A05;A06;A08;A11,transit_open,+,도시철도 1호선 1단계 개통(판암~정부청사): 대동·대전역·중앙로·서대전네거리·용문·탄방·시청역,확인
+E02,2007-04-17,day,A10;A14;A16,transit_open,+,도시철도 1호선 2단계 개통(정부청사~반석): 월평·유성온천·노은 등,확인
+E03,2009-12-31,month,A01,construction,-,대전복합터미널 재개발 착공(기존 건물 철거),확인(사용자 제공)
+E04,2010-03-02,day,A01,construction,-,임시 고속·시외버스터미널 운영 시작(본 공사 기간),확인(사용자 제공)
+E05,2011-12-16,day,A01,anchor_open,+,대전복합터미널 신축 준공·개장,확인(사용자 제공)
+E06,2012-12-01,month,A05,institution_relocation,-,충남도청 내포신도시(홍성·예산) 이전 완료(선화동 청사 → 원도심 공동화),확인(사용자 제공: 2012-12 이전 완료)
+E07,2009-01-01,year,A03,regeneration_designation,0,소제동 도시환경정비(재개발) 구역 지정 → 장기 표류·빈집 증가,확인(사용자 제공)
+E08,2017-01-01,year,A03,regeneration_start,+,민간 도시재생(철도관사 매입·개조 기획) 시작,확인(사용자 제공)
+E09,2018-06-01,month,A03,regeneration_start,+,벽화거리 사업 추진,확인(사용자 제공)
+E10,2019-01-01,year,A03,regeneration_growth,+,리모델링 카페·레스토랑 순차 개점(뉴트로 상권 형성),확인(사용자 제공)
+E11,2020-06-26,day,A15,anchor_open,+,현대프리미엄아울렛 대전점 개점(유성구 용산동·관평동 인근),확인(사용자 제공)
+E12,2021-08-27,day,A12,anchor_open,+,대전신세계 Art & Science 개점,확인
+E13,2021-08-27,day,A07,anchor_competition,-,대전신세계 개점에 따른 둔산(타임월드) 경쟁 상권 영향,가설
+E14,2024-05-19,day,A06,anchor_close,-,백화점 세이 폐업(서대전네거리),확인(사용자 제공: 공식 폐업일)
+E15,2020-02-01,month,ALL,common_shock,-,코로나19 확산(2020~2022) 공통 충격 → 시간 고정효과로 통제,확인

@@ -1,0 +1,30 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.streamlit/secrets.toml
+tram_model/data/raw/
+tram_model/data/dxf/
+tram_model/outputs/landprice_long.pkl
+tram_model/outputs/landprice_parcels.csv.gz
+*.dwg
+*.dxf
+*.zip
+tram_model/outputs/parcel_value.csv.gz
+
+# 8989 상권분석 원본 (대용량, 약관상 재배포 금지)
+tram_model/data/raw/8989/raw/
+
+# 웹사이트: 빌드 결과(dist)는 배포용이라 저장소에 넣지 않음 (web/README.md 참고)
+web/dist/
+web/node_modules/
+_to_delete/
+
+# 8989 재집계 표는 재단 조건(재배포 금지)상 저장소에 넣지 않음
+tram_model/outputs/8989/
+tram_model/outputs/station_sales_dong.csv
+tram_model/outputs/validation_closures_8989.csv
+
+# 작업 도구 미리보기 캐시 (공개 이유 없음)
+cover_motion/.hyperframes/
+cover_motion/.thumbnails/

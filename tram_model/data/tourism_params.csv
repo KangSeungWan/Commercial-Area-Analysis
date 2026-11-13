@@ -1,0 +1,15 @@
+﻿param_id,paper,use,outcome,segment,value,unit,se_or_t,lag_or_period,page_table,note
+TOUR_eps_low,Albalate·Campos·Jiménez 2017/2023 (스페인 HSR),prior_low,Δln 외지인 도착·결제건수 / Δln 접근성,관광자원형 상권,0,elasticity,비유의/음,개통 후,T54·T55,DiD·합성통제 효과 없음 → 하한 0
+TOUR_eps_base_arrivals,"FS Italiane 2024 (이탈리아 HSR, 내국인 도착)",prior,Δln 도착 / Δln 접근성 A_j=Σw_i/TT_ij,관광자원형 상권,0.726,elasticity,***,2009→2019,T53 원문,"HSR −57분 기준 계수를 도시 내 트램에 차용 → 과대 위험, 중간값 0.5~0.7 밴드로 사용"
+TOUR_eps_base_nights,FS Italiane 2024 (내국인 숙박),prior,Δln 숙박 / Δln 접근성,관광자원형 상권,0.532,elasticity,***,2009→2019,T53 원문,체류 대리
+TOUR_eps_high,상한 시나리오 전용,prior_high,Δln 도착 / Δln 접근성,관광자원형 상권,1.0,elasticity,,,보고서 적용 방안,"외국인 2.279(T53)는 국제 HSR 맥락이라 미사용, 상한을 1.0으로 캡"
+TOUR_stay_adj,"FS Italiane 2024 (HSR 더미, 내국인 숙박)",prior,건당 금액·숙박 비중 변화,관광자원형 상권,-0.002,log-point,n.s.,,T53,도착↑·1인당 소비 불변 또는 ↓ 를 기본 가정
+TOUR_tram_share_low,Portland Streetcar 승객 설문 2015,prior_low,관광객(외지인)의 트램 이용률,통근형 신설 노면전차,0.05,share,"n=4,300",,T04 기사,'<5%' → 0.05 상한값으로 기록
+TOUR_tram_share_mid,홍콩 트램 경영진 추정 2019·2023,prior,관광객의 트램 이용률,"레거시 트램, 관광도시",0.15~0.20,share,방법 미공개,,T42 기사,각주 수준
+TOUR_tram_share_high,나가사키현 2018 / 히로시마시 2017 공식 설문,prior_high,관광 목적 도착자·방문객의 노면전차 이용률,관광지 직결 레거시 노면전차,0.37~0.40,share,"n=1,186/1,289(히로시마)",,T17·T19 원문,대전은 대전역·성심당·중앙시장 직결 정거장에만 상한 근접 가정
+TOUR_noncommute_share,아사이 2008 (일본 노면전차 전국 2005),benchmark,비정기(통근 외) 승객 비중,노면전차,0.721,share,,2005,T23 원문,"관광객 비중 아님, 수요 구성 기준선"
+TOUR_lodging_food_survival,Liu & Bardaka 2025 (샬럿 LRT),reference_only,숙박·음식 업체 폐업위험,"역 0.25~0.5마일(≈400~800m), 개통 5~10년",-66,%,,개통 후,T13 초록,경전철·미국·초록만 → 시나리오 계산에 투입하지 않음
+TOUR_visit_freq_high,SGS Economics 2013 (멜버른 세인트킬다),reference_only,방문 빈도,평면 승강장 정비,14,%,,,T16 2차,"컨설팅 추정, 각주"
+TOUR_ramp_midpoint,Li & Schläpfer 2026 (뉴욕 복합개발 PPML DiD),prior,효과 발현 중간점,S-커브,24,months,R²=0.833,56개월 창,T61 원문(예비),"교통 아닌 복합개발 → 형태만 차용, 0~6개월 노벨티 구간 분리"
+TOUR_mode_substitution,빅토리아주 교통부 FTZ 2020,benchmark,트램 통행 증가 중 열차 대체분,무료트램구역,-7000/13700,trips/day,,2015~,T24·T44 원문,트램 이용↑ ≠ 신규 방문↑ → 버스·1호선 대체분 차감
+TOUR_tram_did_null,Kamruzzaman 2024 (골드코스트 G:Link),benchmark,PT 이용 / 상권 매출,트램 DiD(유일),3.6,%,,개통 후,T01 초록,매출 부진은 트램 귀속 불가(무효) → '상인 인식 ≠ 데이터' 근거

@@ -1,0 +1,6 @@
+﻿term,our_coef,our_se,our_t,paper,paper_value,paper_segment,r2_ours
+ln_transit,-0.0212,0.0435,-0.49,P4_sales_transit_all,0.157,서울 전체,0.771
+ln_transit,-0.0212,0.0435,-0.49,P4_sales_transit_res,0.091,서울 주거,0.771
+ln_transit,-0.0212,0.0435,-0.49,P4_sales_transit_com,0.04,서울 상업,0.771
+ln_stores,0.7351,0.0196,37.47,P4_sales_emp_all,0.114,서울 전체(고용·사업체 요인),0.771
+ln_dist_tram,0.0314,0.0188,1.67,,,,0.771
