@@ -82,6 +82,7 @@ STEPS = [
     ("check_rent_gap_national", "B2 전국 상권: 땅값-임대료 간극이 나중 임대료 상승을 알려 주나", None),
     ("analyze_construction_dose", "B3 공사 피해 용량-반응(거리 띠·공사 경과)", None),
     ("cafe_baseline", "B6 카페 기준선(트램 없을 때 추세) 위에 트램 몫", None),
+    ("robust_checks_1113", "검정 보강: 카페 역 단위 묶음 검정·포아송, 공사 코호트별 비교 (규칙: docs/사전분석계획_검정보강_1113.md)", None),
     ("tests_registry", "B11 전체 검정 목록 + BH 다중 검정 보정", None),
     ("check_ai_numbers", "B8 저장된 AI 해설 숫자 기계 대조", None),
     ("analyze_development_trend", "트램 없어도 오르는 곳: 신도시·택지 개발 동 표시, 개발지 뺀 1호선 효과 (약 1분)", None),

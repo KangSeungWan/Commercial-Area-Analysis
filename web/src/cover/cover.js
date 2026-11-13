@@ -145,7 +145,7 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
     el.routeLine.setAttribute("stroke", lerp("#0a1d08", "#c9d5c5", n));
     // 하늘의 노선은 내용 글자가 나와 있는 동안 옅게 (겹쳐 읽히지 않게). 휴대폰은 마무리 글자와도 겹쳐서 끝까지 옅게
     const c01 = v => Math.min(1, Math.max(0, v));
-    const textOn = c01((S.p - .12) / .06) * (W < 768 ? 1 : 1 - c01((S.p - .64) / .06));
+    const textOn = c01((S.p - .12) / .06) * (W < 768 ? 1 : 1 - c01((S.p - .68) / .05));
     el.route.style.opacity = (.5 + n * .3) * (1 - .8 * textOn);
     for (const c of stopsEls) {
       c.setAttribute("fill", lerp("#f8f9f5", "#f2e9cf", n)); c.setAttribute("stroke", lerp("#0a1d08", "#f2e9cf", n)); c.setAttribute("r", 2.6 + n * 1.2);
@@ -181,9 +181,17 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
   }
 
   // 버튼 → Python (트리거: 한 번의 재실행에만 값이 실림, 페이지 새로고침 없음)
+  let scrollerEl = null;                                    // 아래 화살표: 첫 내용 장면까지 부드럽게 내림
   const onClick = e => {
     const b = e.target.closest("[data-act]");
-    if (b) setTriggerValue(b.dataset.act, true);
+    if (!b) return;
+    if (b.dataset.act === "down") {
+      const sc = scrollerEl || document.scrollingElement || document.documentElement;
+      const top = (sc.scrollHeight - sc.clientHeight) * .24;
+      (sc === document.scrollingElement || sc === document.documentElement ? window : sc).scrollTo({ top, behavior: reduce ? "auto" : "smooth" });
+      return;
+    }
+    setTriggerValue(b.dataset.act, true);
   };
   stage.addEventListener("click", onClick);
 
@@ -192,20 +200,26 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
 
   // 스크롤 장면: 길이 1 의 멈춘 타임라인을 스크롤 위치(S.p)로 감음. 제목은 왼쪽으로 빠지고, 내용은 오른쪽에서 들어옴
   const T = reduce ? .0001 : 1;                             // 움직임 줄이기: 이동 없이 바로 바뀜
-  const hero = q(".cv-hero"), navCta = q(".cv-nav-cta"), p1 = q(".cv-p1"), p2 = q(".cv-p2"), p3 = q(".cv-p3");
+  const hero = q(".cv-hero"), navCta = q(".cv-nav-cta"), down = q(".cv-down"), p1 = q(".cv-p1"), p2 = q(".cv-p2"), p3 = q(".cv-p3"), p4 = q(".cv-p4");
   const slideIn = (el, at) => scenes.fromTo(el, { autoAlpha: 0, x: reduce ? 0 : 140 }, { autoAlpha: 1, x: 0, duration: .07 * T, ease: "power3.out" }, at);
   const slideOut = (el, at) => scenes.to(el, { autoAlpha: 0, x: reduce ? 0 : -140, duration: .06 * T, ease: "power2.in" }, at);
   const scenes = gsap.timeline({ paused: true });
   slideOut(hero, .1);                                                       // 새벽~한낮: 제목
+  scenes.to(down, { autoAlpha: 0, duration: .03 * T }, .05);               // 아래 화살표는 내리기 시작하면 사라짐
   scenes.fromTo(navCta, { autoAlpha: 0 }, { autoAlpha: 1, duration: .03 * T }, .13);   // 제목이 빠지면 '지도 열기' 는 위쪽 줄에
-  slideIn(p1, .18);                                                         // 한낮~오후: 세 가지 분석
-  scenes.from(p1.querySelectorAll(".cv-row"), { autoAlpha: 0, y: reduce ? 0 : 26, duration: .05 * T, stagger: .02 * T, ease: "power3.out" }, .2);
-  slideOut(p1, .4);
-  slideIn(p2, .45);                                                         // 오후~노을: 네 단계
-  scenes.from(p2.querySelectorAll(".cv-step"), { autoAlpha: 0, y: reduce ? 0 : 20, duration: .05 * T, stagger: .015 * T, ease: "power3.out" }, .47);
-  slideOut(p2, .63);
+  slideIn(p1, .16);                                                         // 한낮: 1호선이 보여 준 것(범위 그림)
+  scenes.from(p1.querySelectorAll(".cv-fi"), { autoAlpha: 0, y: reduce ? 0 : 18, duration: .03 * T, stagger: .008 * T, ease: "power3.out" }, .17);
+  scenes.from(p1.querySelectorAll(".cv-ft .bar, .cv-ft .pair"), { scaleX: 0, transformOrigin: "left center", duration: .04 * T, stagger: .006 * T, ease: "power3.out" }, .18);
+  slideOut(p1, .32);
+  slideIn(p2, .35);                                                         // 오후: 정책 진단 4칸
+  scenes.from(p2.querySelectorAll(".cv-qc"), { autoAlpha: 0, scale: reduce ? 1 : .92, duration: .03 * T, stagger: .008 * T, ease: "back.out(1.6)" }, .37);
+  scenes.from(p2.querySelectorAll(".cv-split-bar span"), { scaleX: 0, transformOrigin: "left center", duration: .04 * T, ease: "power3.out" }, .37);
+  slideOut(p2, .48);
+  slideIn(p3, .51);                                                         // 늦은 오후~노을: 네 단계 + 검증
+  scenes.from(p3.querySelectorAll(".cv-fs, .cv-chip"), { autoAlpha: 0, y: reduce ? 0 : 16, duration: .03 * T, stagger: .006 * T, ease: "power3.out" }, .52);
+  slideOut(p3, .66);
   scenes.to(navCta, { autoAlpha: 0, duration: .03 * T }, .7);              // 마무리엔 큰 '지도 열기' 가 있으므로 위쪽 줄 버튼은 숨김
-  slideIn(p3, .7);                                                          // 해 진 뒤~밤: 마무리
+  slideIn(p4, .72);                                                         // 해 진 뒤~밤: 마무리
   scenes.set({}, {}, 1);                                                    // 타임라인 길이 = 1 (스크롤 끝)
 
   // Streamlit 페이지의 스크롤 상자 (커버 스크롤 = 페이지 스크롤 하나)
@@ -228,18 +242,18 @@ function start(rootEl, ROUTE, stats, setTriggerValue) {
   if (reduce) {
     S.intro = 1; S.run = W * .18; render();                               // 하늘은 한낮 고정, 내용만 스크롤로 바뀜 (이동 없음)
     requestAnimationFrame(() => {
-      const scroller = findScroller();
+      const scroller = findScroller(); scrollerEl = scroller;
       scroller.scrollTop = 0;
       st = ScrollTrigger.create({ trigger: wrap, scroller, start: "top top", end: "bottom bottom", onUpdate: self => { S.p = self.progress; render(); } });
     });
   } else {
     render();
     tweens.push(gsap.from(rootEl.querySelectorAll(".cv-hero h1 .line > span"), { yPercent: 115, duration: 1.3, ease: "expo.out", stagger: .12, delay: .4 }));
-    tweens.push(gsap.from([q(".cv-hero .cv-tag"), q(".cv-hero .cv-sub"), q(".cv-hero .cv-actions")], { opacity: 0, y: 14, duration: .9, ease: "power3.out", stagger: .5, delay: .6 }));
+    tweens.push(gsap.from([q(".cv-hero .cv-tag"), q(".cv-hero .cv-sub"), q(".cv-hero .cv-actions"), down], { opacity: 0, y: 14, duration: .9, ease: "power3.out", stagger: .5, delay: .6 }));
     tweens.push(gsap.to(S, { intro: 1, duration: 1.8, ease: "expo.out" }));     // 언덕이 아래에서 솟아오름
     // 레이아웃이 자리 잡은 뒤 스크롤 상자를 찾아 연결 (지도에서 돌아오면 맨 위부터)
     requestAnimationFrame(() => {
-      const scroller = findScroller();
+      const scroller = findScroller(); scrollerEl = scroller;
       scroller.scrollTop = 0;
       const tw = gsap.to(S, { p: 1, ease: "none", scrollTrigger: { trigger: wrap, scroller, start: "top top", end: "bottom bottom", scrub: 1 } });
       tweens.push(tw); st = tw.scrollTrigger;

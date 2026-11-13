@@ -48,8 +48,8 @@ _HTML = """
   <!-- 1. 첫 화면: 스크롤하면 왼쪽으로 빠짐 -->
   <div class="cv-copy cv-hero">
     <span class="cv-tag">대전 트램 2호선 · 2030년 개통</span>
-    <h1><span class="line"><span>트램은 매출이 아니라</span></span><span class="line"><span>거리를 바꾼다</span></span></h1>
-    <p class="cv-sub">대전 1호선 역 주변에서는 매출보다 <b>땅값</b>과 <b>가게 종류</b>가 먼저 달라졌습니다. <br>2030년 트램 2호선이 지날 20개 상권에서 같은 변화를 미리 읽습니다.<span class="cv-sub-note">대전 1호선과 해외 사례로 미리 읽은 경고</span></p>
+    <h1><span class="line"><span>대전 트램 2호선 상권 변화 사전 진단</span></span><span class="line"><span>및 정책 의사결정 지원 시스템</span></span></h1>
+    <p class="cv-sub">카페 쪽 업종 변화와 상권 위험을 진단하는 <b>시·구 정책 지도</b> <br>트램은 매출이 아니라 거리를 바꾼다 — 2030년 트램 2호선 주변 상권 12곳과 행정동 44곳에서 대전 1호선의 변화를 미리 읽습니다.<span class="cv-sub-note">대전 1호선과 해외 사례로 미리 읽은 경고</span></p>
     <div class="cv-actions">
       <button type="button" class="cv-cta" data-act="open">지도 열기</button>
       <button type="button" class="cv-ghost" data-act="about">분석 방법 보기</button>
@@ -61,7 +61,7 @@ _HTML = """
     <div class="cv-card cv-rows">
       <div class="cv-row"><h3>상권 진단</h3><p>트램 근처 상권(행정동)을 지금 위험과 트램이 바꿀 업종 변화로 나눠, 담당자가 할 일(먼저 지원·기존 지원 연계·변화 관찰·정기 점검)을 보여 줍니다.</p>
         <div class="cv-num"><b data-stat="rebound"></b>곳이 먼저 지원 · 그중 <span data-stat="rb_rent"></span>곳은 임대료 신호도 높아 지켜볼 곳</div></div>
-      <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 정거장 500m 안의 효과를 추정합니다. 같은 역세권에서 점포당 매출 차이는 땅값의 4분의 1 수준이었습니다.</p>
+      <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 정거장 500m 안의 효과를 추정합니다. 같은 역세권에서 점포당 매출 차이는 땅값 차이보다 작았습니다.</p>
         <div class="cv-num"><b data-stat="base"></b>기본 시나리오 (<span data-stat="low"></span> ~ <span data-stat="high"></span>)</div></div>
       <div class="cv-row"><h3>업종 구성 변화</h3><p>1호선 역 주변에서는 카페가 늘고 음식점 중 카페 비중이 커졌습니다. 같은 근거로 2034년까지 늘어날 카페를 상권마다 계산합니다.</p>
         <div class="cv-num">대전 카페 <b data-stat="cafe_add"></b>곳 (<span data-stat="cafe_rng"></span>)</div></div>
@@ -73,7 +73,7 @@ _HTML = """
     <div class="cv-card cv-steps">
       <div class="cv-step"><b><span>1</span>자료 모으기</b>공시지가 1990~2026, 상가정보 42분기, 음식점 인허가, 카드매출, 임대동향</div>
       <div class="cv-step"><b><span>2</span>효과 추정</b>1호선 역 500m 안과 1~3km 밖의 개통 전후 비교 (땅값·업종)</div>
-      <div class="cv-step"><b><span>3</span>진단과 전망</b>상권 4분류, 땅값·카페 수 시나리오, 임대료 부담 신호</div>
+      <div class="cv-step"><b><span>3</span>진단과 전망</b>정책 진단 4칸(트램 근처 상권 12곳·행정동 44곳), 땅값·카페 수 시나리오, 임대료 부담 신호</div>
       <div class="cv-step"><b><span>4</span>지도에서 보기</b>상권·정거장을 눌러 근거와 AI 해설 확인</div>
     </div>
   </div>
@@ -119,7 +119,7 @@ _CSS = """
 .cv-hero .cv-sub + .cv-actions { margin-top: 26px; }
 .cv-tag { display: inline-block; font-size: 13px; color: var(--tag-fg); background: var(--tag-bg); border: 1px solid var(--tag-line);
           border-radius: 999px; padding: 5px 13px; margin-bottom: 26px; }
-.cv-copy h1 { font-family: "Newsreader", "Noto Serif KR", serif; font-weight: 300; font-size: clamp(40px, 4.6vw, 80px); line-height: 1.1;
+.cv-copy h1 { font-family: "Newsreader", "Noto Serif KR", serif; font-weight: 300; font-size: clamp(30px, 3.4vw, 56px); line-height: 1.16;
               letter-spacing: -0.025em; word-break: keep-all; margin: 0 0 34px 0; padding: 0; color: var(--fg); }
 .cv-copy h1 .line { display: block; overflow: hidden; padding: 0.14em 0 0.06em 0; margin-top: -0.14em; }   /* 한글 세리프 글자 위가 잘리지 않게 */
 .cv-copy h1 .line > span { display: block; }
@@ -164,7 +164,7 @@ _CSS = """
   .cv-sub { font-size: 15.5px; }
   .cv-sub br { display: none; }
   .cv-hero .cv-ghost { background: rgba(248, 249, 245, .82); backdrop-filter: blur(2px); }
-  .cv-copy h1 { margin-bottom: 24px; font-size: min(32px, 8.4vw); }
+  .cv-copy h1 { margin-bottom: 24px; font-size: min(24px, 6.4vw); }
   .cv-rows, .cv-steps { grid-template-columns: 1fr; }
   .cv-row, .cv-step { padding: 14px 0 12px 0; border-left: none; border-top: 1px solid rgba(10, 29, 8, .16); }
   .cv-row:first-child, .cv-step:first-child { padding-top: 0; border-top: none; }

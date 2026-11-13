@@ -502,7 +502,7 @@ PAGES = {"map": "지도", **({"map3d": "3D 지도"} if map3d is not None else {}
 if ss.page not in PAGES:
     ss.page = "map"
 st.sidebar.title("대전 트램 상권 지도")
-st.sidebar.caption(f"{OPEN_YEAR}년 개통 트램 2호선 주변 20개 상권 진단")
+st.sidebar.caption(f"{OPEN_YEAR}년 개통 트램 2호선 · 상권 20곳 중 트램 근처 12곳 정책 진단")
 
 
 def _nav_cb():
@@ -515,7 +515,7 @@ SRC_8989_FULL = ("자료 출처: 대전광역시·대전신용보증재단, 「�
                  "※ 상권분석 서비스의 일부 통계를 활용하여 충남대학교 학생 연구팀이 자체 분석·가공한 결과이며, 대전광역시 또는 대전신용보증재단의 공식 분석이나 전망은 아님")
 PAGE = ss.page
 TRAM_MODES = ["건설 전", "건설 후"]
-MAPM = {"quadrant": "진단 (4분류)", "tram_sel": "상권 가치(땅값) 기준 트램 효과",          # 발표 순서: 진단 → 상권 가치 → 업종 → 임대료
+MAPM = {"quadrant": "정책 진단 (4칸)", "tram_sel": "상권 가치(땅값) 기준 트램 효과",          # 발표 순서: 진단 → 상권 가치 → 업종 → 임대료
         **({"comp": "업종 변화 (카페 비중, 2034)"} if comp89 is not None else {}),
         **({"rent": "임대료 부담 신호 (상대 순위)"} if rentp is not None else {}),
         "land_fc": f"땅값 전망 (2026→{int(fc.year.max()) if fc is not None else 2034})",   # ── 참고 지표
@@ -1051,7 +1051,8 @@ if PAGE == "map":
             sens_d = [dinfo.loc[c, "dong"] for c in dprof.dong_id if ("행정동", str(c)) in SENS]
             if sens_d:
                 st.caption("⚑ 정거장 추정 좌표에 따라 진단이 바뀔 수 있는 동: " + ", ".join(sens_d)
-                           + " (좌표를 0~300m 옮겨 300번 다시 계산, 10% 넘게 바뀜) · 핵심 상권 20곳은 모두 안정")
+                           + " (좌표를 0~300m 옮겨 300번 다시 계산, 10% 넘게 바뀜) · 핵심 상권은 "
+                           + f"{sum(1 for k in SENS if k[0] == '상권')}곳이 10% 넘게 바뀜(상권 카드에 ⚑)")
             dev_d = [dinfo.loc[c, "dong"] for c in dprof.dong_id if DEV.get(str(c), ("",))[0] == "개발지"]
             if dev_d:
                 st.caption("⌂ 신도시·택지 개발로 트램 없어도 오르는 동: " + ", ".join(dev_d)
@@ -1376,7 +1377,7 @@ if PAGE == "map":
                                   help="3D: 상권을 기둥으로 세워 2026→2034 땅값 변화와 트램 운행을 재생 (기둥 높이는 지도 안에서 고름)")
             if _mv3d:
                 with h_l, st.container(horizontal=True, vertical_alignment="center", gap="small"):
-                    st.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 진단 4분류 · 기둥 높이·연도는 지도 안에서 고름'
+                    st.markdown('<div class="maphead-in"><div class="lg"><b>3D</b>&nbsp;색 = 정책 진단 4칸 · 기둥 높이·연도는 지도 안에서 고름'
                                 '</div><span class="hint">기둥·정거장을 누르면 진단 패널에 표시</span></div>',
                                 unsafe_allow_html=True, width="content")
                     st.button("크게 보기", icon=":material/open_in_full:", type="tertiary", key="to_map3d",

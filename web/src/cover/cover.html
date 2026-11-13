@@ -22,38 +22,67 @@
   <!-- 1. 첫 화면: 스크롤하면 왼쪽으로 빠짐 -->
   <div class="cv-copy cv-hero">
     <span class="cv-tag">대전 트램 2호선 · 2030년 개통</span>
-    <h1><span class="line"><span>트램은 매출이 아니라</span></span><span class="line"><span>거리를 바꾼다</span></span></h1>
-    <p class="cv-sub">대전 1호선 역 주변에서는 매출보다 <b>땅값</b>과 <b>가게 종류</b>가 먼저 달라졌습니다. <br>2030년 트램 2호선이 지날 20개 상권에서 같은 변화를 미리 읽습니다.<span class="cv-sub-note">대전 1호선과 해외 사례로 미리 읽은 경고</span></p>
+    <h1><span class="line"><span>대전 트램 2호선 상권 변화 사전 진단</span></span><span class="line"><span>및 정책 의사결정 지원 시스템</span></span></h1>
+    <p class="cv-sub">카페 쪽 업종 변화와 상권 위험을 진단하는 <b>시·구 정책 지도</b><span class="cv-sub-note">대전 1호선(2006) 실측과 해외 사례로 만든 사전 경고 · 트램 주변 상권 <span data-stat="n_area"></span>곳 · 행정동 <span data-stat="n_dong"></span>곳</span></p>
     <div class="cv-actions">
       <button type="button" class="cv-cta" data-act="open">지도 열기</button>
       <button type="button" class="cv-ghost" data-act="about">분석 방법 보기</button>
     </div>
   </div>
+  <button type="button" class="cv-down" data-act="down" aria-label="아래로 넘겨 다음 내용 보기">
+    <span>아래로 넘겨 보기</span>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
 
-  <!-- 2. 무엇을 보나: 세 가지 분석 (오른쪽에서 들어와 왼쪽으로 빠짐) -->
+  <!-- 2. 1호선이 보여 준 것: 다섯 결과를 범위 그림으로 -->
   <div class="cv-panel cv-p1">
-    <div class="cv-card cv-rows">
-      <div class="cv-row"><h3>상권 진단</h3><p>트램 근처 상권을 지금 위험과 업종 변화로 나눠, 담당자가 할 일을 네 가지로 보여 줍니다.</p>
-        <div class="cv-num">트램 근처 <b data-stat="rebound"></b>곳 · 먼저 지원 <span data-stat="rb_rent"></span>곳</div></div>
-      <div class="cv-row"><h3>상권 가치(땅값) 기준 트램 효과</h3><p>2006년 대전 1호선 개통 전후의 땅값 변화로 정거장 500m 안의 효과를 추정합니다. 같은 역세권에서 점포당 매출 차이는 땅값의 4분의 1 수준이었습니다.</p>
-        <div class="cv-num"><b data-stat="base"></b>기본 시나리오 (<span data-stat="low"></span> ~ <span data-stat="high"></span>)</div></div>
-      <div class="cv-row"><h3>업종 구성 변화</h3><p>1호선 역 주변에서는 카페가 늘고 음식점 중 카페 비중이 커졌습니다. 같은 근거로 2034년까지 늘어날 카페를 상권마다 계산합니다.</p>
-        <div class="cv-num">대전 카페 <b data-stat="cafe_add"></b>곳 (<span data-stat="cafe_rng"></span>)</div></div>
+    <div class="cv-card">
+      <div class="cv-kicker">대전 1호선(2006) 개통 전후 실측</div>
+      <h2 class="cv-h2">트램은 매출이 아니라 거리를 바꾼다</h2>
+      <div class="cv-forest" role="img" aria-label="다섯 가지 결과의 효과와 95% 구간"></div>
+      <div class="cv-legend"><span><i class="g1"></i>확실</span><span><i class="g2"></i>방향만</span><span><i class="g3"></i>확인 안 됨</span><span class="cv-legend-note">막대 = 95% 구간 · 점 = 효과 · 세로선 = 0</span></div>
     </div>
   </div>
 
-  <!-- 3. 어떻게 분석했나: 네 단계 -->
+  <!-- 3. 담당자가 할 일: 정책 진단 4칸 -->
   <div class="cv-panel cv-p2">
-    <div class="cv-card cv-steps">
-      <div class="cv-step"><b><span>1</span>자료 모으기</b>공시지가 1990~2026, 상가정보 42분기, 음식점 인허가, 카드매출, 임대동향</div>
-      <div class="cv-step"><b><span>2</span>효과 추정</b>1호선 역 500m 안과 1~3km 밖의 개통 전후 비교 (땅값·업종)</div>
-      <div class="cv-step"><b><span>3</span>진단과 전망</b>상권 4분류, 땅값·카페 수 시나리오, 임대료 부담 신호</div>
-      <div class="cv-step"><b><span>4</span>지도에서 보기</b>상권·정거장을 눌러 근거와 AI 해설 확인</div>
+    <div class="cv-card cv-two">
+      <div>
+        <div class="cv-kicker">시·구 담당자가 할 일</div>
+        <h2 class="cv-h2">트램 근처 상권을 네 칸으로</h2>
+        <div class="cv-split"><div class="cv-split-bar"></div><div class="cv-split-lab"></div></div>
+        <p class="cv-note">가로 = 지금 위험(위험 점수 50 이상 + 절대 쇠퇴 신호) · 세로 = 2034 업종 변화(카페·빵 비중, 가운데값 기준). 매출·투자 전망이 아닌 정책 우선순위입니다.</p>
+      </div>
+      <div class="cv-quadwrap">
+        <span class="cv-ax cv-ax-y">업종 변화 큼 ↑</span>
+        <div class="cv-quad"></div>
+        <span class="cv-ax cv-ax-x">지금 위험 높음 →</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 어떻게 만들었나: 네 단계 흐름 + 검증 -->
+  <div class="cv-panel cv-p3">
+    <div class="cv-card">
+      <div class="cv-kicker">어떻게 만들었나</div>
+      <h2 class="cv-h2">공공데이터에서 지도까지 네 단계</h2>
+      <ol class="cv-flow">
+        <li class="cv-fs"><span class="cv-dot">1</span><b>공공데이터</b><small>공시지가 1990~2026 · 상가정보 42분기 · 인허가 · 카드매출(비율만)</small></li>
+        <li class="cv-fs"><span class="cv-dot">2</span><b>1호선 이중차분</b><small>역 500m 안 vs 1~3km, 개통 전후 비교</small></li>
+        <li class="cv-fs"><span class="cv-dot">3</span><b>정책 진단 4칸</b><small>지금 위험 × 업종 변화, 상권·행정동</small></li>
+        <li class="cv-fs"><span class="cv-dot">4</span><b>지도 · AI 해설</b><small>해설 숫자는 결과와 자동 대조</small></li>
+      </ol>
+      <div class="cv-chips">
+        <div class="cv-chip"><b data-stat="reg_n"></b><span>검정 수</span></div>
+        <div class="cv-chip"><b data-stat="reg_q"></b><span>다중 검정 보정 뒤 남음</span></div>
+        <div class="cv-chip"><b>먼저</b><span>판정 규칙을 결과 보기 전에 작성</span></div>
+        <div class="cv-chip"><b data-stat="n_src"></b><span>공공·재단 자료</span></div>
+      </div>
     </div>
   </div>
 
   <!-- 4. 마무리 (저녁): 지도로 -->
-  <div class="cv-panel cv-p3">
+  <div class="cv-panel cv-p4">
     <div class="cv-close">
       <h2>지도에서 직접 눌러 보세요</h2>
       <p>상권을 누르면 진단 근거가, 정거장을 누르면 500m 영향권이 열립니다.</p>
